@@ -1,0 +1,4 @@
+opi-browser-retry.service: inactive
+opi-pixel-qualification.service: inactive
+opi-weston-test.service: inactive
+opi-video-http.service: inactive

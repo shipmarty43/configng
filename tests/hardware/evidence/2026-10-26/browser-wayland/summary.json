@@ -1,0 +1,576 @@
+{
+  "date": "2026-10-26",
+  "board": "Orange Pi Zero 2W H618",
+  "chromium": "156.0.8078.47-1xtradeb1.2604.1",
+  "chromium_source_revision": "1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+  "external_driver_base": "cac6ece0e23ac1f944dd3af266680aff0c3184df",
+  "status": "experimental: hardware images work; color correctness and performance not qualified",
+  "raw_archive_sha256": "fada254b44c34e1ce0b50b288fe2fe5db037336407880b64cddf15a490b18659",
+  "diagnostic_trials": [
+    {
+      "case": "direct-software-wayland-http-pixels-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]",
+        "video decoder fallback after initial decode error.",
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: false, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-egl-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 15
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-enable",
+      "video": {
+        "time": 2,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 60,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "320x240",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"320x240\",\"color space\":{\"matrix\":\"SMPTE170M\",\"primaries\":\"SMPTE170M\",\"range\":\"LIMITED\",\"transfer\":\"SMPTE170M\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"320x240\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 320x240\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [320,240], visible rect: [0,0,320,240], natural size: [320,240], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:SMPTE170M, transfer:SMPTE170M, matrix:SMPTE170M, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-hist",
+      "video": {
+        "time": 2,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 60,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "320x240",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"320x240\",\"color space\":{\"matrix\":\"SMPTE170M\",\"primaries\":\"SMPTE170M\",\"range\":\"LIMITED\",\"transfer\":\"SMPTE170M\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"320x240\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 320x240\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [320,240], visible rect: [0,0,320,240], natural size: [320,240], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:SMPTE170M, transfer:SMPTE170M, matrix:SMPTE170M, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-no-priority",
+      "video": {
+        "time": 2,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 60,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "320x240",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"320x240\",\"color space\":{\"matrix\":\"SMPTE170M\",\"primaries\":\"SMPTE170M\",\"range\":\"LIMITED\",\"transfer\":\"SMPTE170M\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"320x240\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 320x240\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [320,240], visible rect: [0,0,320,240], natural size: [320,240], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:SMPTE170M, transfer:SMPTE170M, matrix:SMPTE170M, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]",
+        "video decoder fallback after initial decode error.",
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [320,240], visible rect: [0,0,320,240], natural size: [320,240], has extra data: false, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:SMPTE170M, transfer:SMPTE170M, matrix:SMPTE170M, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-trace",
+      "video": {
+        "time": 2,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 60,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "320x240",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"320x240\",\"color space\":{\"matrix\":\"SMPTE170M\",\"primaries\":\"SMPTE170M\",\"range\":\"LIMITED\",\"transfer\":\"SMPTE170M\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"320x240\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 320x240\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [320,240], visible rect: [0,0,320,240], natural size: [320,240], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:SMPTE170M, transfer:SMPTE170M, matrix:SMPTE170M, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-warm",
+      "video": {
+        "time": 2,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 60,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "320x240",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"320x240\",\"color space\":{\"matrix\":\"SMPTE170M\",\"primaries\":\"SMPTE170M\",\"range\":\"LIMITED\",\"transfer\":\"SMPTE170M\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"320x240\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 320x240\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [320,240], visible rect: [0,0,320,240], natural size: [320,240], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:SMPTE170M, transfer:SMPTE170M, matrix:SMPTE170M, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-wayland-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 0
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "VaapiVideoDecoder",
+          "kIsPlatformVideoDecoder": "true",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-wayland-http-pixels-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 4
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "VaapiVideoDecoder",
+          "kIsPlatformVideoDecoder": "true",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "FAIL: every pixel RGB (0,136,0)"
+    },
+    {
+      "case": "direct-vaapi-wayland-patched-pixels-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 4
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "FFmpegVideoDecoder",
+          "kIsPlatformVideoDecoder": "false",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "Selected FFmpegVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified",
+      "invalid_trial": "browser launched before driver build completed; no patch conclusion"
+    },
+    {
+      "case": "direct-vaapi-wayland-patched-ready-pixels-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 9
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "VaapiVideoDecoder",
+          "kIsPlatformVideoDecoder": "true",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    },
+    {
+      "case": "direct-vaapi-wayland-patched-youtube",
+      "video": {
+        "time": 42.671372,
+        "paused": false,
+        "ready": 4,
+        "width": 854,
+        "height": 480,
+        "error": null,
+        "totalFrames": 1285,
+        "droppedFrames": 123
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "VaapiVideoDecoder",
+          "kIsPlatformVideoDecoder": "true",
+          "kResolution": "854x480",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"854x480\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":false,\"hdr metadata\":{},\"natural size\":\"854x480\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 main\",\"visible rect\":\"0,0 854x480\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 main, level: 31, alpha_mode: is_opaque, coded size: [854,480], visible rect: [0,0,854,480], natural size: [854,480], has extra data: false, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified",
+      "youtube_codec_override": "test-only MSE and canPlayType reject VP9/AV1",
+      "observed_image": "film image visible in private screenshot",
+      "color_correctness": "not qualified",
+      "audio_sync": "not tested (muted)"
+    },
+    {
+      "case": "direct-vaapi-wayland-pixels-720p",
+      "video": {
+        "time": 6,
+        "paused": true,
+        "ready": 4,
+        "error": null,
+        "ended": true,
+        "totalFrames": 180,
+        "droppedFrames": 8
+      },
+      "video_players": [
+        {
+          "kVideoDecoderName": "VaapiVideoDecoder",
+          "kIsPlatformVideoDecoder": "true",
+          "kResolution": "1280x720",
+          "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]"
+        }
+      ],
+      "selection_messages": [
+        "VideoDecoderPipeline |decoder_| Initialize() successful",
+        "Selected VaapiVideoDecoder for video decoding, config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0\u00b0, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]"
+      ],
+      "image_correctness": "not qualified"
+    }
+  ],
+  "final_patch_trials": [
+    {
+      "media": "test-tagged-720p.mp4",
+      "preexport": true,
+      "software": false,
+      "backend": "wayland",
+      "captures": [
+        {
+          "file": "last-frame.png",
+          "time": 6
+        },
+        {
+          "file": "seek-1.png",
+          "time": 1
+        },
+        {
+          "file": "seek-3.png",
+          "time": 3
+        },
+        {
+          "file": "seek-5.png",
+          "time": 5
+        }
+      ],
+      "qualified": false,
+      "playback": {
+        "time": 6,
+        "duration": 6,
+        "ended": true,
+        "error": null,
+        "totalFrames": 180,
+        "droppedFrames": 13
+      },
+      "properties": {
+        "kBitrate": "7155444",
+        "kVideoDecoderName": "VaapiVideoDecoder",
+        "kIsStreaming": "false",
+        "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1280x720\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1280x720\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 baseline\",\"visible rect\":\"0,0 1280x720\"}]",
+        "kIsPlatformVideoDecoder": "true",
+        "kIsRangeHeaderSupported": "true",
+        "kIsVideoDecryptingDemuxerStream": "false",
+        "kStartTime": "0.0",
+        "kResolution": "1280x720",
+        "kRendererName": "RendererImpl",
+        "kTotalBytes": "0x51e337",
+        "kMaxDuration": "6.0",
+        "kIsSingleOrigin": "true",
+        "kFrameTitle": "Synthetic decoder validation"
+      },
+      "capture_complete": true,
+      "case": "tagged720-patched-v3",
+      "image_correctness": "FAIL: unresolved color difference"
+    },
+    {
+      "media": "test-tagged-1080p.mp4",
+      "preexport": true,
+      "software": false,
+      "backend": "wayland",
+      "captures": [
+        {
+          "file": "last-frame.png",
+          "time": 10
+        },
+        {
+          "file": "seek-1.png",
+          "time": 1
+        },
+        {
+          "file": "seek-3.png",
+          "time": 3
+        },
+        {
+          "file": "seek-5.png",
+          "time": 5
+        }
+      ],
+      "qualified": false,
+      "playback": {
+        "time": 10,
+        "duration": 10,
+        "ended": true,
+        "error": null,
+        "totalFrames": 300,
+        "droppedFrames": 18
+      },
+      "properties": {
+        "kBitrate": "5750052",
+        "kVideoDecoderName": "VaapiVideoDecoder",
+        "kIsStreaming": "false",
+        "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+        "kIsPlatformVideoDecoder": "true",
+        "kIsRangeHeaderSupported": "true",
+        "kIsVideoDecryptingDemuxerStream": "false",
+        "kStartTime": "0.0",
+        "kResolution": "1920x1080",
+        "kRendererName": "RendererImpl",
+        "kTotalBytes": "0x6dac6d",
+        "kMaxDuration": "10.0",
+        "kIsSingleOrigin": "true",
+        "kFrameTitle": "Synthetic decoder validation"
+      },
+      "capture_complete": true,
+      "case": "tagged1080-patched-v3",
+      "image_correctness": "FAIL: unresolved color difference"
+    },
+    {
+      "media": "test-tagged-1080p.mp4",
+      "preexport": false,
+      "software": true,
+      "backend": "wayland",
+      "captures": [
+        {
+          "file": "last-frame.png",
+          "time": 10
+        },
+        {
+          "file": "seek-1.png",
+          "time": 1
+        },
+        {
+          "file": "seek-3.png",
+          "time": 3
+        },
+        {
+          "file": "seek-5.png",
+          "time": 5
+        }
+      ],
+      "qualified": false,
+      "playback": {
+        "time": 10,
+        "duration": 10,
+        "ended": true,
+        "error": null,
+        "totalFrames": 300,
+        "droppedFrames": 32
+      },
+      "properties": {
+        "kBitrate": "5750052",
+        "kVideoDecoderName": "FFmpegVideoDecoder",
+        "kIsStreaming": "false",
+        "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+        "kIsPlatformVideoDecoder": "false",
+        "kIsRangeHeaderSupported": "true",
+        "kIsVideoDecryptingDemuxerStream": "false",
+        "kStartTime": "0.0",
+        "kRendererName": "RendererImpl",
+        "kTotalBytes": "0x6dac6d",
+        "kMaxDuration": "10.0",
+        "kIsSingleOrigin": "true",
+        "kFrameTitle": "Synthetic decoder validation",
+        "kResolution": "1920x1080"
+      },
+      "capture_complete": true,
+      "case": "tagged1080-software-v3",
+      "image_correctness": "software comparison control"
+    }
+  ],
+  "1080p_pixel_comparison": [
+    {
+      "capture": "last-frame",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "mean_absolute_rgb_channel_error": 7.340656346450618,
+      "max_absolute_rgb_channel_error": 177,
+      "pixels_with_any_channel_error_over_3": 2071219,
+      "pixel_equivalence": "FAIL"
+    },
+    {
+      "capture": "seek-1",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "mean_absolute_rgb_channel_error": 7.332721675668724,
+      "max_absolute_rgb_channel_error": 171,
+      "pixels_with_any_channel_error_over_3": 2071693,
+      "pixel_equivalence": "FAIL"
+    },
+    {
+      "capture": "seek-3",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "mean_absolute_rgb_channel_error": 7.390314911265432,
+      "max_absolute_rgb_channel_error": 198,
+      "pixels_with_any_channel_error_over_3": 2071301,
+      "pixel_equivalence": "FAIL"
+    },
+    {
+      "capture": "seek-5",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "mean_absolute_rgb_channel_error": 7.403229488168725,
+      "max_absolute_rgb_channel_error": 194,
+      "pixels_with_any_channel_error_over_3": 2071553,
+      "pixel_equivalence": "FAIL"
+    }
+  ],
+  "harness_invalid_early_seeks": "tagged720-patched and tagged720-software used HTTP without ranges: all seeks landed at zero; excluded from seek acceptance",
+  "checks": [
+    "Final patch applies cleanly to pinned upstream",
+    "Native Meson build succeeded",
+    "Unopted-in VA-API FFmpeg 60-frame readback byte-exact",
+    "HTTP server full/bounded/open-ended/invalid ranges passed on board",
+    "All dedicated test services inactive after cleanup"
+  ]
+}

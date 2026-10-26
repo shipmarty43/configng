@@ -5,6 +5,12 @@ Same board/image, Chromium `156.0.8078.47-1xtradeb1.2604.1`, Mesa
 `26.0.8-1ubuntu0.3`, and pinned external VA-API bridge. No package changes,
 system-wide flags or browser sandbox-disabling flags were applied in this retry.
 
+**Later findings:** [720p/Wayland and DMA-BUF investigation](zero2w-browser-wayland-2026-10-26.md)
+shows that the early empty capability list was not definitive and 240p favors
+software by default. An experimental driver patch now produces hardware-decoded
+images and a short YouTube stream, with color/performance failures still open.
+The original eight-run observations below are retained as historical evidence.
+
 ## Results
 
 All eight fresh-profile trials responded to DevTools. All selected
@@ -45,9 +51,9 @@ claimed for those two trials.
 3. Without a device override, Chromium logged that VA-API pre-initialization had
    not run or had failed to select a suitable render node. Adding
    `--hardware-video-device-path=/dev/dri/renderD128` changed the log to the
-   external bridge detecting one Request API decoder. Hardware profile
-   enumeration remained empty. The precise reason profiles are rejected or
-   filtered remains unresolved; do not label this a proven decoder-kernel bug.
+   external bridge detecting one Request API decoder. The early CDP hardware-profile array
+   remained empty. Later `chrome://gpu` probing populated capabilities; see the
+   follow-up rather than treating this early sample as a proven rejection.
 4. GPU rendering and VPU decoding are separate: Mali rendering worked while
    H.264 still used the CPU. The process-scoped `VaapiIgnoreDriverChecks` probe
    did not change that outcome and was not made a persistent workaround.
@@ -85,10 +91,9 @@ captured `Media.playerPropertiesChanged`, media events/messages,
 `Runtime.evaluate` playback counters and `SystemInfo.getInfo` before stopping
 the test service. It did not visit YouTube or use a personal browser profile.
 
-Next inspect the installed Chromium build's VA-API capability filtering and
-the bridge's profile/config/surface queries, with libva tracing if needed.
-Only after a hardware decoder is actually selected should display import,
-longer/high-resolution playback and real YouTube streams be qualified.
+The subsequent [Wayland/DMA-BUF investigation](zero2w-browser-wayland-2026-10-26.md)
+performs those capability and display-import checks. Follow its remaining
+acceptance items; the command above still describes this historical X11 probe.
 
 No `--no-sandbox` or `--disable-gpu-sandbox` flags were used. Nevertheless CDP
 reported `gpu.auxAttributes.sandboxed=false` in the Mali GLES trials (and true

@@ -1,0 +1,45 @@
+Oct 26 22:51:29 orangepizero2w env[27683]: [27683:27683:1026/225129.664482:WARNING:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:178] Preferred drm_render_node not found, picking panfrost
+Oct 26 22:51:29 orangepizero2w env[27683]: [27683:27683:1026/225129.909107:WARNING:ui/ozone/platform/wayland/common/wayland_object.cc:120] Binding to wl_shm version 1 but version 2 is available.
+Oct 26 22:51:29 orangepizero2w env[27683]: [27683:27683:1026/225129.909197:WARNING:ui/ozone/platform/wayland/common/wayland_object.cc:120] Binding to zwp_linux_dmabuf_v1 version 4 but version 5 is available.
+Oct 26 22:51:30 orangepizero2w env[27683]: [27683:27683:1026/225130.891910:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: Open new log file <disposable-profile> for the thread 0x00006c50
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: LIBVA_TRACE is on, save log into <disposable-profile>
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: VA-API version 1.23.0
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: User environment variable requested driver 'v4l2_request'
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: Trying to open <user-test-workspace>/driver/v4l2_request_drv_video.so
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: Found init function __vaDriverInit_1_23
+Oct 26 22:51:30 orangepizero2w env[27728]: libva-v4l2request: detected 1 Request API decoder
+Oct 26 22:51:30 orangepizero2w env[27728]: libva info: va_openDriver() returns 0
+Oct 26 22:51:30 orangepizero2w env[27683]: DevTools listening on <local-debugger>
+Oct 26 22:51:31 orangepizero2w env[27728]: [27728:27728:1026/225131.026603:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+Oct 26 22:51:31 orangepizero2w env[27683]: [27683:27683:1026/225131.089693:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:170] Server doesn't support zcr_alpha_compositing_v1.
+Oct 26 22:51:31 orangepizero2w env[27683]: [27683:27683:1026/225131.089788:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:185] Server doesn't support overlay_prioritizer.
+Oct 26 22:51:31 orangepizero2w env[27683]: [27683:27683:1026/225131.089811:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:200] Server doesn't support wp_content_type_v1
+Oct 26 22:51:31 orangepizero2w env[27683]: [27683:27683:1026/225131.089834:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:214] Server doesn't support wp_color_management_surface_v1.
+Oct 26 22:51:31 orangepizero2w env[27683]: [27683:27683:1026/225131.091457:WARNING:ui/ozone/platform/wayland/host/wayland_connection.cc:422] text-input-v3 not available.
+Oct 26 22:51:31 orangepizero2w env[27683]: [27683:27683:1026/225131.267594:WARNING:ui/ozone/platform/wayland/host/wayland_connection.cc:422] text-input-v3 not available.
+Oct 26 22:51:35 orangepizero2w env[27728]: [27728:27868:1026/225135.003546:VERBOSE2:media/gpu/chromeos/video_decoder_pipeline.cc:619] Initialize(): config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0°, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]
+Oct 26 22:51:35 orangepizero2w env[27728]: [27728:27920:1026/225135.005738:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:136] VaapiVideoDecoder():
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: Open new log file <disposable-profile> for the thread 0x00006d10
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: LIBVA_TRACE is on, save log into <disposable-profile>
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: VA-API version 1.23.0
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: User environment variable requested driver 'v4l2_request'
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: Trying to open <user-test-workspace>/driver/v4l2_request_drv_video.so
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: Found init function __vaDriverInit_1_23
+Oct 26 22:51:35 orangepizero2w env[27728]: libva-v4l2request: detected 1 Request API decoder
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: va_openDriver() returns 0
+Oct 26 22:51:35 orangepizero2w env[27728]: [27728:27920:1026/225135.029274:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:641] ApplyResolutionChange():
+Oct 26 22:51:35 orangepizero2w env[27728]: [27728:27920:1026/225135.032045:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:669] ApplyResolutionChangeWithScreenSizes():
+Oct 26 22:51:35 orangepizero2w env[27728]: libva-v4l2request: decoding h264 via /dev/video0 [cedrus] (media /dev/media0)
+Oct 26 22:51:35 orangepizero2w env[27728]: libva info: Save context 0x02000000 into log file <disposable-profile>
+Oct 26 22:51:35 orangepizero2w env[27728]: [27728:27920:1026/225135.055741:VERBOSE1:media/gpu/chromeos/video_decoder_pipeline.cc:1239] PickDecoderOutputFormat(): Initializing frame pool with up to 22 VideoFrames. No ImageProcessor needed.
+Oct 26 22:51:35 orangepizero2w env[27728]: libva-v4l2request: using CAPTURE format NV12 (1280x720)
+Oct 26 22:51:51 orangepizero2w env[27728]: [27728:27920:1026/225151.500009:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:144] ~VaapiVideoDecoder():
+Oct 26 22:51:51 orangepizero2w env[27728]: [27728:27919:1026/225151.719003:VERBOSE1:media/gpu/gpu_video_encode_accelerator_factory.cc:356] GetSupportedProfiles(): Supported profiles empty, querying again...
+Oct 26 22:51:51 orangepizero2w env[27728]: Warning: ../src/panfrost/vulkan/panvk_physical_device.c:408: WARNING: panvk is not well-tested on v7, pass PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1 if you know what you're doing. (VK_ERROR_INCOMPATIBLE_DRIVER)
+Oct 26 22:51:51 orangepizero2w env[27728]: Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Oct 26 22:51:51 orangepizero2w env[27728]: Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Oct 26 22:51:51 orangepizero2w env[27728]: Warning: EGL display does not support requested client API 'OpenGL' (supported: OpenGL_ES).
+Oct 26 22:51:51 orangepizero2w env[27728]:  - While trying to discover a BackendType::OpenGL adapter.
+Oct 26 22:51:51 orangepizero2w env[27728]: Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 72 to 16 to fit dynamic offset allocation limit.
+Oct 26 22:51:51 orangepizero2w env[27728]: Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 32 to 16 to fit dynamic offset allocation limit.

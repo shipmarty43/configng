@@ -1,0 +1,17 @@
+[35225:35225:1026/230048.512349:WARNING:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:178] Preferred drm_render_node not found, picking panfrost
+[35225:35225:1026/230048.754054:WARNING:ui/ozone/platform/wayland/common/wayland_object.cc:120] Binding to wl_shm version 1 but version 2 is available.
+[35225:35225:1026/230048.754195:WARNING:ui/ozone/platform/wayland/common/wayland_object.cc:120] Binding to zwp_linux_dmabuf_v1 version 4 but version 5 is available.
+[35225:35225:1026/230049.728973:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+
+DevTools listening on <local-debugger>
+[35265:35265:1026/230049.842833:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+[35225:35225:1026/230049.924763:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:170] Server doesn't support zcr_alpha_compositing_v1.
+[35225:35225:1026/230049.925239:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:185] Server doesn't support overlay_prioritizer.
+[35225:35225:1026/230049.925270:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:200] Server doesn't support wp_content_type_v1
+[35225:35225:1026/230049.925290:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:214] Server doesn't support wp_color_management_surface_v1.
+[35225:35225:1026/230049.928841:WARNING:ui/ozone/platform/wayland/host/wayland_connection.cc:422] text-input-v3 not available.
+[35225:35225:1026/230050.099850:WARNING:ui/ozone/platform/wayland/host/wayland_connection.cc:422] text-input-v3 not available.
+[35225:35225:1026/230050.753173:WARNING:ui/ozone/platform/wayland/host/org_gnome_mutter_idle_monitor.cc:87] org.gnome.Mutter.IdleMonitor D-Bus service does not exist
+[35225:35225:1026/230115.181146:WARNING:content/common/zygote/zygote_communication_linux.cc:323] Error reading message from zygote: Connection reset by peer (104)
+[35225:35225:1026/230115.183338:ERROR:content/common/zygote/zygote_communication_linux.cc:313] Failed to send GetTerminationStatus message to zygote
+[35225:35225:1026/230115.183460:WARNING:content/common/zygote/zygote_communication_linux.cc:325] Socket closed prematurely.

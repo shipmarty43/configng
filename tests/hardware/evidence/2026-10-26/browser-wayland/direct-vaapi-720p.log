@@ -1,0 +1,35 @@
+Oct 26 22:42:04 orangepizero2w env[22247]: [22247:22247:1026/224204.628379:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+Oct 26 22:42:04 orangepizero2w env[22247]: DevTools listening on <local-debugger>
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: Open new log file <disposable-profile> for the thread 0x00005710
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: LIBVA_TRACE is on, save log into <disposable-profile>
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: VA-API version 1.23.0
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: User environment variable requested driver 'v4l2_request'
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: Trying to open <user-test-workspace>/driver/v4l2_request_drv_video.so
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: Found init function __vaDriverInit_1_23
+Oct 26 22:42:04 orangepizero2w env[22288]: libva-v4l2request: detected 1 Request API decoder
+Oct 26 22:42:04 orangepizero2w env[22288]: libva info: va_openDriver() returns 0
+Oct 26 22:42:04 orangepizero2w env[22288]: [22288:22288:1026/224204.892700:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+Oct 26 22:42:09 orangepizero2w env[22288]: [22288:22438:1026/224209.024707:VERBOSE2:media/gpu/chromeos/video_decoder_pipeline.cc:619] Initialize(): config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0°, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]
+Oct 26 22:42:09 orangepizero2w env[22288]: [22288:22446:1026/224209.025400:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:136] VaapiVideoDecoder():
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: Open new log file <disposable-profile> for the thread 0x000057ae
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: LIBVA_TRACE is on, save log into <disposable-profile>
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: VA-API version 1.23.0
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: User environment variable requested driver 'v4l2_request'
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: Trying to open <user-test-workspace>/driver/v4l2_request_drv_video.so
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: Found init function __vaDriverInit_1_23
+Oct 26 22:42:09 orangepizero2w env[22288]: libva-v4l2request: detected 1 Request API decoder
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: va_openDriver() returns 0
+Oct 26 22:42:09 orangepizero2w env[22288]: [22288:22446:1026/224209.035867:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:641] ApplyResolutionChange():
+Oct 26 22:42:09 orangepizero2w env[22288]: [22288:22446:1026/224209.037792:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:669] ApplyResolutionChangeWithScreenSizes():
+Oct 26 22:42:09 orangepizero2w env[22288]: libva-v4l2request: decoding h264 via /dev/video0 [cedrus] (media /dev/media0)
+Oct 26 22:42:09 orangepizero2w env[22288]: libva info: Save context 0x02000000 into log file <disposable-profile>
+Oct 26 22:42:09 orangepizero2w env[22288]: [22288:22446:1026/224209.060835:VERBOSE2:media/gpu/chromeos/video_decoder_pipeline.cc:1319] PickDecoderOutputFormat(): Initializing ImageProcessor; max buffers: 16
+Oct 26 22:42:09 orangepizero2w env[22288]: [22288:22446:1026/224209.075418:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:144] ~VaapiVideoDecoder():
+Oct 26 22:42:24 orangepizero2w env[22288]: [22288:22445:1026/224224.987635:VERBOSE1:media/gpu/gpu_video_encode_accelerator_factory.cc:356] GetSupportedProfiles(): Supported profiles empty, querying again...
+Oct 26 22:42:25 orangepizero2w env[22288]: Warning: ../src/panfrost/vulkan/panvk_physical_device.c:408: WARNING: panvk is not well-tested on v7, pass PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1 if you know what you're doing. (VK_ERROR_INCOMPATIBLE_DRIVER)
+Oct 26 22:42:25 orangepizero2w env[22288]: Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Oct 26 22:42:25 orangepizero2w env[22288]: Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Oct 26 22:42:25 orangepizero2w env[22288]: Warning: EGL display does not support requested client API 'OpenGL' (supported: OpenGL_ES).
+Oct 26 22:42:25 orangepizero2w env[22288]:  - While trying to discover a BackendType::OpenGL adapter.
+Oct 26 22:42:25 orangepizero2w env[22288]: Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 72 to 16 to fit dynamic offset allocation limit.
+Oct 26 22:42:25 orangepizero2w env[22288]: Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 32 to 16 to fit dynamic offset allocation limit.

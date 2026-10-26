@@ -1,0 +1,4 @@
+Oct 26 23:02:13 orangepizero2w env[35950]: libva-v4l2request: decoding h264 via /dev/video0 [cedrus] (media /dev/media0)
+Oct 26 23:02:13 orangepizero2w env[35950]: [35950:36174:1026/230213.381467:VERBOSE1:media/gpu/chromeos/video_decoder_pipeline.cc:1239] PickDecoderOutputFormat(): Initializing frame pool with up to 28 VideoFrames. No ImageProcessor needed.
+Oct 26 23:02:13 orangepizero2w env[35950]: libva-v4l2request: experimental stable pre-export DMA-BUF capture enabled
+Oct 26 23:02:13 orangepizero2w env[35950]: libva-v4l2request: using CAPTURE format NV12 (864x480)

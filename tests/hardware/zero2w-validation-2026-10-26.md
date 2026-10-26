@@ -228,7 +228,12 @@ It does not prove DMA-BUF display import, browser playback or high-resolution
 throughput. The FFmpeg rawvideo output encoder is a file formatter, not evidence
 of a hardware video encoder.
 
-### Chromium / YouTube: unfinished trial
+### Chromium / YouTube: initial trial and follow-ups
+
+**Latest:** [experimental Wayland/DMA-BUF patch](zero2w-browser-wayland-2026-10-26.md)
+produces visible hardware H.264, including a short YouTube stream. BT.709 color
+conversion, frame pacing and integration are not yet accepted. The following
+records the original trial and its first retry, not the final status.
 
 **Follow-up:** [eight fresh-profile retries](zero2w-browser-retry-2026-10-26.md)
 started successfully and obtained actual decoder evidence. Playback still used
@@ -279,8 +284,9 @@ decoder, rather than infer acceleration from low CPU usage or GPU rendering.
    pacing and temperature. Vulkan currently requires explicit experimental opt-in.
 3. Test realistic video files in the intended player and resolution, including
    audio synchronization and sustained playback; keep decoder selection visible.
-   Diagnose the failed Chromium startup and validate hardware decoding in the
-   browser before claiming accelerated YouTube support.
+   Continue [browser qualification](zero2w-browser-wayland-2026-10-26.md): fix
+   BT.709 output and frame drops, then validate sustained/adaptive playback
+   and ordinary desktop integration before enabling acceleration by default.
 4. Integrate the validated kernel PWM1 path into WiringPi's public hardware PWM
    functions with ownership, cleanup and error handling; validate additional
    channels only with their wiring confirmed. The sysfs physical 32-to-29 test

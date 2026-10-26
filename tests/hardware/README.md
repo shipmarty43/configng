@@ -38,7 +38,7 @@ Results describe one H618 board and image, not universal Armbian support.
 | OpenGL ES | Panfrost pixel readback and accelerated XFCE | Sustained workloads, games, frame pacing and thermal behavior |
 | Vulkan graphics / compute | PanVK cube on HDMI; 524,288 integer compute results checked | Experimental opt-in only; floating-point/workload qualification and driver stability |
 | Video decoder | Cedrus GStreamer: H.264, HEVC, VP8, MPEG-2; VA-API H.264 byte-exact readback | Realistic resolution/bitrate, audio sync, display import, long playback |
-| Browser / YouTube | [Eight retries](zero2w-browser-retry-2026-10-26.md) started; local H.264 completed using software decode, GLES rendered on Mali | Resolve empty Chromium hardware-profile list after explicit DRM selection; then test real YouTube codec selection |
+| Browser / YouTube | [Experimental DMA-BUF patch + nested Wayland](zero2w-browser-wayland-2026-10-26.md): visible hardware H.264 at 720p/1080p and a short YouTube 480p stream | Fix BT.709 conversion and frame drops; qualify long/adaptive playback, driver lifecycle and normal desktop integration |
 | Hardware encoding | No encoder exposed by tested stack; VA-API reports decode entrypoints | Separate kernel/userspace driver research; do not advertise hardware encoding |
 | CVBS | Offline Android/vendor research in [CVBS notes](zero2w-cvbs.md) | Native driver bring-up and capture through expansion board + EasyCAP |
 | FT232H | Not connected, no capture performed | Select/validate acquisition mode and bandwidth, then protocol captures |
@@ -57,6 +57,8 @@ Neither decoder enumeration nor a launch flag proves hardware YouTube playback.
 - [VA-API H.264 comparison](zero2w-vaapi-smoke.sh) uses an explicitly selected
   external driver, verifies Cedrus selection, requires hardware-surface readback
   and compares every byte. See the report for the pinned driver build.
+- [Browser pixel harness](zero2w-browser-pixels.py) captures actual frames and seek positions;
+  see the [external-driver experiment](zero2w-browser-wayland-2026-10-26.md) before using it.
 - [Retained evidence](evidence/2026-10-26/) contains selected logs and SHA-256
   checksums. Paths in public logs are normalized; raw logs are archived privately
   off the SD card. Checksums protect file integrity, not proof of test validity.
@@ -78,11 +80,13 @@ hardware limit. Kernel edge timestamps do not qualify high-frequency signal shap
 
 Runtime CPU changes were reset by reboot. LightDM remains the display manager.
 The boot environment was backed up before enabling the stock PWM1 overlay.
-Development/test packages and native Chromium were installed. The original
+Development/test packages, native Chromium and nested Weston were installed. The original
 Chromium master preferences were retained during package configuration.
 The VA-API driver was built in the validation workspace and copied into an
 isolated user test directory; no global libva or experimental PanVK setting was
-installed. Browser tests use a separate profile and a bounded transient user
+installed. A second, opt-in VA-API driver build with the experimental pre-export
+DMA-BUF patch remains in the isolated test directory; nested Weston and test
+HTTP/browser services were stopped. Browser tests use a separate profile and a bounded transient user
 service, without sandbox-disabling command-line flags. See the report for failure details.
 
 This is a development baseline for the fork. No upstream Armbian acceptance,

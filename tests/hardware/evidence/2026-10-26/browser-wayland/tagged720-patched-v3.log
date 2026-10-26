@@ -1,0 +1,27 @@
+[37750:37750:1026/230440.209081:WARNING:ui/ozone/platform/wayland/common/drm_render_node_path_finder.cc:178] Preferred drm_render_node not found, picking panfrost
+[37750:37750:1026/230440.453176:WARNING:ui/ozone/platform/wayland/common/wayland_object.cc:120] Binding to wl_shm version 1 but version 2 is available.
+[37750:37750:1026/230440.453307:WARNING:ui/ozone/platform/wayland/common/wayland_object.cc:120] Binding to zwp_linux_dmabuf_v1 version 4 but version 5 is available.
+[37750:37750:1026/230441.436652:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+
+DevTools listening on <local-debugger>
+libva-v4l2request: detected 1 Request API decoder
+[37792:37792:1026/230441.579137:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+[37750:37750:1026/230441.621143:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:170] Server doesn't support zcr_alpha_compositing_v1.
+[37750:37750:1026/230441.621324:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:185] Server doesn't support overlay_prioritizer.
+[37750:37750:1026/230441.621350:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:200] Server doesn't support wp_content_type_v1
+[37750:37750:1026/230441.621370:WARNING:ui/ozone/platform/wayland/host/wayland_surface.cc:214] Server doesn't support wp_color_management_surface_v1.
+[37750:37750:1026/230441.626998:WARNING:ui/ozone/platform/wayland/host/wayland_connection.cc:422] text-input-v3 not available.
+[37750:37750:1026/230441.827708:WARNING:ui/ozone/platform/wayland/host/wayland_connection.cc:422] text-input-v3 not available.
+[37750:37750:1026/230442.465323:WARNING:ui/ozone/platform/wayland/host/org_gnome_mutter_idle_monitor.cc:87] org.gnome.Mutter.IdleMonitor D-Bus service does not exist
+[37792:37931:1026/230444.059417:VERBOSE2:media/gpu/chromeos/video_decoder_pipeline.cc:619] Initialize(): config: codec: h264, profile: h264 baseline, level: not available, alpha_mode: is_opaque, coded size: [1280,720], visible rect: [0,0,1280,720], natural size: [1280,720], has extra data: true, encryption scheme: Unencrypted, rotation: 0°, flipped: 0, color space: {primaries:BT709, transfer:BT709, matrix:BT709, range:LIMITED}, spatial format: [projection_type: none, stereo_mode: mono]
+[37792:37965:1026/230444.076752:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:136] VaapiVideoDecoder():
+libva-v4l2request: detected 1 Request API decoder
+[37792:37965:1026/230444.100802:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:641] ApplyResolutionChange():
+[37792:37965:1026/230444.103847:VERBOSE2:media/gpu/vaapi/vaapi_video_decoder.cc:669] ApplyResolutionChangeWithScreenSizes():
+libva-v4l2request: decoding h264 via /dev/video0 [cedrus] (media /dev/media0)
+[37792:37965:1026/230444.142585:VERBOSE1:media/gpu/chromeos/video_decoder_pipeline.cc:1239] PickDecoderOutputFormat(): Initializing frame pool with up to 22 VideoFrames. No ImageProcessor needed.
+libva-v4l2request: experimental stable pre-export DMA-BUF capture enabled
+libva-v4l2request: using CAPTURE format NV12 (1280x720)
+[37750:37750:1026/230454.825921:WARNING:content/common/zygote/zygote_communication_linux.cc:323] Error reading message from zygote: Connection reset by peer (104)
+[37750:37750:1026/230454.834052:ERROR:content/common/zygote/zygote_communication_linux.cc:313] Failed to send GetTerminationStatus message to zygote
+[37750:37750:1026/230454.834213:WARNING:content/common/zygote/zygote_communication_linux.cc:325] Socket closed prematurely.

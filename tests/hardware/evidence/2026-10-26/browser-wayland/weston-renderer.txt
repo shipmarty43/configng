@@ -1,0 +1,131 @@
+Oct 26 22:46:48 orangepizero2w weston[25229]: Date: 2026-10-26 EET
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.432] weston 14.0.2
+Oct 26 22:46:48 orangepizero2w weston[25229]:                https://wayland.freedesktop.org
+Oct 26 22:46:48 orangepizero2w weston[25229]:                Bug reports to: https://gitlab.freedesktop.org/wayland/weston/issues/
+Oct 26 22:46:48 orangepizero2w weston[25229]:                Build: 14.0.2
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.432] Command line: weston --backend=x11 --renderer=gl --width=960 --height=540 --socket=opi-vaapi-wayland --idle-time=0 --no-config
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.432] OS: Linux, 6.18.57-current-sunxi64, #1 SMP PREEMPT Thu Oct 15 09:58:20 UTC 2026, aarch64
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.433] Flight recorder: enabled
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.433] Starting with no config file.
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.433] Output repaint window is 7 ms maximum.
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.433] Loading module '/usr/lib/aarch64-linux-gnu/libweston-14/x11-backend.so'
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.442] Loading module '/usr/lib/aarch64-linux-gnu/libweston-14/gl-renderer.so'
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.623] Using rendering device: /dev/dri/renderD128
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.655] EGL version: 1.5
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.655] EGL vendor: Mesa Project
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.655] EGL client APIs: OpenGL OpenGL_ES
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.656] EGL features:
+Oct 26 22:46:48 orangepizero2w weston[25229]:                EGL Wayland extension: no
+Oct 26 22:46:48 orangepizero2w weston[25229]:                context priority: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                buffer age: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                partial update: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                swap buffers with damage: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                configless context: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                surfaceless context: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                dmabuf support: modifiers
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.664] Failed to obtain a high priority context.
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.667] GL version: OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.667] GLSL version: OpenGL ES GLSL ES 3.10
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.667] GL vendor: Mesa
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.667] GL renderer: Mali-G31 MC1 (Panfrost)
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.719] GL ES 3.1 - renderer features:
+Oct 26 22:46:48 orangepizero2w weston[25229]:                read-back format: ARGB8888
+Oct 26 22:46:48 orangepizero2w weston[25229]:                glReadPixels supports y-flip: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                glReadPixels supports PBO: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                wl_shm 10 bpc formats: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                wl_shm 16 bpc formats: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                wl_shm half-float formats: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                internal R and RG formats: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                OES_EGL_image_external: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.720] Using GL renderer
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.739] Registered plugin API 'weston_windowed_output_api_x11_v2' of size 16
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.739] Color manager: no-op
+Oct 26 22:46:48 orangepizero2w weston[25229]:                  protocol support: no
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.739] Output 'screen0' attempts EOTF mode SDR and colorimetry mode default.
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.739] Output 'screen0' using color profile: stock sRGB color profile
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.741] Chosen EGL config details: id:  17 rgba: 8 8 8 0 buf: 24 dep:  0 stcl: 0 int: 0-1000 type: win|pix|pbf|swap_preserved vis_id: 0x21
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.843] x11 output 960x540, window id 41943045
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.843] Output 'screen0' enabled with head(s) screen0
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.843] Compositor capabilities:
+Oct 26 22:46:48 orangepizero2w weston[25229]:                arbitrary surface rotation: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                screen capture uses y-flip: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                cursor planes: no
+Oct 26 22:46:48 orangepizero2w weston[25229]:                arbitrary resolutions: no
+Oct 26 22:46:48 orangepizero2w weston[25229]:                view mask clipping: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                explicit sync: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                color operations: yes
+Oct 26 22:46:48 orangepizero2w weston[25229]:                presentation clock: CLOCK_MONOTONIC_RAW, id 4
+Oct 26 22:46:48 orangepizero2w weston[25229]:                presentation clock resolution: 0.000000001 s
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.845] Loading module '/usr/lib/aarch64-linux-gnu/weston/desktop-shell.so'
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.847] launching '/usr/libexec/weston-keyboard'
+Oct 26 22:46:48 orangepizero2w weston[25229]: [22:46:48.854] launching '/usr/libexec/weston-desktop-shell'
+Oct 26 22:46:49 orangepizero2w weston[25238]: could not load cursor 'dnd-copy'
+Oct 26 22:46:49 orangepizero2w weston[25237]: could not load cursor 'dnd-copy'
+Oct 26 22:46:49 orangepizero2w weston[25237]: could not load cursor 'dnd-none'
+Oct 26 22:46:49 orangepizero2w weston[25238]: could not load cursor 'dnd-none'
+Oct 26 22:53:46 orangepizero2w weston[25229]: [22:53:46.457] caught signal 15
+Oct 26 22:53:46 orangepizero2w weston[29610]: Date: 2026-10-26 EET
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.973] weston 14.0.2
+Oct 26 22:53:46 orangepizero2w weston[29610]:                https://wayland.freedesktop.org
+Oct 26 22:53:46 orangepizero2w weston[29610]:                Bug reports to: https://gitlab.freedesktop.org/wayland/weston/issues/
+Oct 26 22:53:46 orangepizero2w weston[29610]:                Build: 14.0.2
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.975] Command line: weston --backend=x11 --renderer=gl --width=960 --height=540 --socket=opi-vaapi-wayland --idle-time=0 --no-config
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.975] OS: Linux, 6.18.57-current-sunxi64, #1 SMP PREEMPT Thu Oct 15 09:58:20 UTC 2026, aarch64
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.975] Flight recorder: enabled
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.975] Starting with no config file.
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.975] Output repaint window is 7 ms maximum.
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.976] Loading module '/usr/lib/aarch64-linux-gnu/libweston-14/x11-backend.so'
+Oct 26 22:53:46 orangepizero2w weston[29610]: [22:53:46.987] Loading module '/usr/lib/aarch64-linux-gnu/libweston-14/gl-renderer.so'
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.204] Using rendering device: /dev/dri/renderD128
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.241] EGL version: 1.5
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.241] EGL vendor: Mesa Project
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.241] EGL client APIs: OpenGL OpenGL_ES
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.241] EGL features:
+Oct 26 22:53:47 orangepizero2w weston[29610]:                EGL Wayland extension: no
+Oct 26 22:53:47 orangepizero2w weston[29610]:                context priority: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                buffer age: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                partial update: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                swap buffers with damage: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                configless context: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                surfaceless context: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                dmabuf support: modifiers
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.251] Failed to obtain a high priority context.
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.254] GL version: OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.254] GLSL version: OpenGL ES GLSL ES 3.10
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.254] GL vendor: Mesa
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.254] GL renderer: Mali-G31 MC1 (Panfrost)
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.286] GL ES 3.1 - renderer features:
+Oct 26 22:53:47 orangepizero2w weston[29610]:                read-back format: ARGB8888
+Oct 26 22:53:47 orangepizero2w weston[29610]:                glReadPixels supports y-flip: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                glReadPixels supports PBO: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                wl_shm 10 bpc formats: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                wl_shm 16 bpc formats: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                wl_shm half-float formats: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                internal R and RG formats: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                OES_EGL_image_external: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.286] Using GL renderer
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.306] Registered plugin API 'weston_windowed_output_api_x11_v2' of size 16
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.306] Color manager: no-op
+Oct 26 22:53:47 orangepizero2w weston[29610]:                  protocol support: no
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.306] Output 'screen0' attempts EOTF mode SDR and colorimetry mode default.
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.306] Output 'screen0' using color profile: stock sRGB color profile
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.308] Chosen EGL config details: id:  17 rgba: 8 8 8 0 buf: 24 dep:  0 stcl: 0 int: 0-1000 type: win|pix|pbf|swap_preserved vis_id: 0x21
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.311] x11 output 960x540, window id 41943045
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.311] Output 'screen0' enabled with head(s) screen0
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.311] Compositor capabilities:
+Oct 26 22:53:47 orangepizero2w weston[29610]:                arbitrary surface rotation: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                screen capture uses y-flip: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                cursor planes: no
+Oct 26 22:53:47 orangepizero2w weston[29610]:                arbitrary resolutions: no
+Oct 26 22:53:47 orangepizero2w weston[29610]:                view mask clipping: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                explicit sync: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                color operations: yes
+Oct 26 22:53:47 orangepizero2w weston[29610]:                presentation clock: CLOCK_MONOTONIC_RAW, id 4
+Oct 26 22:53:47 orangepizero2w weston[29610]:                presentation clock resolution: 0.000000001 s
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.312] Loading module '/usr/lib/aarch64-linux-gnu/weston/desktop-shell.so'
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.314] launching '/usr/libexec/weston-keyboard'
+Oct 26 22:53:47 orangepizero2w weston[29610]: [22:53:47.322] launching '/usr/libexec/weston-desktop-shell'
+Oct 26 22:53:47 orangepizero2w weston[29619]: could not load cursor 'dnd-copy'
+Oct 26 22:53:47 orangepizero2w weston[29619]: could not load cursor 'dnd-none'
+Oct 26 22:53:47 orangepizero2w weston[29618]: could not load cursor 'dnd-copy'
+Oct 26 22:53:47 orangepizero2w weston[29618]: could not load cursor 'dnd-none'

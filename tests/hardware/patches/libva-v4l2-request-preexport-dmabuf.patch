@@ -1,0 +1,234 @@
+diff --git a/src/context.c b/src/context.c
+index d905a6b..d804e60 100644
+--- a/src/context.c
++++ b/src/context.c
+@@ -380,7 +380,7 @@ static int capture_buffer_new(struct v4l2r_context *ctx)
+ {
+ 	struct v4l2_create_buffers buffers = {
+ 		.count = 1,
+-		.memory = V4L2_MEMORY_MMAP,
++		.memory = ctx->capture_dmabuf ? V4L2_MEMORY_DMABUF : V4L2_MEMORY_MMAP,
+ 		.format = ctx->capture_format,
+ 	};
+ 	struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
+@@ -410,6 +410,7 @@ static int capture_buffer_new(struct v4l2r_context *ctx)
+ 		return -ENOSPC;
+ 
+ 	buffer.type = ctx->capture_format.type;
++	buffer.memory = buffers.memory;
+ 	buffer.index = buffers.index;
+ 	if (V4L2_TYPE_IS_MULTIPLANAR(buffer.type)) {
+ 		buffer.length = VIDEO_MAX_PLANES;
+@@ -464,7 +465,7 @@ static int capture_buffer_new(struct v4l2r_context *ctx)
+  * read fence a GPU attaches while sampling it. Buffers that were never exported
+  * carry fd == -1 and are skipped.
+  */
+-static void capture_wait_readers(struct v4l2r_capture_buffer *capture)
++static int capture_wait_readers(struct v4l2r_capture_buffer *capture)
+ {
+ 	for (unsigned int i = 0; i < capture->nb_planes; i++) {
+ 		struct pollfd pfd = {
+@@ -475,8 +476,50 @@ static void capture_wait_readers(struct v4l2r_capture_buffer *capture)
+ 		if (capture->dmabuf_fd[i] < 0)
+ 			continue;
+ 
+-		poll(&pfd, 1, V4L2R_POLL_TIMEOUT_MS);
++		int ret;
++		do {
++			ret = poll(&pfd, 1, V4L2R_POLL_TIMEOUT_MS);
++		} while (ret < 0 && errno == EINTR);
++		if (ret < 0)
++			return -errno;
++		if (!ret || !(pfd.revents & POLLOUT) ||
++		    (pfd.revents & (POLLERR | POLLNVAL)))
++			return ret ? -EIO : -ETIMEDOUT;
+ 	}
++	return 0;
++}
++
++/* Import the storage already handed to the client before the first decode.
++ * Experimental path: single-planar linear NV12 H.264 only. Keep independent fd
++ * ownership in the queue slot, including when a surface is destroyed. */
++static int capture_import_backing(struct v4l2r_context *ctx,
++				  struct v4l2r_surface *surface, int index)
++{
++	struct v4l2r_capture_buffer *capture = &ctx->captures[index];
++	struct v4l2r_surface_backing *backing = surface->backing;
++	const struct v4l2_pix_format *fmt = &ctx->capture_format.fmt.pix;
++	int fd;
++
++	if (!backing || backing->pixelformat != fmt->pixelformat ||
++	    backing->nb_planes != 1 || backing->width != fmt->width ||
++	    backing->height != fmt->height || backing->pitch != fmt->bytesperline ||
++	    backing->plane_size[0] < fmt->sizeimage) {
++		v4l2r_log("pre-export backing does not match CAPTURE layout\n");
++		return -EINVAL;
++	}
++	fd = fcntl(backing->dmabuf_fd[0], F_DUPFD_CLOEXEC, 0);
++	if (fd < 0)
++		return -errno;
++	if (capture->map[0]) {
++		munmap(capture->map[0], capture->plane_size[0]);
++		capture->map[0] = NULL;
++	}
++	if (capture->dmabuf_fd[0] >= 0)
++		close(capture->dmabuf_fd[0]);
++	capture->dmabuf_fd[0] = fd;
++	capture->plane_size[0] = backing->plane_size[0];
++	capture->nb_planes = 1;
++	return 0;
+ }
+ 
+ /*
+@@ -497,6 +540,7 @@ static int capture_buffer_bind(struct v4l2r_context *ctx,
+ 			       struct v4l2r_surface *surface)
+ {
+ 	int index = surface->capture_index;
++	bool first_bind = index < 0;
+ 
+ 	/* Refresh the completion counter with anything already finished. */
+ 	v4l2r_reap_capture(ctx);
+@@ -526,9 +570,13 @@ static int capture_buffer_bind(struct v4l2r_context *ctx,
+ 	 * while any frame still references its current contents, or while
+ 	 * the format converter is still reading it. */
+ 	uint64_t t0 = v4l2r_now_ns();
+-	v4l2r_sync_capture(ctx, index);
++	VAStatus sync = v4l2r_sync_capture(ctx, index);
++	if (sync != VA_STATUS_SUCCESS && ctx->capture_dmabuf)
++		return -EIO;
+ 	uint64_t t1 = v4l2r_now_ns();
+-	v4l2r_wait_completed(ctx, ctx->captures[index].last_ref_seq);
++	sync = v4l2r_wait_completed(ctx, ctx->captures[index].last_ref_seq);
++	if (sync != VA_STATUS_SUCCESS && ctx->capture_dmabuf)
++		return -EIO;
+ 	uint64_t t2 = v4l2r_now_ns();
+ 	v4l2r_convert_drain_index(ctx, index);
+ 
+@@ -542,9 +590,20 @@ static int capture_buffer_bind(struct v4l2r_context *ctx,
+ 	 * wait for readers to finish before handing the buffer back to decode.
+ 	 * No-op for a buffer never exported (fd < 0) or already idle.
+ 	 */
+-	capture_wait_readers(&ctx->captures[index]);
++	int readers = capture_wait_readers(&ctx->captures[index]);
++	if (readers < 0 && ctx->capture_dmabuf)
++		return readers;
+ 	uint64_t t3 = v4l2r_now_ns();
+ 
++	if (ctx->capture_dmabuf && first_bind) {
++		int ret = capture_import_backing(ctx, surface, index);
++		if (ret < 0) {
++			v4l2r_context_release_capture(ctx, index);
++			surface->ctx = NULL;
++			return ret;
++		}
++	}
++
+ 	v4l2r_trace("bind wait (surface 0x%08x buf #%d): sync %.2f refwait %.2f "
+ 		    "readers %.2f ms\n", surface->id, index,
+ 		    (t1 - t0) / 1e6, (t2 - t1) / 1e6, (t3 - t2) / 1e6);
+@@ -629,6 +688,19 @@ VAStatus v4l2r_context_bind_surface(struct v4l2r_context *ctx,
+ 			}
+ 		}
+ 
++		/* Explicit opt-in until the import lifecycle is qualified on other
++		 * decoders/codecs. Refuse unsupported layouts instead of replacing
++		 * a DMA buffer already imported by the browser. */
++		if (surface->backing && getenv("V4L2R_PREEXPORT_DMABUF")) {
++			if (ctx->codec != &v4l2r_codec_h264 || ctx->conv ||
++			    ctx->capture_format.type != V4L2_BUF_TYPE_VIDEO_CAPTURE ||
++			    ctx->capture_format.fmt.pix.pixelformat != V4L2_PIX_FMT_NV12 ||
++			    !(ctx->capture_capabilities & V4L2_BUF_CAP_SUPPORTS_DMABUF))
++				return VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT;
++			ctx->capture_dmabuf = true;
++			v4l2r_log("experimental stable pre-export DMA-BUF capture enabled\n");
++		}
++
+ 		type = ctx->output_format.type;
+ 		if (ioctl(ctx->video_fd, VIDIOC_STREAMON, &type) < 0) {
+ 			v4l2r_log("failed to start OUTPUT streaming: %s\n",
+@@ -647,7 +719,7 @@ VAStatus v4l2r_context_bind_surface(struct v4l2r_context *ctx,
+ 	 * standalone backing from pre-decode export probing. With a
+ 	 * conversion chain the backing IS the presented storage - keep it
+ 	 * (v4l2r_surface_convert_backing replaces a mismatched one). */
+-	if (!ctx->conv)
++	if (!ctx->conv && !ctx->capture_dmabuf)
+ 		v4l2r_surface_free_backing(surface);
+ 
+ 	if (starting) {
+@@ -1005,6 +1077,13 @@ VAStatus v4l2r_EndPicture(VADriverContextP va_ctx, VAContextID context_id)
+ 	status = ctx->vpp ? v4l2r_vpp_end_picture(ctx) :
+ 		 ctx->codec->end_picture(ctx);
+ 
++	/* Chromium retains its pre-decode DMA-BUF import and need not call
++	 * vaSyncSurface before sampling. Cedrus does not publish a producer
++	 * fence here, so finish the hardware write before returning EndPicture.
++	 * This deliberately serializes decode; it does not copy pixels. */
++	if (status == VA_STATUS_SUCCESS && ctx->capture_dmabuf)
++		status = v4l2r_surface_ready(ctx->pic.target);
++
+ 	ctx->in_picture = false;
+ 	ctx->pic.output = NULL;
+ 	ctx->pic.target = NULL;
+diff --git a/src/decode.c b/src/decode.c
+index 777750b..3bd455c 100644
+--- a/src/decode.c
++++ b/src/decode.c
+@@ -109,6 +109,12 @@ static int queue_buffer(struct v4l2r_context *ctx, struct v4l2_buffer *buffer)
+ 		buffer->m.planes = planes;
+ 	}
+ 
++	if (!V4L2_TYPE_IS_OUTPUT(buffer->type) && ctx->capture_dmabuf) {
++		struct v4l2r_capture_buffer *capture = &ctx->captures[buffer->index];
++		buffer->m.fd = capture->dmabuf_fd[0];
++		buffer->length = capture->plane_size[0];
++	}
++
+ 	if (ioctl(ctx->video_fd, VIDIOC_QBUF, buffer) < 0)
+ 		return -errno;
+ 
+@@ -139,7 +145,7 @@ static int queue_capture_buffer(struct v4l2r_context *ctx, uint32_t index)
+ 	struct v4l2_buffer buffer = {
+ 		.index = index,
+ 		.type = ctx->capture_format.type,
+-		.memory = V4L2_MEMORY_MMAP,
++		.memory = ctx->capture_dmabuf ? V4L2_MEMORY_DMABUF : V4L2_MEMORY_MMAP,
+ 	};
+ 
+ 	return queue_buffer(ctx, &buffer);
+@@ -167,7 +173,8 @@ static int dequeue_buffer(struct v4l2r_context *ctx, enum v4l2_buf_type type)
+ 	struct v4l2_plane planes[VIDEO_MAX_PLANES] = {0};
+ 	struct v4l2_buffer buffer = {
+ 		.type = type,
+-		.memory = V4L2_MEMORY_MMAP,
++		.memory = !V4L2_TYPE_IS_OUTPUT(type) && ctx->capture_dmabuf ?
++			V4L2_MEMORY_DMABUF : V4L2_MEMORY_MMAP,
+ 	};
+ 
+ 	if (V4L2_TYPE_IS_MULTIPLANAR(type)) {
+diff --git a/src/surface.c b/src/surface.c
+index f7fe03d..bd8ac38 100644
+--- a/src/surface.c
++++ b/src/surface.c
+@@ -581,8 +581,8 @@ VAStatus v4l2r_surface_capture_view(struct v4l2r_surface *surface,
+ 					capture->plane_size[i],
+ 					PROT_READ | PROT_WRITE,
+ 					MAP_SHARED,
+-					ctx->video_fd,
+-					capture->plane_mem_offset[i]);
++					ctx->capture_dmabuf ? capture->dmabuf_fd[i] : ctx->video_fd,
++					ctx->capture_dmabuf ? 0 : capture->plane_mem_offset[i]);
+ 				if (addr == MAP_FAILED)
+ 					return VA_STATUS_ERROR_OPERATION_FAILED;
+ 				capture->map[i] = addr;
+diff --git a/src/v4l2_request.h b/src/v4l2_request.h
+index 80ca83e..7afa618 100644
+--- a/src/v4l2_request.h
++++ b/src/v4l2_request.h
+@@ -282,6 +282,7 @@ struct v4l2r_context {
+ 	uint32_t output_capabilities;
+ 	uint32_t capture_capabilities;
+ 	bool streaming;			/* CAPTURE side fully configured */
++	bool capture_dmabuf;		/* opt-in stable pre-exported H.264 backing */
+ 
+ 	struct v4l2r_output_buffer output[V4L2R_OUTPUT_BUFFERS];
+ 	uint8_t next_output;

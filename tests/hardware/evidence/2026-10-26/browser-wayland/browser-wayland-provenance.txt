@@ -1,0 +1,10 @@
+6.18.57-current-sunxi64
+chromium	156.0.8078.47-1xtradeb1.2604.1
+libegl-mesa0:arm64	26.0.8-1ubuntu0.3
+libgl1-mesa-dri:arm64	26.0.8-1ubuntu0.3
+weston	14.0.2-5
+f47e3158998749faaf08005a9fcd006ed0b32a2ada68daa87da9cdd43bc165f4  <user-test-workspace>/driver-preexport/v4l2_request_drv_video.so
+06b539835863e19b81eded62f09bbc820a32fde634c3c5440c3b4ff8df41c5af  <validation-workspace>/zero2w-preexport-v3.patch
+07ebf240e822c69ad4a00236222b6fa5ae76b64a602ff8ee7c1992afcfde3ec3  <user-test-workspace>/zero2w-browser-pixels.py
+4bdc6db53b198d4f7ded67dd4ae63a01fbe8e23b6671366c0a25cb6cf6dc2e2d  <user-test-workspace>/test-tagged-720p.mp4
+5d1b1cfd0003ea63d84e25c90df9e528485725c3ba84a05fef86c24129b9e2db  <user-test-workspace>/test-tagged-1080p.mp4
