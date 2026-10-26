@@ -65,5 +65,177 @@
       "sha256": "665f1946496a94c40f106e9e3302821905a5445ed32f67781412bc190cba0989",
       "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/tcon_feat.h"
     }
-  ]
+  ],
+  "android_reference": {
+    "scope": "Community OmniROM Android 12 source, not extracted from or verified against the official Android image. Static review only; no hardware execution.",
+    "reviewed_on": "2026-10-26",
+    "repositories": [
+      {
+        "repository": "https://gitlab.com/Yajat/android_longan",
+        "branch": "omni-12.1",
+        "commit": "47b861f18054c373241666c1ad3cb6ba0f265441",
+        "files": [
+          {
+            "path": "device/config/chips/h618/configs/p2/linux-5.4/board.dts",
+            "sha256": "7452a0f9a5741b5018ea8b448053eb0a15226a465939e7b122f957a45259ec12",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/device/config/chips/h618/configs/p2/linux-5.4/board.dts"
+          },
+          {
+            "path": "device/config/chips/h618/configs/p2/uboot-board.dts",
+            "sha256": "41eca9213f087ecee5257749ebbad4e2039433cba01baccb8391e422b7991133",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/device/config/chips/h618/configs/p2/uboot-board.dts"
+          },
+          {
+            "path": "device/config/chips/h618/configs/p2/sys_config.fex",
+            "sha256": "dedf4ff9af0a3d6c72f2c5679867aceea22b79d36c2a21885778767f6c56ddbc",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/device/config/chips/h618/configs/p2/sys_config.fex"
+          },
+          {
+            "path": "device/config/chips/h618/configs/p2/android/BoardConfig.mk",
+            "sha256": "cddcb466630f6a816a33eca10b3d97eff341835bf0d701222c7c885f2f14f2ac",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/device/config/chips/h618/configs/p2/android/BoardConfig.mk"
+          },
+          {
+            "path": "build/mkcmd.sh",
+            "sha256": "e330f7b71aad86df1c98b59241410302da9010354fff435a8dad5ef36a3a6087",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/build/mkcmd.sh"
+          },
+          {
+            "path": "build/pack",
+            "sha256": "e8fce5f77a7b8be79f496616ff88252fa2c4e66697946eec671f615bcfda2042",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/build/pack"
+          },
+          {
+            "path": "kernel/linux-5.4/arch/arm64/boot/dts/sunxi/sun50iw9.dtsi",
+            "sha256": "db18a9522685071dfb00a126108628cbbdb052a686387ce26d1333df19961083",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/kernel/linux-5.4/arch/arm64/boot/dts/sunxi/sun50iw9.dtsi"
+          },
+          {
+            "path": "kernel/linux-5.4/drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c",
+            "sha256": "f68ee977e807b097aa90d05b8b6ca3b411ea197ed213156d8af65b005ab6af07",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/kernel/linux-5.4/drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c"
+          },
+          {
+            "path": "kernel/linux-5.4/drivers/video/fbdev/sunxi/disp2/tv/de_tve_sun8iw11.c",
+            "sha256": "54309cb05bcea0e09ba264926385feefe632f96fe16a7c2de929e3b3e597a01f",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/kernel/linux-5.4/drivers/video/fbdev/sunxi/disp2/tv/de_tve_sun8iw11.c"
+          },
+          {
+            "path": "brandy/brandy-2.0/u-boot-2018/drivers/video/sunxi/bootGUI/dev_manage.c",
+            "sha256": "e31912c6392308626326d6a03731a53f22065cc8a5feb6135ea71411d67ae5f5",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/brandy/brandy-2.0/u-boot-2018/drivers/video/sunxi/bootGUI/dev_manage.c"
+          },
+          {
+            "path": "brandy/brandy-2.0/u-boot-2018/drivers/video/sunxi/bootGUI/video_hal.c",
+            "sha256": "237250c5847b2964f28f9fcb69bb88ac914ec4e461fab0c31ee9aabb27d90f19",
+            "url": "https://gitlab.com/Yajat/android_longan/-/blob/47b861f18054c373241666c1ad3cb6ba0f265441/brandy/brandy-2.0/u-boot-2018/drivers/video/sunxi/bootGUI/video_hal.c"
+          }
+        ]
+      },
+      {
+        "repository": "https://github.com/YAJATapps/android_hardware_aw",
+        "branch": "omni-12.1",
+        "commit": "eb2b7e7c8708284128fc170635d5f9bca2495048",
+        "files": [
+          {
+            "path": "display/configs/dispconfigs/config.json",
+            "sha256": "826f57c8f6502c2fac8c7e54c34cea2e8ce0a2432dcc35ed59c59e10025312ca",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/configs/dispconfigs/config.json"
+          },
+          {
+            "path": "display/configs/dispconfigs/homlet-default.json",
+            "sha256": "444935652bbcd11541433d869c3b4cf4d29f3f3e0ee4ae7bd5d54de9a8898bd5",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/configs/dispconfigs/homlet-default.json"
+          },
+          {
+            "path": "display/libdisplayd/platform/platform.cpp",
+            "sha256": "4d6f5f00fd8031b0b8cef1d0228a0da6cfb55b228372b278dd20d2802a26dfc2",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/platform/platform.cpp"
+          },
+          {
+            "path": "display/libdisplayd/device/device_cvbs.cpp",
+            "sha256": "05f4c09223500a2dbb4b42e4b88c033acf70d467554eb8a3366ea8d5071ee47e",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/device/device_cvbs.cpp"
+          },
+          {
+            "path": "display/libdisplayd/device/device_controler.cpp",
+            "sha256": "1e0a7de96b183f0e03618a6b02c3a7d0dabdf96df21f8b5a62b8409dee73804b",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/device/device_controler.cpp"
+          },
+          {
+            "path": "display/libdisplayd/device/hardware_ctrl.cpp",
+            "sha256": "c6bcff1a7c4a1a2887c8cf154e0fcd66a2bff447247b700de82427ac452b53f9",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/device/hardware_ctrl.cpp"
+          },
+          {
+            "path": "display/libdisplayd/output_policy/output_policy.cpp",
+            "sha256": "33a4c21a5c5e1b8aee6fa51c2cc2e013f2664ab7e45c9caddf1a456daf823219",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/output_policy/output_policy.cpp"
+          },
+          {
+            "path": "display/libdisplayd/include/platform.h",
+            "sha256": "8dced2437a87a778dfefc50de26fe935a5eb2828fcc529e1b483d8766f78dc4c",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/include/platform.h"
+          },
+          {
+            "path": "display/libdisplayd/include/platform/platform-universal.h",
+            "sha256": "588a5ca8eb0c1389eb1e03dfd164e49e7ecdadf11cbbb771cbcb58e052ad4cf1",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/libdisplayd/include/platform/platform-universal.h"
+          },
+          {
+            "path": "display/include/hardware/sunxi_display2.h",
+            "sha256": "ab9d3f4d1a1b144279b80fce8b845f7514d6986ecc64b945ca543224fad47bdc",
+            "url": "https://github.com/YAJATapps/android_hardware_aw/blob/eb2b7e7c8708284128fc170635d5f9bca2495048/display/include/hardware/sunxi_display2.h"
+          }
+        ]
+      },
+      {
+        "repository": "https://github.com/YAJATapps/android_apollo-p2_local_manifest",
+        "branch": "omni-12.1",
+        "commit": "94e917de18da7d82274a671a678fba94c06e3ca0",
+        "files": [
+          {
+            "path": "local_manifest.xml",
+            "sha256": "c158e8d7e17716b80adaaf70282e8b8b70bc907e773e4c2935196fd3ea4d41b9",
+            "url": "https://github.com/YAJATapps/android_apollo-p2_local_manifest/blob/94e917de18da7d82274a671a678fba94c06e3ca0/local_manifest.xml"
+          }
+        ]
+      },
+      {
+        "repository": "https://github.com/YAJATapps/android_device_allwinner_apollo-p2",
+        "branch": "omni-12.1",
+        "commit": "b1dcda4be853a9202d4adc20afa56dfec12ca5cd",
+        "files": [
+          {
+            "path": "device.mk",
+            "sha256": "ab1e14b5aa05df53a6e8881b85f2a565019bba048fbb918f52aa505120e606ed",
+            "url": "https://github.com/YAJATapps/android_device_allwinner_apollo-p2/blob/b1dcda4be853a9202d4adc20afa56dfec12ca5cd/device.mk"
+          },
+          {
+            "path": "BoardConfig.mk",
+            "sha256": "a86d92fa84f2595a7c60e37284e1e67fad9765903dcd1dd1ea0a0abf03f7630f",
+            "url": "https://github.com/YAJATapps/android_device_allwinner_apollo-p2/blob/b1dcda4be853a9202d4adc20afa56dfec12ca5cd/BoardConfig.mk"
+          }
+        ]
+      }
+    ],
+    "official_downloads": [
+      {
+        "filename": "opizero2w_android12_patches.tar.gz",
+        "url": "https://drive.google.com/file/d/15pDLyQyI33qOu0wAuXo5K9yeuw6X3Egy/view",
+        "status": "quota_exceeded",
+        "downloaded": false
+      },
+      {
+        "filename": "Orangepi_zero2w_android12_tv_v1.0.tar.gz",
+        "url": "https://drive.google.com/file/d/198QVyib3a1O_Pbu2y1H7KnRI0L7F3KoE/view",
+        "status": "quota_exceeded",
+        "downloaded": false
+      }
+    ],
+    "identical_to_official_bsp": [
+      "drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c",
+      "drivers/video/fbdev/sunxi/disp2/tv/de_tve_sun8iw11.c"
+    ]
+  }
 }
