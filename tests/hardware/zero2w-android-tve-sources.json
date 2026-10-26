@@ -1,0 +1,69 @@
+{
+  "repository": "https://github.com/orangepi-xunlong/linux-orangepi",
+  "branch": "orange-pi-5.4-sun50iw9",
+  "commit": "3a4a29414d558664847202f4d8919b8ab8bcf4a8",
+  "reviewed_on": "2026-10-26",
+  "scope": "Official BSP reference with H618 Android defconfig; not matched to a tested Zero 2W Android image.",
+  "files": [
+    {
+      "path": "arch/arm64/configs/sun50iw9p1smp_h618_android_defconfig",
+      "sha256": "391d4c48a914db4d2338dd18ce97234fa1bd3c3774d1d24c447765203cb84793",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/arch/arm64/configs/sun50iw9p1smp_h618_android_defconfig"
+    },
+    {
+      "path": "arch/arm64/boot/dts/sunxi/sun50iw9.dtsi",
+      "sha256": "52df873344e1fc79f2c62b7e9b8c939c2a1fba19b2d1f45434429cda16dd6c91",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/arch/arm64/boot/dts/sunxi/sun50iw9.dtsi"
+    },
+    {
+      "path": "arch/arm64/boot/dts/sunxi/sun50i-h616-orangepi-zero3.dts",
+      "sha256": "286443a0d84ae28aa251ef52bf0cc5dec1b351fc08f34c7e1a2e8e838cc9acae",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/arch/arm64/boot/dts/sunxi/sun50i-h616-orangepi-zero3.dts"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/tv/Makefile",
+      "sha256": "b5e3ad9fdfde4be41c1946274406c06aaa8977110c09d966cae839651dc8c010",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/tv/Makefile"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c",
+      "sha256": "f68ee977e807b097aa90d05b8b6ca3b411ea197ed213156d8af65b005ab6af07",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/tv/de_tve_sun8iw11.c",
+      "sha256": "54309cb05bcea0e09ba264926385feefe632f96fe16a7c2de929e3b3e597a01f",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/tv/de_tve_sun8iw11.c"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/tv/de_tvec.h",
+      "sha256": "19f4b6cefb1b928dae562dd9e4a60b7d9c96add88924ae315d30fd913ebb7aa2",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/tv/de_tvec.h"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/disp/dev_disp.c",
+      "sha256": "b45d175108c6434f115e43aa20ed927e4cb0472abbe779265e0f572fe7779009",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/dev_disp.c"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/disp/de/disp_tv.c",
+      "sha256": "50a2fe8799ec8646280365bdcce11f0c3eb989a4349c125a4527bf39c8bef212",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/disp_tv.c"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/disp_al_tcon.c",
+      "sha256": "ca9b218a2cc64921599d5babd8e21a6b9f23034677e2b1411ae133ae4b73589c",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/disp_al_tcon.c"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/tcon/de_lcd.c",
+      "sha256": "7afaf8ccc7c03519485de9cbe13797c30503091f7e1a3d3b9f5ff55628fa3aae",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/tcon/de_lcd.c"
+    },
+    {
+      "path": "drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/tcon_feat.h",
+      "sha256": "665f1946496a94c40f106e9e3302821905a5445ed32f67781412bc190cba0989",
+      "url": "https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/tcon_feat.h"
+    }
+  ]
+}

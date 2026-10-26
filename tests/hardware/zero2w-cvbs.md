@@ -5,6 +5,12 @@ enablement overlay or a claim that TV-out works on the current Armbian image.
 The owner has the 24-pin expansion board and an EasyCAP USB capture device.
 The target is the board's native CVBS output, not HDMI-to-AV conversion.
 
+Follow-up: the official Orange Pi BSP contains an H618 Android configuration
+and a concrete native TVE implementation. See the
+[Android/BSP source investigation](zero2w-android-tve.md) and its pinned source
+manifest. Android support is documented by the vendor and reported online;
+the owner has not yet personally verified it with the EasyCAP.
+
 ## Evidence
 
 The manufacturer's [Zero 2W manual v1.1, mirrored copy](https://orangepi.net/wp-content/uploads/2023/10/OrangePi_Zero2w_H618_User-Manual_v1.1.pdf)
