@@ -1,0 +1,21 @@
+libva info: VA-API version 1.23.0
+libva info: User environment variable requested driver 'v4l2_request'
+libva info: Trying to open <isolated-test-root>/driver-preexport/v4l2_request_drv_video.so
+libva info: Found init function __vaDriverInit_1_23
+libva-v4l2request: detected 1 Request API decoder
+libva info: va_openDriver() returns 0
+Renderer: Mali-G31 MC1 (Panfrost)
+YUV 63,102,240 matrix=601 RGB=234,0,2 expected=233,0,2
+YUV 63,102,240 matrix=709 RGB=255,1,0 expected=255,1,0
+YUV 173,42,26 matrix=601 RGB=20,255,9 expected=20,255,9
+YUV 173,42,26 matrix=709 RGB=0,255,1 expected=0,255,1
+YUV 32,240,118 matrix=601 RGB=3,0,245 expected=3,0,245
+YUV 32,240,118 matrix=709 RGB=1,0,255 expected=1,0,255
+YUV 219,16,138 matrix=601 RGB=252,255,10 expected=252,255,10
+YUV 219,16,138 matrix=709 RGB=254,255,0 expected=254,255,0
+YUV 126,128,128 matrix=601 RGB=128,128,128 expected=128,128,128
+YUV 126,128,128 matrix=709 RGB=128,128,128 expected=128,128,128
+YUV 235,128,128 matrix=601 RGB=255,255,255 expected=255,255,255
+YUV 235,128,128 matrix=709 RGB=255,255,255 expected=255,255,255
+max_formula_error=1 wrong_601_hint_max_error_against_709=21
+PASS: both EGL matrices match their CPU formula; wrong hint visibly changes BT.709 colors

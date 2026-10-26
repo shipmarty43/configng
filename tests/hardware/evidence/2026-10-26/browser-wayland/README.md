@@ -17,7 +17,7 @@ software fallback cannot be mistaken for accelerated playback.
 - Provenance and cleanup files record exact packages, checksums and stopped
   diagnostic services. Runtime test paths/debugger addresses are normalized.
 
-The final patch and pixel harness published with the report are byte-identical
+The final patch and pixel harness as committed in `f765036e` are byte-identical
 to their tested copies in the raw archive. The final binary hash identifies an
 experimental build, not a signed package or a production acceptance result.
 Early patched probes used earlier iterations; use the `*-v3` cases for final

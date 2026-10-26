@@ -116,12 +116,15 @@ def main():
     parser.add_argument("--backend", choices=("x11", "wayland"), default="wayland")
     parser.add_argument("--chromium", default="/usr/lib/chromium/chromium")
     parser.add_argument("--timeout", type=int, default=90, help="Overall deadline, seconds")
+    parser.add_argument("--warmup", type=float, default=5, help="Seconds excluded from steady-playback counters")
     parser.add_argument("--seeks", default="1,3,5", help="Capture these timestamps after playback")
     args = parser.parse_args()
     if os.geteuid() == 0:
         parser.error("Run as the desktop user; do not disable Chromium's sandbox to run as root")
     if args.preexport and (not args.driver or args.software):
         parser.error("--preexport requires --driver and hardware decoding")
+    if args.timeout <= 0 or args.warmup < 0:
+        parser.error("--timeout must be positive and --warmup nonnegative")
     media = args.media.resolve(strict=True)
     out = args.output.resolve()
     if args.driver and not (args.driver / "v4l2_request_drv_video.so").is_file():
@@ -191,17 +194,32 @@ def main():
         while not cdp.evaluate("!!document.querySelector('video') && video.readyState >= 2"):
             time.sleep(0.2)
         cdp.evaluate("video.play()")
+        playback_started = time.monotonic()
+        samples = []
+        warm_sample = None
         while True:
             state = cdp.evaluate("({time:video.currentTime,duration:video.duration,ended:video.ended,"
                                  "error:video.error && {code:video.error.code,message:video.error.message},"
                                  "totalFrames:video.getVideoPlaybackQuality().totalVideoFrames,"
                                  "droppedFrames:video.getVideoPlaybackQuality().droppedVideoFrames})")
+            state["elapsed"] = time.monotonic() - playback_started
+            samples.append(state)
+            if warm_sample is None and state["time"] >= args.warmup and not state["ended"]:
+                warm_sample = state
             if state["error"]:
                 raise RuntimeError(state["error"])
             if state["ended"]:
                 break
             time.sleep(0.5)
         result["playback"] = state
+        result["samples"] = samples
+        if warm_sample:
+            result["steady_playback"] = {
+                "from_media_time": warm_sample["time"], "to_media_time": state["time"],
+                "wall_seconds": state["elapsed"] - warm_sample["elapsed"],
+                "totalFrames": state["totalFrames"] - warm_sample["totalFrames"],
+                "droppedFrames": state["droppedFrames"] - warm_sample["droppedFrames"],
+            }
 
         def capture(label):
             data = cdp.evaluate("(()=>{const c=document.createElement('canvas');c.width=video.videoWidth;"
@@ -250,7 +268,7 @@ def main():
         server.shutdown()
         server.server_close()
         (out / "result.json").write_text(json.dumps(result, indent=2))
-    print(json.dumps(result, indent=2))
+    print(json.dumps({key: value for key, value in result.items() if key != "samples"}, indent=2))
     return 0 if result.get("capture_complete") else 1
 
 

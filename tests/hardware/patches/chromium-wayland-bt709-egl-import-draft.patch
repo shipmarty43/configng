@@ -1,0 +1,47 @@
+diff --git a/ui/ozone/common/native_pixmap_egl_binding.cc b/ui/ozone/common/native_pixmap_egl_binding.cc
+--- a/ui/ozone/common/native_pixmap_egl_binding.cc
++++ b/ui/ozone/common/native_pixmap_egl_binding.cc
+@@ -6,11 +6,14 @@
+ 
+ #include <array>
+ 
++#include "base/command_line.h"
++#include "base/feature_list.h"
+ #include "base/logging.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/notreached.h"
+ #include "base/numerics/safe_conversions.h"
+ #include "ui/gfx/linux/drm_util_linux.h"
++#include "ui/ozone/common/features.h"
+ #include "ui/gl/gl_bindings.h"
+ #include "ui/gl/gl_surface_egl.h"
+ #include "ui/gl/scoped_binders.h"
+@@ -18,6 +21,17 @@
+ namespace ui {
+ 
+ namespace {
++
++// Experimental opt-in for composited Wayland only. Do not change the matrix
++// while video can be delegated to a compositor overlay with different defaults.
++BASE_FEATURE(kWaylandBt709EglImport, base::FEATURE_DISABLED_BY_DEFAULT);
++
++bool UseBt709EglImport() {
++  return base::FeatureList::IsEnabled(kWaylandBt709EglImport) &&
++         base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
++             "ozone-platform") == "wayland" &&
++         !IsWaylandOverlayDelegationEnabled();
++}
+ 
+ #define FOURCC(a, b, c, d)                                        \
+   ((static_cast<uint32_t>(a)) | (static_cast<uint32_t>(b) << 8) | \
+@@ -130,6 +144,10 @@
+     // color space and range to DRM/KMS.
+     attrs.push_back(EGL_YUV_COLOR_SPACE_HINT_EXT);
+     switch (color_space.GetMatrixID()) {
++      case gfx::ColorSpace::MatrixID::BT709:
++        attrs.push_back(UseBt709EglImport() ? EGL_ITU_REC709_EXT
++                                          : EGL_ITU_REC601_EXT);
++        break;
+       case gfx::ColorSpace::MatrixID::BT2020_NCL:
+         attrs.push_back(EGL_ITU_REC2020_EXT);
+         break;

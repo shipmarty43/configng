@@ -27,6 +27,9 @@ Results describe one H618 board and image, not universal Armbian support.
   installed system-wide. The similarly named Apple AVD fork was inspected but
   was not the driver used for these results.
 
+The [2026-10-27 follow-up](zero2w-browser-followup-2026-10-27.md) records minute-long
+frame-drop measurements, isolated EGL color tests and the power-outage checkpoint.
+
 ## Integration boundaries and remaining acceptance
 
 | Area | Evidence obtained | Next development/acceptance step |
