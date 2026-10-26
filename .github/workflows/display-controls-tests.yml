@@ -1,0 +1,42 @@
+name: Display controls tests
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/modules/desktops/module_screen_settings.sh'
+      - 'tools/modules/desktops/module_display_manager.sh'
+      - 'tools/modules/functions/module_dialog_ui.sh'
+      - 'tools/json/config.system.json'
+      - 'tests/bats/display_controls.bats'
+      - '.github/workflows/display-controls-tests.yml'
+  pull_request:
+    paths:
+      - 'tools/modules/desktops/module_screen_settings.sh'
+      - 'tools/modules/desktops/module_display_manager.sh'
+      - 'tools/modules/functions/module_dialog_ui.sh'
+      - 'tools/json/config.system.json'
+      - 'tests/bats/display_controls.bats'
+      - '.github/workflows/display-controls-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  display-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install test tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats jq shellcheck
+      - name: Validate modules and menu
+        run: |
+          bash -n tools/modules/desktops/module_screen_settings.sh
+          bash -n tools/modules/desktops/module_display_manager.sh
+          bash -n tools/modules/functions/module_dialog_ui.sh
+          shellcheck --shell=bash tools/modules/desktops/module_screen_settings.sh tools/modules/desktops/module_display_manager.sh
+          jq empty tools/json/config.system.json
+      - name: Test with fixtures and mocked system services
+        run: bats tests/bats/display_controls.bats

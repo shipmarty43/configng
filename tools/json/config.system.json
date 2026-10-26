@@ -124,6 +124,32 @@
                     "short": "Desktop",
                     "sub": [
                         {
+                            "id": "DISP01",
+                            "description": "Inspect DRM outputs and open native desktop display settings",
+                            "short": "Displays",
+                            "module": "module_generic",
+                            "command": [
+                                "module_screen_settings select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "",
+                            "help": "Inspect DRM outputs and open native desktop display settings"
+                        },
+                        {
+                            "id": "DISM01",
+                            "description": "Inspect and configure the graphical login manager",
+                            "short": "Display Manager",
+                            "module": "module_generic",
+                            "command": [
+                                "module_display_manager select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "",
+                            "help": "Inspect and configure the graphical login manager"
+                        },
+                        {
                             "id": "CINM01",
                             "description": "Install Cinnamon (minimal)",
                             "short": "Cinnamon",

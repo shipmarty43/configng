@@ -799,8 +799,10 @@ dialog_yesno() {
 
 	case "$DIALOG" in
 		"whiptail")
-			whiptail --title "$(strip_color_codes "$title")" "${extra_args[@]}" --backtitle "$(strip_color_codes "$BACKTITLE")" --yes-button "$yes_label" --no-button "$no_label" --yesno "$prompt" $height $width 3>&1 1>&2 2>&3
+			local result=0
+			whiptail --title "$(strip_color_codes "$title")" "${extra_args[@]}" --backtitle "$(strip_color_codes "$BACKTITLE")" --yes-button "$yes_label" --no-button "$no_label" --yesno "$prompt" $height $width 3>&1 1>&2 2>&3 || result=$?
 			clear
+			return "$result"
 			;;
 		"dialog")
 			dialog --clear --colors --title "$title" "${extra_args[@]}" --backtitle "$BACKTITLE" --yes-button "$yes_label" --no-button "$no_label" --yesno "$prompt" $height $width
