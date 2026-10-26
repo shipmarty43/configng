@@ -49,6 +49,19 @@
                             "help": "Remove Linux headers"
                         },
                         {
+                            "id": "CPUP01",
+                            "description": "Change CPU governor and maximum frequency at runtime",
+                            "short": "CPU Power",
+                            "module": "module_generic",
+                            "command": [
+                                "module_cpu_power select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_cpu_power_available",
+                            "help": "Choose supported CPUFreq settings without changing voltages or boot configuration"
+                        },
+                        {
                             "id": "DTO001",
                             "description": "Manage device tree overlays",
                             "short": "Device Tree Overlays",

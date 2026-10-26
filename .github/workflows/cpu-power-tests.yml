@@ -1,0 +1,36 @@
+name: CPU power tests
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/modules/system/module_cpu_power.sh'
+      - 'tools/json/config.system.json'
+      - 'tests/bats/cpu_power.bats'
+      - '.github/workflows/cpu-power-tests.yml'
+  pull_request:
+    paths:
+      - 'tools/modules/system/module_cpu_power.sh'
+      - 'tools/json/config.system.json'
+      - 'tests/bats/cpu_power.bats'
+      - '.github/workflows/cpu-power-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-power:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install test tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats jq shellcheck
+      - name: Validate module and menu
+        run: |
+          bash -n tools/modules/system/module_cpu_power.sh
+          shellcheck --shell=bash tools/modules/system/module_cpu_power.sh
+          jq empty tools/json/config.system.json
+      - name: Test against temporary CPUFreq fixtures
+        run: bats tests/bats/cpu_power.bats
