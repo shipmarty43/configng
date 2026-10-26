@@ -1,0 +1,4 @@
+Oct 26 22:29:47 orangepizero2w env[14992]: [14992:14992:1026/222947.136162:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+Oct 26 22:29:47 orangepizero2w env[14992]: DevTools listening on ws://127.0.0.1:9223/devtools/browser/<ephemeral-id>
+Oct 26 22:29:47 orangepizero2w env[15033]: [15033:15033:1026/222947.371723:VERBOSE1:media/gpu/vaapi/vaapi_wrapper.cc:1750] GetHandle(): Either VADisplayStateSingleton::PreSandboxInitialization() hasn't been called or that method failed to find a suitable render node
+Oct 26 22:29:47 orangepizero2w env[15033]: [15033:15033:1026/222947.397671:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.

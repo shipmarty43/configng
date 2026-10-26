@@ -1,0 +1,7 @@
+Oct 26 22:28:47 orangepizero2w env[13846]: DevTools listening on ws://127.0.0.1:9223/devtools/browser/<ephemeral-id>
+Oct 26 22:28:47 orangepizero2w env[13902]: [13902:13902:1026/222847.680845:ERROR:ui/gl/angle_platform_impl.cc:34] Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:28:47 orangepizero2w env[13902]: ERR: Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:28:47 orangepizero2w env[13902]: [13902:13902:1026/222847.681297:ERROR:ui/gl/egl_util.cc:92] EGL Driver message (Critical) eglInitialize: Could not create a backing OpenGL context.
+Oct 26 22:28:47 orangepizero2w env[13902]: [13902:13902:1026/222847.681553:ERROR:ui/gl/gl_display.cc:613] eglInitialize OpenGL failed with error EGL_NOT_INITIALIZED, trying next display type
+Oct 26 22:28:47 orangepizero2w env[13902]: [13902:13902:1026/222847.736911:VERBOSE1:media/gpu/vaapi/vaapi_wrapper.cc:1750] GetHandle(): Either VADisplayStateSingleton::PreSandboxInitialization() hasn't been called or that method failed to find a suitable render node
+Oct 26 22:28:47 orangepizero2w env[13902]: [13902:13902:1026/222847.763667:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.

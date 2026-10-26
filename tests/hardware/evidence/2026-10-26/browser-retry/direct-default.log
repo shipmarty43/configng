@@ -1,0 +1,8 @@
+Oct 26 22:28:25 orangepizero2w env[13403]: [13403:13403:1026/222825.754235:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+Oct 26 22:28:25 orangepizero2w env[13445]: [13445:13445:1026/222825.864499:ERROR:ui/gl/angle_platform_impl.cc:34] Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:28:25 orangepizero2w env[13445]: ERR: Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:28:25 orangepizero2w env[13445]: [13445:13445:1026/222825.864971:ERROR:ui/gl/egl_util.cc:92] EGL Driver message (Critical) eglInitialize: Could not create a backing OpenGL context.
+Oct 26 22:28:25 orangepizero2w env[13445]: [13445:13445:1026/222825.865132:ERROR:ui/gl/gl_display.cc:613] eglInitialize OpenGL failed with error EGL_NOT_INITIALIZED, trying next display type
+Oct 26 22:28:25 orangepizero2w env[13403]: DevTools listening on ws://127.0.0.1:9223/devtools/browser/<ephemeral-id>
+Oct 26 22:28:25 orangepizero2w env[13445]: [13445:13445:1026/222825.918935:VERBOSE1:media/gpu/vaapi/vaapi_wrapper.cc:1750] GetHandle(): Either VADisplayStateSingleton::PreSandboxInitialization() hasn't been called or that method failed to find a suitable render node
+Oct 26 22:28:25 orangepizero2w env[13445]: [13445:13445:1026/222825.948192:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.

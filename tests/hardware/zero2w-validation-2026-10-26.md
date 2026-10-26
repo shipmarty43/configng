@@ -230,6 +230,11 @@ of a hardware video encoder.
 
 ### Chromium / YouTube: unfinished trial
 
+**Follow-up:** [eight fresh-profile retries](zero2w-browser-retry-2026-10-26.md)
+started successfully and obtained actual decoder evidence. Playback still used
+`FFmpegVideoDecoder`; hardware browser decoding remains unresolved. The original
+failed trial below is retained as history, not the current startup status.
+
 Native Chromium `156.0.8078.47-1xtradeb1.2604.1` was installed from the configured
 package sources. Package configuration retained the image's existing master
 preferences. A fresh isolated user profile and a local MP4 remux of the synthetic
@@ -247,7 +252,7 @@ file://<isolated-test-directory>/test.html
 ```
 
 These are recorded attempted flags, **not a validated browser recipe**. The
-sandbox remained enabled. A transient user service limited the trial to 240
+launch did not use sandbox-disabling command-line flags. A transient user service limited the trial to 240
 seconds. Chromium printed a DevTools listening address, but two requests to
 `/json/list` timed out waiting for HTTP data; child processes reported termination
 after 15 seconds without a connection. No Media decoder events or successful

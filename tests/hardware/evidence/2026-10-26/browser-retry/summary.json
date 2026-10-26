@@ -1,0 +1,249 @@
+[
+  {
+    "case": "direct-angle-gl",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/lib/chromium/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3",
+      "--use-gl=angle",
+      "--use-angle=gl"
+    ],
+    "video": {
+      "time": 2,
+      "paused": true,
+      "ready": 4,
+      "error": null,
+      "ended": true,
+      "totalFrames": 60,
+      "droppedFrames": 5
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": true
+  },
+  {
+    "case": "direct-default",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/lib/chromium/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3"
+    ],
+    "video": {
+      "time": 0,
+      "paused": false,
+      "ready": 1,
+      "error": null,
+      "quality": {}
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "ANGLE (Mesa, Mali-G31 MC1 (Panfrost), OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3)",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": false
+  },
+  {
+    "case": "direct-vaapi",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/lib/chromium/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3",
+      "--enable-features=AcceleratedVideoDecodeLinuxGL",
+      "--use-gl=angle",
+      "--use-angle=gles"
+    ],
+    "video": {
+      "time": 2,
+      "paused": true,
+      "ready": 4,
+      "error": null,
+      "ended": true,
+      "totalFrames": 60,
+      "droppedFrames": 0
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "ANGLE (Mesa, Mali-G31 MC1 (Panfrost), OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3)",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": false
+  },
+  {
+    "case": "direct-vaapi-checks",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/lib/chromium/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3",
+      "--enable-features=AcceleratedVideoDecodeLinuxGL,VaapiIgnoreDriverChecks",
+      "--use-gl=angle",
+      "--use-angle=gles",
+      "--hardware-video-device-path=/dev/dri/renderD128"
+    ],
+    "video": {
+      "time": 2,
+      "paused": true,
+      "ready": 4,
+      "error": null,
+      "ended": true,
+      "totalFrames": 60,
+      "droppedFrames": 0
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "ANGLE (Mesa, Mali-G31 MC1 (Panfrost), OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3)",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": false
+  },
+  {
+    "case": "direct-vaapi-node",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/lib/chromium/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3",
+      "--enable-features=AcceleratedVideoDecodeLinuxGL",
+      "--use-gl=angle",
+      "--use-angle=gles",
+      "--hardware-video-device-path=/dev/dri/renderD128"
+    ],
+    "video": {
+      "time": 2,
+      "paused": true,
+      "ready": 4,
+      "error": null,
+      "ended": true,
+      "totalFrames": 60,
+      "droppedFrames": 0
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "ANGLE (Mesa, Mali-G31 MC1 (Panfrost), OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3)",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": false
+  },
+  {
+    "case": "wrapper-default",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/bin/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3"
+    ],
+    "video": {
+      "time": 0,
+      "paused": false,
+      "ready": 1,
+      "error": null,
+      "quality": {}
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "ANGLE (Mesa, Mali-G31 MC1 (Panfrost), OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3)",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": false
+  },
+  {
+    "case": "wrapper-vaapi",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/bin/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3",
+      "--enable-features=AcceleratedVideoDecodeLinuxGL",
+      "--use-gl=angle",
+      "--use-angle=gles"
+    ],
+    "video": {
+      "time": 2,
+      "paused": true,
+      "ready": 4,
+      "error": null,
+      "ended": true,
+      "totalFrames": 60,
+      "droppedFrames": 1
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "ANGLE (Mesa, Mali-G31 MC1 (Panfrost), OpenGL ES 3.1 Mesa 26.0.8-1ubuntu0.3)",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": false
+  },
+  {
+    "case": "wrapper-vaapi-original",
+    "cdp_responsive": true,
+    "error": null,
+    "binary": "/usr/bin/chromium",
+    "flags": [
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=9223",
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-logging=stderr",
+      "--vmodule=*vaapi*=3,*video_decoder*=3",
+      "--enable-features=AcceleratedVideoDecodeLinuxGL",
+      "--use-gl=angle",
+      "--use-angle=gl"
+    ],
+    "video": {
+      "time": 2,
+      "paused": true,
+      "ready": 4,
+      "error": null,
+      "ended": true,
+      "totalFrames": 60,
+      "droppedFrames": 8
+    },
+    "decoder": "FFmpegVideoDecoder",
+    "platform_decoder": "false",
+    "renderer": "",
+    "video_decoding_profiles": [],
+    "gpu_sandboxed_reported": true
+  }
+]

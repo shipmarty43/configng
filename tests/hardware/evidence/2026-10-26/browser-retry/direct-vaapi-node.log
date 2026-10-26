@@ -1,0 +1,4 @@
+Oct 26 22:30:43 orangepizero2w env[15900]: [15900:15900:1026/223043.206833:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+Oct 26 22:30:43 orangepizero2w env[15900]: DevTools listening on ws://127.0.0.1:9223/devtools/browser/<ephemeral-id>
+Oct 26 22:30:43 orangepizero2w env[15940]: libva-v4l2request: detected 1 Request API decoder
+Oct 26 22:30:43 orangepizero2w env[15940]: [15940:15940:1026/223043.469215:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.

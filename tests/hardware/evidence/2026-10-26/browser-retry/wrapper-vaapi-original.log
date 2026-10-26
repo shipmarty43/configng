@@ -1,0 +1,28 @@
+Oct 26 22:32:05 orangepizero2w env[17220]: DevTools listening on ws://127.0.0.1:9223/devtools/browser/<ephemeral-id>
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.809105:ERROR:ui/gl/angle_platform_impl.cc:34] Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:05 orangepizero2w env[17275]: ERR: Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.809624:ERROR:ui/gl/egl_util.cc:92] EGL Driver message (Critical) eglInitialize: Could not create a backing OpenGL context.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.809786:ERROR:ui/gl/gl_display.cc:613] eglInitialize OpenGL failed with error EGL_NOT_INITIALIZED
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.809991:ERROR:ui/gl/gl_display.cc:648] Initialization of all (1) EGL display types failed.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.810130:ERROR:ui/ozone/common/gl_ozone_egl.cc:26] GLDisplayEGL::Initialize failed.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.814456:ERROR:ui/gl/angle_platform_impl.cc:34] Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:05 orangepizero2w env[17275]: ERR: Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.814810:ERROR:ui/gl/egl_util.cc:92] EGL Driver message (Critical) eglInitialize: Could not create a backing OpenGL context.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.814946:ERROR:ui/gl/gl_display.cc:613] eglInitialize OpenGL failed with error EGL_NOT_INITIALIZED
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.815076:ERROR:ui/gl/gl_display.cc:648] Initialization of all (1) EGL display types failed.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.815224:ERROR:ui/ozone/common/gl_ozone_egl.cc:26] GLDisplayEGL::Initialize failed.
+Oct 26 22:32:05 orangepizero2w env[17275]: [17275:17275:1026/223205.822950:ERROR:components/viz/service/main/viz_main_impl.cc:192] Exiting GPU process due to errors during initialization
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.511753:ERROR:ui/gl/angle_platform_impl.cc:34] Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:07 orangepizero2w env[17422]: ERR: Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.512316:ERROR:ui/gl/egl_util.cc:92] EGL Driver message (Critical) eglInitialize: Could not create a backing OpenGL context.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.515297:ERROR:ui/gl/gl_display.cc:613] eglInitialize OpenGL failed with error EGL_NOT_INITIALIZED
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.517699:ERROR:ui/gl/gl_display.cc:648] Initialization of all (1) EGL display types failed.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.520052:ERROR:ui/ozone/common/gl_ozone_egl.cc:26] GLDisplayEGL::Initialize failed.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.531506:ERROR:ui/gl/angle_platform_impl.cc:34] Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:07 orangepizero2w env[17422]: ERR: Display.cpp:1505 (initialize): ANGLE Display::initialize error 12289: Could not create a backing OpenGL context.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.531925:ERROR:ui/gl/egl_util.cc:92] EGL Driver message (Critical) eglInitialize: Could not create a backing OpenGL context.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.534593:ERROR:ui/gl/gl_display.cc:613] eglInitialize OpenGL failed with error EGL_NOT_INITIALIZED
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.535529:ERROR:ui/gl/gl_display.cc:648] Initialization of all (1) EGL display types failed.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.537737:ERROR:ui/ozone/common/gl_ozone_egl.cc:26] GLDisplayEGL::Initialize failed.
+Oct 26 22:32:07 orangepizero2w env[17422]: [17422:17422:1026/223207.553020:ERROR:components/viz/service/main/viz_main_impl.cc:192] Exiting GPU process due to errors during initialization
+Oct 26 22:32:07 orangepizero2w env[17435]: [17435:17435:1026/223207.696487:VERBOSE1:media/gpu/vaapi/vaapi_wrapper.cc:1750] GetHandle(): Either VADisplayStateSingleton::PreSandboxInitialization() hasn't been called or that method failed to find a suitable render node
