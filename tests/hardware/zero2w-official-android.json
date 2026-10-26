@@ -1,0 +1,477 @@
+{
+  "image_size": 1247014912,
+  "image_sha256": "9bee8e58cb2b8aab5daf301b70de1fb5eda8ed2ea104b5791645bfe690e72e84",
+  "items": [
+    {
+      "index": 0,
+      "name": "sys_config.fex",
+      "offset": 47104,
+      "size": 33847,
+      "stored_size": 33856
+    },
+    {
+      "index": 1,
+      "name": "board.fex",
+      "offset": 81920,
+      "size": 1024,
+      "stored_size": 1024
+    },
+    {
+      "index": 2,
+      "name": "config.fex",
+      "offset": 82944,
+      "size": 53248,
+      "stored_size": 53248
+    },
+    {
+      "index": 3,
+      "name": "split_xxxx.fex",
+      "offset": 136192,
+      "size": 512,
+      "stored_size": 512
+    },
+    {
+      "index": 4,
+      "name": "sys_partition.fex",
+      "offset": 137216,
+      "size": 5601,
+      "stored_size": 5616
+    },
+    {
+      "index": 5,
+      "name": "sunxi.fex",
+      "offset": 143360,
+      "size": 73728,
+      "stored_size": 73728
+    },
+    {
+      "index": 6,
+      "name": "boot0_nand.fex",
+      "offset": 217088,
+      "size": 61440,
+      "stored_size": 61440
+    },
+    {
+      "index": 7,
+      "name": "boot0_sdcard.fex",
+      "offset": 278528,
+      "size": 61440,
+      "stored_size": 61440
+    },
+    {
+      "index": 8,
+      "name": "u-boot.fex",
+      "offset": 339968,
+      "size": 917504,
+      "stored_size": 917504
+    },
+    {
+      "index": 9,
+      "name": "u-boot-crash.fex",
+      "offset": 1257472,
+      "size": 37,
+      "stored_size": 48
+    },
+    {
+      "index": 10,
+      "name": "toc1.fex",
+      "offset": 1258496,
+      "size": 8,
+      "stored_size": 16
+    },
+    {
+      "index": 11,
+      "name": "toc0.fex",
+      "offset": 1259520,
+      "size": 8,
+      "stored_size": 16
+    },
+    {
+      "index": 12,
+      "name": "fes1.fex",
+      "offset": 1260544,
+      "size": 40160,
+      "stored_size": 40160
+    },
+    {
+      "index": 13,
+      "name": "boot_package.fex",
+      "offset": 1301504,
+      "size": 1310720,
+      "stored_size": 1310720
+    },
+    {
+      "index": 14,
+      "name": "usbtool.fex",
+      "offset": 2612224,
+      "size": 154624,
+      "stored_size": 154624
+    },
+    {
+      "index": 15,
+      "name": "usbtool_crash.fex",
+      "offset": 2766848,
+      "size": 621056,
+      "stored_size": 621056
+    },
+    {
+      "index": 16,
+      "name": "aultools.fex",
+      "offset": 3388416,
+      "size": 166515,
+      "stored_size": 166528
+    },
+    {
+      "index": 17,
+      "name": "aultls32.fex",
+      "offset": 3555328,
+      "size": 152069,
+      "stored_size": 152080
+    },
+    {
+      "index": 18,
+      "name": "cardtool.fex",
+      "offset": 3707904,
+      "size": 73728,
+      "stored_size": 73728
+    },
+    {
+      "index": 19,
+      "name": "cardscript.fex",
+      "offset": 3781632,
+      "size": 1899,
+      "stored_size": 1904
+    },
+    {
+      "index": 20,
+      "name": "sunxi_gpt.fex",
+      "offset": 3783680,
+      "size": 8192,
+      "stored_size": 8192
+    },
+    {
+      "index": 21,
+      "name": "sunxi_mbr.fex",
+      "offset": 3791872,
+      "size": 65536,
+      "stored_size": 65536
+    },
+    {
+      "index": 22,
+      "name": "dlinfo.fex",
+      "offset": 3857408,
+      "size": 16384,
+      "stored_size": 16384
+    },
+    {
+      "index": 23,
+      "name": "arisc.fex",
+      "offset": 3873792,
+      "size": 6,
+      "stored_size": 16
+    },
+    {
+      "index": 24,
+      "name": "vmlinux.fex",
+      "offset": 3874816,
+      "size": 12501094,
+      "stored_size": 12501104
+    },
+    {
+      "index": 25,
+      "name": "boot-resource.fex",
+      "offset": 16376832,
+      "size": 5876736,
+      "stored_size": 5876736
+    },
+    {
+      "index": 26,
+      "name": "Vboot-resource.fex",
+      "offset": 22253568,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 27,
+      "name": "env.fex",
+      "offset": 22254592,
+      "size": 131072,
+      "stored_size": 131072
+    },
+    {
+      "index": 28,
+      "name": "Venv.fex",
+      "offset": 22385664,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 29,
+      "name": "boot.fex",
+      "offset": 22386688,
+      "size": 67108864,
+      "stored_size": 67108864
+    },
+    {
+      "index": 30,
+      "name": "Vboot.fex",
+      "offset": 89495552,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 31,
+      "name": "vendor_boot.fex",
+      "offset": 89496576,
+      "size": 33554432,
+      "stored_size": 33554432
+    },
+    {
+      "index": 32,
+      "name": "Vvendor_boot.fex",
+      "offset": 123051008,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 33,
+      "name": "super.fex",
+      "offset": 123052032,
+      "size": 1105065656,
+      "stored_size": 1105065664
+    },
+    {
+      "index": 34,
+      "name": "Vsuper.fex",
+      "offset": 1228118016,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 35,
+      "name": "misc.fex",
+      "offset": 1228119040,
+      "size": 16777216,
+      "stored_size": 16777216
+    },
+    {
+      "index": 36,
+      "name": "Vmisc.fex",
+      "offset": 1244896256,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 37,
+      "name": "vbmeta.fex",
+      "offset": 1244897280,
+      "size": 8192,
+      "stored_size": 8192
+    },
+    {
+      "index": 38,
+      "name": "Vvbmeta.fex",
+      "offset": 1244905472,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 39,
+      "name": "vbmeta_system.fex",
+      "offset": 1244906496,
+      "size": 4096,
+      "stored_size": 4096
+    },
+    {
+      "index": 40,
+      "name": "Vvbmeta_system.fex",
+      "offset": 1244910592,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 41,
+      "name": "vbmeta_vendor.fex",
+      "offset": 1244911616,
+      "size": 4096,
+      "stored_size": 4096
+    },
+    {
+      "index": 42,
+      "name": "Vvbmeta_vendor.fex",
+      "offset": 1244915712,
+      "size": 4,
+      "stored_size": 16
+    },
+    {
+      "index": 43,
+      "name": "dtbo.fex",
+      "offset": 1244916736,
+      "size": 2097152,
+      "stored_size": 2097152
+    },
+    {
+      "index": 44,
+      "name": "Vdtbo.fex",
+      "offset": 1247013888,
+      "size": 4,
+      "stored_size": 16
+    }
+  ],
+  "fdt_candidates": [
+    {
+      "offset": 143360,
+      "size": 69461,
+      "item_index": 5,
+      "item_name": "sunxi.fex",
+      "item_offset": 0,
+      "filename": "offset-00023000.dtb",
+      "sha256": "f79ac3af1450ad95bf91b5adf593299c527c644319641bb09795f660de46a459"
+    },
+    {
+      "offset": 1232092,
+      "size": 18722,
+      "item_index": 8,
+      "item_name": "u-boot.fex",
+      "item_offset": 892124,
+      "filename": "offset-0012ccdc.dtb",
+      "sha256": "f0930bff7bea265a7e28e0cfbbe5afa3b0f51e9a1e6739327929dbfd616df576"
+    },
+    {
+      "offset": 2195676,
+      "size": 18722,
+      "item_index": 13,
+      "item_name": "boot_package.fex",
+      "item_offset": 894172,
+      "filename": "offset-002180dc.dtb",
+      "sha256": "f0930bff7bea265a7e28e0cfbbe5afa3b0f51e9a1e6739327929dbfd616df576"
+    },
+    {
+      "offset": 2328576,
+      "size": 4532,
+      "item_index": 13,
+      "item_name": "boot_package.fex",
+      "item_offset": 1027072,
+      "filename": "offset-00238800.dtb",
+      "sha256": "05f3ce2060296532fad8fd714769f0024532267e7aefc2f2bbfcf8a40083a1ef"
+    },
+    {
+      "offset": 2523136,
+      "size": 69461,
+      "item_index": 13,
+      "item_name": "boot_package.fex",
+      "item_offset": 1221632,
+      "filename": "offset-00268000.dtb",
+      "sha256": "f79ac3af1450ad95bf91b5adf593299c527c644319641bb09795f660de46a459"
+    },
+    {
+      "offset": 89502720,
+      "size": 69461,
+      "item_index": 31,
+      "item_name": "vendor_boot.fex",
+      "item_offset": 6144,
+      "filename": "offset-0555b400.dtb",
+      "sha256": "f79ac3af1450ad95bf91b5adf593299c527c644319641bb09795f660de46a459"
+    },
+    {
+      "offset": 1244916800,
+      "size": 4532,
+      "item_index": 43,
+      "item_name": "dtbo.fex",
+      "item_offset": 64,
+      "filename": "offset-4a33ec40.dtb",
+      "sha256": "05f3ce2060296532fad8fd714769f0024532267e7aefc2f2bbfcf8a40083a1ef"
+    }
+  ],
+  "reviewed_on": "2026-10-26",
+  "scope": "Offline inspection of user-downloaded official archives. No boot, flashing or hardware validation.",
+  "archives": [
+    {
+      "filename": "opizero2w_android12_patches.tar.gz",
+      "size": 55587,
+      "sha256": "29e9450567d44e4b8c649da092aaed1aea833474ff64393ae22c64b7d2d0cfd7"
+    },
+    {
+      "filename": "Orangepi_zero2w_android12_tv_v1.0.tar.gz",
+      "size": 578269602,
+      "sha256": "4ad49833c1c7f91fc5cfa8f6a3bace1e1ae82adbe417ab9b5e4ba9edeb663984"
+    }
+  ],
+  "patch_files": [
+    {
+      "path": "device/softwinner/apollo/apollo_p2.mk",
+      "size": 1448,
+      "sha256": "037dfeb735a7755a84733d762df6f8da8cb4602a6fb6409ea158e887caca155c"
+    },
+    {
+      "path": "device/softwinner/apollo/common/overlay/overlay/frameworks/base/core/res/res/values/config.xml",
+      "size": 26134,
+      "sha256": "c4a5a65392a968921d8bb5bc737348fe35b4b991df1447810023157240cd4d6d"
+    },
+    {
+      "path": "device/softwinner/apollo/common/system/init.sun50iw9p1.rc",
+      "size": 4461,
+      "sha256": "b14c292d84d9966a8cbfa900527e5eb4f7310a411013637d0d2e14bd8ea3ef44"
+    },
+    {
+      "path": "device/softwinner/apollo/common/system/ueventd.sun50iw9p1.rc",
+      "size": 2514,
+      "sha256": "afa9c1ede37fbb4a37306e65a2ac2f5f86ec0fc2d9fd390f7b9f995489265ac4"
+    },
+    {
+      "path": "longan/device/config/chips/h618/configs/p2/linux-5.4/board.dts",
+      "size": 29632,
+      "sha256": "7452a0f9a5741b5018ea8b448053eb0a15226a465939e7b122f957a45259ec12"
+    },
+    {
+      "path": "longan/kernel/linux-5.4/arch/arm64/configs/sun50iw9p1smp_h618_android_defconfig",
+      "size": 14459,
+      "sha256": "be093323fc798f4d313b5d5933ec0cd5177df2574618411cbb4a5eaaf7287890"
+    },
+    {
+      "path": "longan/kernel/linux-5.4/drivers/mtd/spi-nor/spi-nor.c",
+      "size": 151667,
+      "sha256": "f3315a24c965502a0f060df60aac41c9706a55a6a1b5a3d647cd92d80aee08fd"
+    }
+  ],
+  "board_source_matches_community": {
+    "path": "longan/device/config/chips/h618/configs/p2/linux-5.4/board.dts",
+    "repository": "https://gitlab.com/Yajat/android_longan",
+    "commit": "47b861f18054c373241666c1ad3cb6ba0f265441",
+    "byte_identical": true
+  },
+  "kernel_config": {
+    "source": "boot.fex kernel IKCONFIG",
+    "sha256": "12479a23d310c2758dcdfc6e9d6fb59a5b7b43d74bad15a63c7bce1472874a55",
+    "matches_bundled_vmlinux_ikconfig": true,
+    "kernel_release": "5.4.125",
+    "selected_values": {
+      "CONFIG_ARCH_SUN50IW9": "y",
+      "CONFIG_DISP2_SUNXI": "y",
+      "CONFIG_TV_DISP2_SUNXI": "y",
+      "CONFIG_DISP2_TV_AC200": "n",
+      "CONFIG_DISP2_TV_GM7121": "n",
+      "CONFIG_EXTCON": "y"
+    }
+  },
+  "vendor_boot": {
+    "header_version": 3,
+    "page_size": 2048,
+    "header_size": 2112,
+    "vendor_ramdisk_size": 1437,
+    "dtb_size": 69461,
+    "dtb_offset": 6144,
+    "dtb_matches_sunxi_fex": true
+  },
+  "dtbo": {
+    "entry_count": 1,
+    "overlay_targets": [
+      "twi5",
+      "cpu0"
+    ],
+    "modifies_tv_or_disp": false,
+    "cmdline_dtbo_idx": "0,1,2",
+    "runtime_selection_verified": false
+  },
+  "fdt_validation": "All seven candidates decoded successfully with dtc; legacy-tree warnings retained locally, not treated as schema validation."
+}

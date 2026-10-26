@@ -6,14 +6,22 @@ found in online reports, not personally tested. The Zero 2W manufacturer's
 also lists TV-OUT as working for Android 12 TV / Linux 5.4 (section 6.2).
 That is a vendor support statement, not a captured-picture test on this board.
 
+**Update:** the owner supplied the official patch and image archives. The
+patch board DTS matches the community reference byte-for-byte, and the packed
+kernel DT and kernel configuration confirm native TVE/DAC0/PAL support.
+See the [official-image inspection](zero2w-official-android.md). Hardware output
+and runtime handoff remain untested; historical download failures below are
+resolved by these local copies.
+
 ## Source identity and limits
 
 Inspected the official [Orange Pi BSP kernel](https://github.com/orangepi-xunlong/linux-orangepi/tree/3a4a29414d558664847202f4d8919b8ab8bcf4a8),
 branch `orange-pi-5.4-sun50iw9`, commit
 `3a4a29414d558664847202f4d8919b8ab8bcf4a8` (2026-04-17).
 The branch contains the H618 Android configuration and the TV driver it selects.
-It has not been matched byte-for-byte to a specific working Android image or
-to the separate `opizero2w_android12_patches` archive described by the vendor.
+The whole BSP kernel has not been matched byte-for-byte to the image's kernel.
+The official patch board DTS and image's relevant DT settings have now been
+checked separately, as detailed in the update above.
 Selected Android HAL and U-Boot sources from a community Android 12 port were
 subsequently inspected; their provenance and limits are recorded below.
 
@@ -97,10 +105,10 @@ links these public downloads, inspected on 2026-10-26:
   2023-09-18;
   [individual file](https://drive.google.com/file/d/198QVyib3a1O_Pbu2y1H7KnRI0L7F3KoE/view).
 
-Both downloads returned Google's **quota exceeded** page. No archive bytes,
-archive hashes, or DTB extracted from that official image are available from
-this attempt. The HTML responses were not retained as misleading `.tar.gz`
-files. The vendor manual names the small patch archive as a prerequisite for
+The initial downloads returned Google's **quota exceeded** page. The owner
+subsequently supplied both archives; hashes and extracted DTB evidence are in
+the linked official-image inspection. The failed HTML responses were not
+retained as misleading `.tar.gz` files. The vendor manual names the small patch archive as a prerequisite for
 building Zero 2W, so a generic H618 source tree alone is insufficient evidence.
 
 An independently published [OmniROM build manifest](https://github.com/YAJATapps/android_apollo-p2_local_manifest/tree/omni-12.1)
@@ -109,7 +117,8 @@ and [Allwinner Android hardware sources](https://github.com/YAJATapps/android_ha
 Its [author's build instructions](https://blogs.yajatkumar.com/2024/10/source-compilation-omnirom-121-for.html)
 identify `h618/p2` as Zero 2W and `h618/p3` as Zero 3. The inspected p2 kernel
 DTS itself says `model = "Orange Pi Zero2w"`. These are community sources,
-**not a verified copy of the blocked vendor patch archive**.
+not a verified copy of the entire vendor source archive. Subsequent comparison
+confirmed the p2 Linux 5.4 board DTS is byte-identical to the vendor patch.
 
 Longan commit: `47b861f18054c373241666c1ad3cb6ba0f265441`.
 Hardware/HAL commit: `eb2b7e7c8708284128fc170635d5f9bca2495048`.
@@ -186,11 +195,10 @@ own validated configuration and resource lifecycle.
 
 ## Next evidence needed
 
-1. Obtain the vendor Zero 2W Android image/board patch archive and extract its
-   actual kernel DT, boot display parameters and relevant configuration. Record
-   file hashes and versions. The official links and community reference are
-   now known; quota prevented the official-image comparison. No need to build
-   the entire Android distribution merely to inspect these files.
+1. **Completed offline:** obtain the vendor Zero 2W Android image/board patch
+   archive, extract kernel/boot trees, inspect boot display defaults and kernel
+   configuration, and record hashes. Whole-kernel source equivalence and
+   packaged HAL equivalence remain unverified.
 2. Boot that image on a test SD and capture PAL/NTSC with the owner's EasyCAP.
    Record USB ID/driver, selected standard, kernel log and DT. Avoid dumping
    unrelated Android account data or enabling network ADB for this purpose.

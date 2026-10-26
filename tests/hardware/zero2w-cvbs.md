@@ -10,6 +10,10 @@ and a concrete native TVE implementation. See the
 [Android/BSP source investigation](zero2w-android-tve.md) and its pinned source
 manifest. Android support is documented by the vendor and reported online;
 the owner has not yet personally verified it with the EasyCAP.
+The [official Android image has now been inspected offline](zero2w-official-android.md):
+its Linux 5.4.125 configuration enables native TVE and its kernel DT selects
+DAC0/CVBS with PAL as the TV default. This supplies a baseline to test, not an
+Armbian enablement overlay.
 
 ## Evidence
 

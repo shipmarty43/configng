@@ -67,7 +67,7 @@
     }
   ],
   "android_reference": {
-    "scope": "Community OmniROM Android 12 source, not extracted from or verified against the official Android image. Static review only; no hardware execution.",
+    "scope": "Community OmniROM Android 12 source, statically reviewed. Official patch board.dts now verified byte-identical; see official image analysis for packed DT and kernel-config evidence. No hardware execution.",
     "reviewed_on": "2026-10-26",
     "repositories": [
       {
@@ -223,19 +223,26 @@
       {
         "filename": "opizero2w_android12_patches.tar.gz",
         "url": "https://drive.google.com/file/d/15pDLyQyI33qOu0wAuXo5K9yeuw6X3Egy/view",
-        "status": "quota_exceeded",
-        "downloaded": false
+        "status": "available_from_user_download",
+        "downloaded": true,
+        "initial_download_status": "quota_exceeded",
+        "sha256": "29e9450567d44e4b8c649da092aaed1aea833474ff64393ae22c64b7d2d0cfd7",
+        "size": 55587
       },
       {
         "filename": "Orangepi_zero2w_android12_tv_v1.0.tar.gz",
         "url": "https://drive.google.com/file/d/198QVyib3a1O_Pbu2y1H7KnRI0L7F3KoE/view",
-        "status": "quota_exceeded",
-        "downloaded": false
+        "status": "available_from_user_download",
+        "downloaded": true,
+        "initial_download_status": "quota_exceeded",
+        "sha256": "4ad49833c1c7f91fc5cfa8f6a3bace1e1ae82adbe417ab9b5e4ba9edeb663984",
+        "size": 578269602
       }
     ],
     "identical_to_official_bsp": [
       "drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c",
       "drivers/video/fbdev/sunxi/disp2/tv/de_tve_sun8iw11.c"
-    ]
+    ],
+    "official_image_analysis": "zero2w-official-android.json"
   }
 }
