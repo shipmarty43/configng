@@ -1,0 +1,3 @@
+Results: <validation-workspace>/zero2w-vaapi.0sYTK4
+libva-v4l2request: decoding h264 via /dev/video0 [cedrus] (media /dev/media0)
+PASS: Cedrus VA-API H.264, 60 frames 320x240 NV12, byte-exact software comparison

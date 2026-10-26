@@ -1,5 +1,9 @@
 # Unit tests
 
+Physical Orange Pi testing and follow-up development are documented in the
+[hardware validation handoff](hardware/README.md), including reproducible tests,
+source revisions, retained evidence and remaining acceptance work.
+
 If the function `testcase()` returns 0, the test is succesful. Put the code there.
 
 - name of the the file is function ID.conf

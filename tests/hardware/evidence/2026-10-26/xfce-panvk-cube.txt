@@ -1,0 +1,9 @@
+Running as unit: run-p7650-i7651.service; invocation ID: <transient-invocation-id>
+Selected WSI platform: xcb
+WARNING: panvk is not a conformant Vulkan implementation, testing use only.
+Selected GPU 0: Mali-G31 MC1, type: IntegratedGpu
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 2.787s
+             CPU time consumed: 303ms
+                   Memory peak: 14M (swap: 0B)

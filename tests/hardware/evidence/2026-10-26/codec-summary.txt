@@ -1,0 +1,10 @@
+test.h264: hardware pipeline reached EOS
+x265 [error]: unable to set thread affinity for NUMA node mask
+x265 [error]: unable to set thread affinity for NUMA node mask
+test.h265: hardware pipeline reached EOS
+test.m2v: hardware pipeline reached EOS
+test.ivf: hardware pipeline reached EOS
+test.h264.software.yuv: 60 decoded frames, mean squared error=0.000000, max difference=0
+test.h265.software.yuv: 60 decoded frames, mean squared error=0.000000, max difference=0
+test.ivf.software.yuv: 60 decoded frames, mean squared error=0.000000, max difference=0
+test.m2v.software.yuv: 60 decoded frames, mean squared error=0.006507, max difference=3

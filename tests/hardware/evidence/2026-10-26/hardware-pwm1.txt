@@ -1,0 +1,12 @@
+10 Hz, 25%: {'frequency': 10, 'high_ns': 24994319, 'low_ns': 75012456}
+10 Hz, 50%: {'frequency': 10, 'high_ns': 49987553, 'low_ns': 49989429}
+10 Hz, 75%: {'frequency': 10, 'high_ns': 74986164, 'low_ns': 24993610}
+100 Hz, 25%: {'frequency': 100, 'high_ns': 2500582, 'low_ns': 7476245}
+100 Hz, 50%: {'frequency': 100, 'high_ns': 5003247, 'low_ns': 5004747}
+100 Hz, 75%: {'frequency': 100, 'high_ns': 7475496, 'low_ns': 2501915}
+1000 Hz, 25%: {'frequency': 999, 'high_ns': 243292, 'low_ns': 762416}
+1000 Hz, 50%: {'frequency': 1000, 'high_ns': 487500, 'low_ns': 488083}
+1000 Hz, 75%: {'frequency': 1000, 'high_ns': 730874, 'low_ns': 244167}
+0% duty: input level 0
+100% duty: input level 1
+Kernel PWM1 loopback passed; PWM disabled/unexported, input released

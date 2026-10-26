@@ -1,0 +1,18 @@
+libva info: VA-API version 1.23.0
+libva info: User environment variable requested driver 'v4l2_request'
+libva info: Trying to open <validation-workspace>/libva-v4l2_request-upstream/build/src/v4l2_request_drv_video.so
+libva info: Found init function __vaDriverInit_1_23
+libva-v4l2request: detected 1 Request API decoder
+libva info: va_openDriver() returns 0
+Trying display: drm
+vainfo: VA-API version: 1.23 (libva 2.22.0)
+vainfo: Driver version: v4l2-request
+vainfo: Supported profile and entrypoints
+      VAProfileMPEG2Simple            :	VAEntrypointVLD
+      VAProfileMPEG2Main              :	VAEntrypointVLD
+      VAProfileH264ConstrainedBaseline:	VAEntrypointVLD
+      VAProfileH264Main               :	VAEntrypointVLD
+      VAProfileH264High               :	VAEntrypointVLD
+      VAProfileHEVCMain               :	VAEntrypointVLD
+      VAProfileHEVCMain10             :	VAEntrypointVLD
+      VAProfileVP8Version0_3          :	VAEntrypointVLD

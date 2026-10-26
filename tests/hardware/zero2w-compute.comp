@@ -1,0 +1,12 @@
+#version 450
+// SPDX-License-Identifier: GPL-2.0
+layout(local_size_x = 64) in;
+layout(set = 0, binding = 0, std430) buffer Values { uint values[]; };
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= 65536u) return;
+    uint x = values[i];
+    for (uint step = 0u; step < 64u; ++step)
+        x = (x * 1664525u + 1013904223u) ^ (i + step);
+    values[i] = x;
+}

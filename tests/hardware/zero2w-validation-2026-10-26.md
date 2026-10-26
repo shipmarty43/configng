@@ -162,6 +162,108 @@ reproducible sysfs PWM test and input probe; its legacy `pwmWrite` API still
 returns unsupported on H618. Kernel functionality and library integration are
 separate acceptance items.
 
+### Vulkan compute
+
+The separate headless [`zero2w-compute.c`](zero2w-compute.c) test and
+[`zero2w-compute.comp`](zero2w-compute.comp) shader passed on Mali-G31 MC1 using
+the installed PanVK (reported Vulkan 1.0.335). Eight dispatches each processed
+65,536 uint32 values through 64 multiply/add/XOR rounds. All **524,288** results
+matched the CPU reference exactly. The test checks compute queue selection,
+storage-buffer access, dispatch, host/device memory barriers and fence completion.
+Selecting the llvmpipe ICD in a negative test correctly caused rejection rather
+than a software-compute pass. This is an integer correctness smoke test, not a
+floating-point, neural-network, OpenCL or performance qualification.
+
+```sh
+glslangValidator -V tests/hardware/zero2w-compute.comp -o /tmp/zero2w-compute.spv
+spirv-val --target-env vulkan1.0 /tmp/zero2w-compute.spv
+cc -Wall -Wextra -Werror tests/hardware/zero2w-compute.c \
+  -lvulkan -o /tmp/zero2w-compute
+env VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.json \
+  PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1 \
+  timeout 45 /tmp/zero2w-compute /tmp/zero2w-compute.spv
+```
+
+Dependencies: libvulkan-dev, glslang-tools and spirv-tools. No global experimental
+Vulkan setting was installed.
+
+### VA-API bridge to Cedrus
+
+The unmodified external `libva-v4l2_request` driver at
+`cac6ece0e23ac1f944dd3af266680aff0c3184df` was built natively with Meson/Ninja.
+Source and integration context: [upstream repository](https://xff.cz/git/libva-v4l2_request/)
+and [author's explanation](https://xnux.eu/log/102.html). It was selected per
+process; it was not installed over distribution drivers.
+
+```sh
+git clone https://xff.cz/git/libva-v4l2_request libva-v4l2_request
+git -C libva-v4l2_request checkout --detach cac6ece0e23ac1f944dd3af266680aff0c3184df
+meson setup libva-v4l2_request/build libva-v4l2_request
+meson compile -C libva-v4l2_request/build -j2
+bash tests/hardware/zero2w-vaapi-smoke.sh \
+  "$(realpath libva-v4l2_request/build/src)" /tmp
+```
+
+Build dependencies: C compiler, pkg-config, Meson, Ninja, libva-dev, libdrm-dev
+and Linux UAPI headers with the stateless codec controls. Runtime test dependencies:
+vainfo, FFmpeg with libx264/VA-API support and access to `/dev/media0`,
+`/dev/video0`, `/dev/dri/renderD128`. These paths were observed on this board;
+rediscover them before porting to a different image or board.
+
+`vainfo` successfully loaded the driver and advertised MPEG-2, H.264, HEVC and
+VP8 VLD (decode) entrypoints. HEVC Main10 was advertised but was not exercised.
+The installed package reports libva `2.23.0-1ubuntu1`; `vainfo`'s banner includes
+`libva 2.22.0`, so retain both observations rather than deriving package versions
+from that banner alone.
+
+The actual FFmpeg H.264 run logged
+`decoding h264 via /dev/video0 [cedrus] (media /dev/media0)` and selected NV12
+capture. `-hwaccel_output_format vaapi` followed by `hwdownload,format=nv12`
+produced 60 frames, 6,912,000 bytes. Every byte matched the explicitly software
+decoded reference. Both outputs had SHA-256
+`21a72842d3edb72faee839dbde08151543f5976f54cc0da8f9bd39b1e51b7490`.
+The retained input hash and log accompany the report. This proves a working
+VA-API → V4L2 Request → Cedrus readback path for this small 8-bit H.264 clip.
+It does not prove DMA-BUF display import, browser playback or high-resolution
+throughput. The FFmpeg rawvideo output encoder is a file formatter, not evidence
+of a hardware video encoder.
+
+### Chromium / YouTube: unfinished trial
+
+Native Chromium `156.0.8078.47-1xtradeb1.2604.1` was installed from the configured
+package sources. Package configuration retained the image's existing master
+preferences. A fresh isolated user profile and a local MP4 remux of the synthetic
+H.264 clip were used. The test launched as the logged-in desktop user with the
+VA-API driver variables above, plus:
+
+```text
+--enable-features=AcceleratedVideoDecodeLinuxGL --use-gl=angle --use-angle=gl
+--remote-debugging-address=127.0.0.1 --remote-debugging-port=9223
+--no-first-run --no-default-browser-check
+--autoplay-policy=no-user-gesture-required --enable-logging=stderr
+--vmodule=*vaapi*=3,*video_decoder*=3
+--user-data-dir=<isolated-test-directory>/profile
+file://<isolated-test-directory>/test.html
+```
+
+These are recorded attempted flags, **not a validated browser recipe**. The
+sandbox remained enabled. A transient user service limited the trial to 240
+seconds. Chromium printed a DevTools listening address, but two requests to
+`/json/list` timed out waiting for HTTP data; child processes reported termination
+after 15 seconds without a connection. No Media decoder events or successful
+playback were obtained. The temporary service was stopped after collecting its
+log; termination required the service's stop timeout. No global acceleration
+environment or browser profile was changed.
+
+Next isolate browser startup with the same package and a plain fresh profile,
+then add the bridge and capture actual decoder selection and playback progress.
+Use the [Chromium VA-API verification guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/gpu/vaapi.md)
+for `chrome://gpu` and `chrome://media-internals`, while keeping this installed
+version's behavior as the acceptance criterion. Real YouTube remains untested.
+The tested Cedrus stack exposes no VP9/AV1 decode or hardware encoding path;
+initial browser acceptance should use H.264/`avc1` and explicitly identify the
+decoder, rather than infer acceleration from low CPU usage or GPU rendering.
+
 ## Remaining hardware acceptance
 
 1. Save and restore an explicit non-default XFCE display profile across login
@@ -172,6 +274,8 @@ separate acceptance items.
    pacing and temperature. Vulkan currently requires explicit experimental opt-in.
 3. Test realistic video files in the intended player and resolution, including
    audio synchronization and sustained playback; keep decoder selection visible.
+   Diagnose the failed Chromium startup and validate hardware decoding in the
+   browser before claiming accelerated YouTube support.
 4. Integrate the validated kernel PWM1 path into WiringPi's public hardware PWM
    functions with ownership, cleanup and error handling; validate additional
    channels only with their wiring confirmed. The sysfs physical 32-to-29 test

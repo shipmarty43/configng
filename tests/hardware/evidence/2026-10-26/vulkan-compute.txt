@@ -1,0 +1,11 @@
+WARNING: panvk is not a conformant Vulkan implementation, testing use only.
+Compute device: Mali-G31 MC1, Vulkan 1.0.335
+Dispatch 1: 65536 uint32 results match CPU reference
+Dispatch 2: 65536 uint32 results match CPU reference
+Dispatch 3: 65536 uint32 results match CPU reference
+Dispatch 4: 65536 uint32 results match CPU reference
+Dispatch 5: 65536 uint32 results match CPU reference
+Dispatch 6: 65536 uint32 results match CPU reference
+Dispatch 7: 65536 uint32 results match CPU reference
+Dispatch 8: 65536 uint32 results match CPU reference
+Vulkan compute passed: 524288 checked results, 64 arithmetic rounds each
