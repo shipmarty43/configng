@@ -4,7 +4,8 @@ Physical board, 2026-10-26. Armbian community 26.11.0-trunk.108,
 Ubuntu 26.04, Linux 6.18.57-current-sunxi64, AArch64. These results apply to
 this image and board; they are not a compatibility claim for every Armbian build.
 Tests ran in a separate source checkout; the distribution's installed
-armbian-config was not replaced. No boot overlay was enabled during these tests.
+armbian-config was not replaced. The initial tests changed no boot overlays.
+The follow-up below enabled the explicitly authorized stock PWM1 overlay.
 
 ## Configuration
 
@@ -99,19 +100,82 @@ Each run retains approximately 54 MB of generated media and logs for inspection.
 These are functional decoder tests, not 1080p/4K throughput, 10-bit profile,
 zero-copy display, audio/video synchronization or browser/player acceptance.
 
+## Follow-up with HDMI and hardware PWM connected
+
+The owner connected a 1024×600 HDMI panel and confirmed moving the 1 kOhm resistor
+from 37-to-29 to **32-to-29**, with other devices disconnected. The display
+advertised 1024×600 at 59.85 Hz and 800×450 at 60.05 Hz.
+
+### HDMI recovery and XFCE
+
+On hotplug after the initial headless boot, the kernel and Xorg detected HDMI but
+Xorg had no active mode on HDMI-1. LightDM/slick-greeter were running on tty7 while
+tty6 was selected. Switching to tty7 and enabling the advertised 1024×600 mode
+with xrandr restored the greeter; the owner confirmed the visible login screen.
+This recovery did not change boot configuration or install an Xorg startup hook.
+
+After the owner logged into XFCE, the fork's actual `module_screen_settings open`
+command launched `xfce4-display-settings` through the ordinary user's systemd
+manager. X11 reported accelerated direct rendering on Mali-G31 MC1/Panfrost,
+OpenGL 3.1 and OpenGL ES 3.1. A user-session xrandr test selected 800×450, verified
+the current mode, then restored and verified 1024×600 with a cleanup trap.
+The XFCE profile contained no explicitly saved per-monitor resolution, so this
+tests runtime switching rather than persistence of a custom saved profile.
+
+With HDMI still connected, the later PWM-overlay reboot started LightDM on tty7
+with HDMI-1 active at 1024×600 automatically. The owner confirmed that the login
+screen appeared without manual recovery. A repeated unplug/replug matrix and
+persistence of a deliberately saved non-default XFCE profile remain untested.
+
+### Actual Vulkan rendering
+
+In the owner's XFCE session the following bounded test completed successfully:
+
+```sh
+env VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.json \
+  PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1 \
+  timeout 40 vkcube --c 120 --width 640 --height 480
+```
+
+Run this from the logged-in desktop terminal, not an unconfigured SSH shell.
+Selecting only the Panfrost ICD excludes llvmpipe fallback. The output reported
+`Selected GPU 0: Mali-G31 MC1, type: IntegratedGpu`; the process rendered its
+120-frame run and exited with status 0 after about 2.8 seconds. The owner saw
+the cube on the HDMI screen. This is actual hardware Vulkan rendering and
+presentation, beyond the earlier enumeration-only probe. The driver still warns
+that it is non-conformant and intended for testing. The opt-in was scoped to the
+test process and was not made a global desktop setting. This is not a game
+compatibility or sustained-performance result.
+
+### PWM1
+
+With explicit owner approval, the stock `pwm1-pi11` overlay was applied to the
+installed DTB offline for validation, then added to `/boot/armbianEnv.txt` and
+the board rebooted. The original file is retained privately on the board at
+`/root/opi-validation-20261026/logs/armbianEnv.before-pwm1.txt`.
+
+Kernel PWM1 on physical 32 passed 10/100/1000 Hz at 25/50/75% duty using GPIO
+input 29, plus stable LOW/HIGH tests at 0/100%. The channel was disabled and
+unexported afterward; the overlay remains active and reserves PI11 for PWM1.
+The kernel-owned PWM5/ac300-clk was untouched. The WiringPi fork contains the
+reproducible sysfs PWM test and input probe; its legacy `pwmWrite` API still
+returns unsupported on H618. Kernel functionality and library integration are
+separate acceptance items.
+
 ## Remaining hardware acceptance
 
-1. Connect HDMI and log into XFCE as an ordinary user. Check the native screen
-   settings launch, resolution/refresh changes, revert and behavior after login
-   and reboot. Confirm the desktop renderer, not merely headless EGL.
+1. Save and restore an explicit non-default XFCE display profile across login
+   and reboot; exercise repeated HDMI hotplug and unattended recovery. The native
+   panel launch, runtime resolution/revert, accelerated desktop and connected
+   boot were verified above.
 2. Exercise a chosen game or emulator and record renderer, resolution, frame
    pacing and temperature. Vulkan currently requires explicit experimental opt-in.
 3. Test realistic video files in the intended player and resolution, including
    audio synchronization and sustained playback; keep decoder selection visible.
-4. Hardware PWM remains a separate WiringPi task. Only software PWM/tone on
-   physical 37-to-29 through 1 kOhm was tested. PWM1 on physical 32 was not enabled
-   because the owner kept the existing wiring. GPIO loopback/IRQ test details
-   belong to the WiringPi fork's H618 support document.
+4. Integrate the validated kernel PWM1 path into WiringPi's public hardware PWM
+   functions with ownership, cleanup and error handling; validate additional
+   channels only with their wiring confirmed. The sysfs physical 32-to-29 test
+   is recorded above; GPIO/IRQ details are in the WiringPi H618 support document.
 
 Native CVBS is a separate driver bring-up described in
 [`zero2w-cvbs.md`](zero2w-cvbs.md); HDMI/GPU/Cedrus results do not validate TV-out.
