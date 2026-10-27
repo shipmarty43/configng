@@ -1,0 +1,8 @@
+Running as unit: opi-manual-trial.service; invocation ID: a3fe4a07a3db4f49b8cf987802b68241
+Running as unit: opi-manual-browser.service; invocation ID: 6906cd99b09048f3a82ac50699472ca6
+restored VT: 7
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 5min 552ms
+             CPU time consumed: 4.391s
+                   Memory peak: 2.5M (swap: 0B)

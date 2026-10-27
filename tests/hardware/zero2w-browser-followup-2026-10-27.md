@@ -1,7 +1,8 @@
 # Browser video follow-up — 2026-10-27
 
-Work stopped after the user reported another power outage. No remote cleanup or
-post-outage filesystem check is claimed. This supplements the
+Checkpoint recorded when the user reported another power outage. Work later
+resumed: see the [direct-output report](zero2w-browser-direct-2026-10-27.md) for
+recovered logs, final EGL rerun and additional playback tests. This supplements the
 [previous report](zero2w-browser-wayland-2026-10-26.md).
 
 ## Playback and frame pacing
@@ -34,9 +35,10 @@ The ondemand JSON was copied off the board before the outage; the
 [public extract](evidence/2026-10-27/ondemand-summary.json) retains all samples.
 Performance numbers above were observed in completed command output before the
 outage. Its full JSON, temperatures and restoration log were still on the board
-and have **not yet been copied off the SD card**. Recover them from
+and had **not yet been copied off the SD card** at this checkpoint. They have
+since been recovered; the source locations were
 `/root/opi-validation-20261027/` and the isolated user directory
-`20261027-1080-hardware-performance-60s/` after power returns.
+`20261027-1080-hardware-performance-60s/`.
 
 ## Color conversion experiment
 
@@ -53,8 +55,9 @@ that a modified Chromium renders correct pixels end to end.
 
 The tested version compiled with `-Wall -Wextra -Werror` and passed on the board.
 Four descriptor bounds/alignment assertions were subsequently added to the
-published source; that final revision still needs a board rebuild and rerun.
-Do not claim the published C source is byte-identical to the tested revision.
+published source. The original log predates those assertions; the final source
+was rebuilt and passed after power returned, with its SHA-256 recorded in the
+resumed report.
 
 An opt-in [Chromium patch draft](patches/chromium-wayland-bt709-egl-import-draft.patch)
 selects BT.709 for BT.709 imports only on explicit Wayland without overlay

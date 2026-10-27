@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Chromium H.264 (experimental)
+Name[ru]=Chromium H.264 (экспериментальный)
+Comment=Isolated Cedrus browser on direct Weston; close Chromium to log out
+Exec=/usr/local/bin/opi-cedrus-session
+TryExec=/usr/local/bin/opi-cedrus-session
+Type=Application

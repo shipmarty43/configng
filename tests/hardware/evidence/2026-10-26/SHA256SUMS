@@ -1,6 +1,6 @@
 6afeedc8767559bf6ca0396fdf372f2f487ec4593558b2e24cb377d114748f04  ../../patches/README.md
 06b539835863e19b81eded62f09bbc820a32fde634c3c5440c3b4ff8df41c5af  ../../patches/libva-v4l2-request-preexport-dmabuf.patch
-948464a5869370732ea8756652ff1817319776ca9fe9b41b948bee56efee25f4  ../../zero2w-browser-pixels.py
+c63668e2fd36cb9c2939780f1c95ed0daa9fd97d3cfdbfa40745c9c7318f1fad  ../../zero2w-browser-pixels.py
 242c2389acffa1df9375cee680fb0d81ff6d3979df5fc16f79e340bbfd1d6a4e  ../../zero2w-browser-wayland-2026-10-26.md
 29a546e4f2fcf32a3be2d50397470f0fd004a8beb72c06fb884df4e3daa4fa27  ../../zero2w-codec-smoke.sh
 a95161978151579759bee28d3a0d9692c176cd25aa9e76c389bcc8144f2f37c5  ../../zero2w-compute.c

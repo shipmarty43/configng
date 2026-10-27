@@ -1,0 +1,257 @@
+[
+  {
+    "case": "20261027-youtube-legacy-90s",
+    "qualified": false,
+    "acceptance": "rejected: main video reset and YouTube displayed an error",
+    "harness_error": null,
+    "warmup_min_seconds": null,
+    "codec_negotiation": {
+      "h264": true,
+      "vp9": false,
+      "av1": false
+    },
+    "first_measurement_sample": {
+      "time": 2.99216,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": true,
+      "error": null,
+      "totalFrames": 94,
+      "droppedFrames": 12,
+      "elapsed": 0.12704020299997865
+    },
+    "last_valid_sample": {
+      "time": 41.958012,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "error": null,
+      "totalFrames": 1263,
+      "droppedFrames": 79,
+      "elapsed": 39.15250618899995
+    },
+    "last_sample": {
+      "time": 0,
+      "width": 0,
+      "height": 0,
+      "paused": true,
+      "ready": 0,
+      "muted": false,
+      "error": null,
+      "totalFrames": 0,
+      "droppedFrames": 0,
+      "elapsed": 90.63772002299993
+    },
+    "video_decoders": [
+      "VaapiVideoDecoder"
+    ],
+    "video_http_status_counts": {},
+    "network_failures": {}
+  },
+  {
+    "case": "20261027-youtube-warm-90s",
+    "qualified": false,
+    "acceptance": "rejected: main video reset and YouTube displayed an error",
+    "harness_error": "RuntimeError('Video reset, seek or advertisement invalidated the measurement window')",
+    "warmup_min_seconds": 15,
+    "codec_negotiation": {
+      "h264": true,
+      "vp9": false,
+      "av1": false
+    },
+    "first_measurement_sample": {
+      "time": 18.507954,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 40.592045,
+      "error": null,
+      "totalFrames": 559,
+      "droppedFrames": 62,
+      "elapsed": 0
+    },
+    "last_valid_sample": {
+      "time": 40.641111,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 19.359888999999995,
+      "error": null,
+      "totalFrames": 1223,
+      "droppedFrames": 70,
+      "elapsed": 22.09259708700006
+    },
+    "last_sample": {
+      "time": 0,
+      "width": 0,
+      "height": 0,
+      "paused": true,
+      "ready": 0,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 0,
+      "error": null,
+      "totalFrames": 0,
+      "droppedFrames": 0,
+      "elapsed": 23.124310006000087
+    },
+    "video_decoders": [
+      "VaapiVideoDecoder"
+    ],
+    "video_http_status_counts": {
+      "204": 1,
+      "200": 18
+    },
+    "network_failures": {
+      "net::ERR_ABORTED": 8
+    }
+  },
+  {
+    "case": "20261027-youtube-software-warm-90s",
+    "qualified": false,
+    "acceptance": "rejected: main video reset and YouTube displayed an error",
+    "harness_error": "RuntimeError('Video reset, seek or advertisement invalidated the measurement window')",
+    "warmup_min_seconds": 15,
+    "codec_negotiation": {
+      "h264": true,
+      "vp9": false,
+      "av1": false
+    },
+    "first_measurement_sample": {
+      "time": 18.247862,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 41.75313799999999,
+      "error": null,
+      "totalFrames": 551,
+      "droppedFrames": 55,
+      "elapsed": 0
+    },
+    "last_valid_sample": {
+      "time": 40.891005,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 19.109994999999998,
+      "error": null,
+      "totalFrames": 1230,
+      "droppedFrames": 66,
+      "elapsed": 22.568119131999993
+    },
+    "last_sample": {
+      "time": 0,
+      "width": 0,
+      "height": 0,
+      "paused": true,
+      "ready": 0,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 0,
+      "error": null,
+      "totalFrames": 0,
+      "droppedFrames": 0,
+      "elapsed": 23.85535492200006
+    },
+    "video_decoders": [
+      "FFmpegVideoDecoder"
+    ],
+    "video_http_status_counts": {
+      "204": 1,
+      "200": 18
+    },
+    "network_failures": {
+      "net::ERR_ABORTED": 9
+    }
+  },
+  {
+    "case": "20261027-youtube-native-codecs-90s",
+    "qualified": false,
+    "acceptance": "rejected: main video reset and YouTube displayed an error",
+    "harness_error": "RuntimeError('Video reset, seek or advertisement invalidated the measurement window')",
+    "warmup_min_seconds": 15,
+    "codec_negotiation": {
+      "h264": true,
+      "vp9": true,
+      "av1": true
+    },
+    "first_measurement_sample": {
+      "time": 20.103468,
+      "width": 640,
+      "height": 360,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 27.963198,
+      "error": null,
+      "totalFrames": 604,
+      "droppedFrames": 46,
+      "elapsed": 0
+    },
+    "last_valid_sample": {
+      "time": 42.895831,
+      "width": 854,
+      "height": 480,
+      "paused": false,
+      "ready": 4,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 17.105168999999997,
+      "error": null,
+      "totalFrames": 1291,
+      "droppedFrames": 82,
+      "elapsed": 22.77231115199993
+    },
+    "last_sample": {
+      "time": 0,
+      "width": 0,
+      "height": 0,
+      "paused": true,
+      "ready": 0,
+      "muted": false,
+      "visibility": "visible",
+      "adShowing": false,
+      "bufferedAhead": 0,
+      "error": null,
+      "totalFrames": 0,
+      "droppedFrames": 0,
+      "elapsed": 23.840855186
+    },
+    "video_decoders": [
+      "Dav1dVideoDecoder"
+    ],
+    "video_http_status_counts": {
+      "204": 1,
+      "200": 16,
+      "403": 6
+    },
+    "network_failures": {
+      "net::ERR_ABORTED": 15
+    }
+  }
+]

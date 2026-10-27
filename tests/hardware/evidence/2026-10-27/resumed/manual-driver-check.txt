@@ -1,0 +1,3 @@
+experimental-driver-loaded pid=20761 devices=/dev/media0,/dev/video0
+CmaTotal:          65536 kB
+CmaFree:           11044 kB

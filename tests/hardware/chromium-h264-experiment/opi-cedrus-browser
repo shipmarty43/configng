@@ -1,0 +1,32 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -euo pipefail
+if (( EUID == 0 )); then
+    echo 'Run this browser as the desktop user, not root.' >&2
+    exit 1
+fi
+if [[ -z ${WAYLAND_DISPLAY:-} ]]; then
+    echo 'Select the Chromium H.264 experimental session at the login screen, or run inside Weston.' >&2
+    exit 1
+fi
+data=${OPI_CEDRUS_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/opi-cedrus-browser}
+if [[ ! -r $data/driver/v4l2_request_drv_video.so || ! -r $data/extension/manifest.json ]]; then
+    echo "Missing experimental driver or extension under $data" >&2
+    exit 1
+fi
+umask 077
+mkdir -p "$data/profile"
+unset LIBVA_TRACE LIBVA_V4L2_TRACE
+export LIBVA_DRIVERS_PATH="$data/driver" LIBVA_DRIVER_NAME=v4l2_request
+export LIBVA_V4L2_REQUEST_MEDIA_PATH=/dev/media0 V4L2R_PREEXPORT_DMABUF=1
+if (( $# == 0 )); then
+    set -- 'https://www.youtube.com/'
+fi
+exec /usr/lib/chromium/chromium \
+    --ozone-platform=wayland --use-gl=angle --use-angle=gles \
+    --enable-features=AcceleratedVideoDecoder,AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL \
+    --disable-features=PreferV4L2VideoAcceleration \
+    --hardware-video-device-path=/dev/dri/renderD128 \
+    --no-first-run --no-default-browser-check --start-maximized \
+    --user-data-dir="$data/profile" \
+    --load-extension="$data/extension" --disable-extensions-except="$data/extension" "$@"

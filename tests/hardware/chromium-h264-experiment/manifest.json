@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Orange Pi H.264 experiment",
+  "version": "0.1.0",
+  "description": "Prefer H.264 on YouTube for the experimental Cedrus VA-API path.",
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*", "https://www.youtube-nocookie.com/*"],
+    "js": ["h264.js"],
+    "run_at": "document_start",
+    "world": "MAIN",
+    "all_frames": true
+  }]
+}

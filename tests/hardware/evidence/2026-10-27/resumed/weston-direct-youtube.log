@@ -1,0 +1,19 @@
+[01:41:53.493] DRM: supports atomic modesetting
+[01:41:53.493] DRM: supports GBM modifiers
+[01:41:53.493] DRM: does not support Atomic async page flip
+[01:41:53.493] DRM: supports picture aspect ratio
+[01:41:53.691] GL renderer: Mali-G31 MC1 (Panfrost)
+[01:41:53.963] Output 'HDMI-A-1' attempts EOTF mode SDR and colorimetry mode default.
+[01:41:53.963] Output 'HDMI-A-1' using color profile: stock sRGB color profile
+[01:41:53.966] Output 'HDMI-A-1' enabled with head(s) HDMI-A-1
+[01:41:53.985] atomic: couldn't commit new state: Invalid argument
+[01:41:53.985] repaint-flush failed: Invalid argument
+[01:41:53.985] activating session
+[01:41:53.989] atomic: couldn't commit new state: Invalid argument
+[01:41:53.989] repaint-flush failed: Invalid argument
+[01:41:54.231] atomic: couldn't commit new state: Invalid argument
+[01:41:54.232] repaint-flush failed: Invalid argument
+[01:41:59.150] atomic: couldn't commit new state: Invalid argument
+[01:41:59.150] repaint-flush failed: Invalid argument
+[01:41:59.183] atomic: couldn't commit new state: Invalid argument
+[01:41:59.183] repaint-flush failed: Invalid argument

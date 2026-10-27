@@ -113,6 +113,8 @@ def main():
     parser.add_argument("--driver", type=Path, help="External libva driver directory")
     parser.add_argument("--preexport", action="store_true", help="Enable experimental DMA-BUF patch")
     parser.add_argument("--software", action="store_true")
+    parser.add_argument("--wayland-overlay-delegation", action="store_true", help="Experimental Wayland compositor video delegation")
+    parser.add_argument("--driver-trace", action="store_true", help="Trace VA driver buffer timing; affects performance")
     parser.add_argument("--backend", choices=("x11", "wayland"), default="wayland")
     parser.add_argument("--chromium", default="/usr/lib/chromium/chromium")
     parser.add_argument("--timeout", type=int, default=90, help="Overall deadline, seconds")
@@ -121,6 +123,8 @@ def main():
     args = parser.parse_args()
     if os.geteuid() == 0:
         parser.error("Run as the desktop user; do not disable Chromium's sandbox to run as root")
+    if args.wayland_overlay_delegation and args.backend != "wayland":
+        parser.error("--wayland-overlay-delegation requires --backend wayland")
     if args.preexport and (not args.driver or args.software):
         parser.error("--preexport requires --driver and hardware decoding")
     if args.timeout <= 0 or args.warmup < 0:
@@ -152,22 +156,29 @@ def main():
                    LIBVA_DRIVER_NAME="v4l2_request", LIBVA_V4L2_REQUEST_MEDIA_PATH="/dev/media0")
     if args.preexport:
         env["V4L2R_PREEXPORT_DMABUF"] = "1"
+    if args.driver_trace:
+        env["LIBVA_V4L2_TRACE"] = "1"
     profile = out / "profile"
     cmd = [args.chromium, f"--user-data-dir={profile}", "--no-first-run",
            "--no-default-browser-check", "--remote-debugging-address=127.0.0.1",
            "--remote-debugging-port=0", "--autoplay-policy=no-user-gesture-required",
            "--use-gl=angle", "--use-angle=gles", f"--ozone-platform={args.backend}",
            "--enable-logging=stderr", "--vmodule=*vaapi*=2,*video_decoder*=2"]
+    features = ["WaylandOverlayDelegation"] if args.wayland_overlay_delegation else []
     if args.software:
         cmd.append("--disable-accelerated-video-decode")
     else:
-        cmd += ["--enable-features=AcceleratedVideoDecoder,AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL",
-                "--disable-features=PreferV4L2VideoAcceleration",
+        features += ["AcceleratedVideoDecoder", "AcceleratedVideoDecodeLinuxGL",
+                     "AcceleratedVideoDecodeLinuxZeroCopyGL"]
+        cmd += ["--disable-features=PreferV4L2VideoAcceleration",
                 "--hardware-video-device-path=/dev/dri/renderD128"]
+    if features:
+        cmd.append("--enable-features=" + ",".join(features))
     cmd.append("about:blank")
     (out / "command.json").write_text(json.dumps(cmd, indent=2))
     result = {"media": str(media), "preexport": args.preexport, "software": args.software,
-              "backend": args.backend, "captures": [], "qualified": False}
+              "backend": args.backend, "driver_trace": args.driver_trace,
+              "wayland_overlay_delegation": args.wayland_overlay_delegation, "captures": [], "qualified": False}
     process = None
     cdp = None
 

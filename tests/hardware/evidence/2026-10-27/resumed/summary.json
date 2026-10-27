@@ -1,0 +1,236 @@
+[
+  {
+    "case": "20261027-resumed-direct-legacy-60s",
+    "playback": {
+      "time": 60,
+      "duration": 60,
+      "ended": true,
+      "error": null,
+      "totalFrames": 1800,
+      "droppedFrames": 7,
+      "elapsed": 60.574383495000006
+    },
+    "steady_playback": {
+      "from_media_time": 5.0902,
+      "to_media_time": 60,
+      "wall_seconds": 55.10078721500008,
+      "totalFrames": 1643,
+      "droppedFrames": 4
+    },
+    "properties": {
+      "kBitrate": "5749470",
+      "kVideoDecoderName": "VaapiVideoDecoder",
+      "kIsStreaming": "false",
+      "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+      "kIsPlatformVideoDecoder": "true",
+      "kIsRangeHeaderSupported": "true",
+      "kIsVideoDecryptingDemuxerStream": "false",
+      "kStartTime": "0.0",
+      "kResolution": "1920x1080",
+      "kRendererName": "RendererImpl",
+      "kTotalBytes": "0x291f985",
+      "kMaxDuration": "60.0",
+      "kIsSingleOrigin": "true",
+      "kFrameTitle": "Synthetic decoder validation",
+      "kVideoPlaybackFreezingRatio": "1.005970059700597",
+      "kFramerate": "30.0",
+      "kVideoPlaybackRoughness": "15.182"
+    },
+    "physical_display_confirmed": true,
+    "acceptance": "diagnostic only; color correctness not qualified"
+  },
+  {
+    "case": "20261027-resumed-direct-wayland-60s",
+    "playback": {
+      "time": 60,
+      "duration": 60,
+      "ended": true,
+      "error": null,
+      "totalFrames": 1800,
+      "droppedFrames": 0,
+      "elapsed": 60.736340454000015
+    },
+    "steady_playback": {
+      "from_media_time": 5.3789,
+      "to_media_time": 60,
+      "wall_seconds": 55.157743821000054,
+      "totalFrames": 1639,
+      "droppedFrames": 0
+    },
+    "properties": {
+      "kBitrate": "5749470",
+      "kVideoDecoderName": "VaapiVideoDecoder",
+      "kIsStreaming": "false",
+      "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+      "kIsPlatformVideoDecoder": "true",
+      "kIsRangeHeaderSupported": "true",
+      "kIsVideoDecryptingDemuxerStream": "false",
+      "kStartTime": "0.0",
+      "kResolution": "1920x1080",
+      "kRendererName": "RendererImpl",
+      "kTotalBytes": "0x291f985",
+      "kMaxDuration": "60.0",
+      "kIsSingleOrigin": "true",
+      "kFrameTitle": "Synthetic decoder validation"
+    },
+    "physical_display_confirmed": false,
+    "acceptance": "INVALID for display performance: atomic KMS failed; user saw no browser/video"
+  },
+  {
+    "case": "20261027-resumed-driver-trace",
+    "playback": {
+      "time": 10,
+      "duration": 10,
+      "ended": true,
+      "error": null,
+      "totalFrames": 300,
+      "droppedFrames": 12,
+      "elapsed": 10.796364778999987
+    },
+    "steady_playback": {
+      "from_media_time": 5.2818,
+      "to_media_time": 10,
+      "wall_seconds": 5.046373566999989,
+      "totalFrames": 136,
+      "droppedFrames": 5
+    },
+    "properties": {
+      "kBitrate": "5750052",
+      "kVideoDecoderName": "VaapiVideoDecoder",
+      "kIsStreaming": "false",
+      "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+      "kIsPlatformVideoDecoder": "true",
+      "kIsRangeHeaderSupported": "true",
+      "kIsVideoDecryptingDemuxerStream": "false",
+      "kStartTime": "0.0",
+      "kResolution": "1920x1080",
+      "kRendererName": "RendererImpl",
+      "kTotalBytes": "0x6dac6d",
+      "kMaxDuration": "10.0",
+      "kIsSingleOrigin": "true",
+      "kFrameTitle": "Synthetic decoder validation"
+    },
+    "physical_display_confirmed": false,
+    "acceptance": "diagnostic only; color correctness not qualified"
+  },
+  {
+    "case": "20261027-resumed-no-xfwm-60s",
+    "playback": {
+      "time": 60,
+      "duration": 60,
+      "ended": true,
+      "error": null,
+      "totalFrames": 1800,
+      "droppedFrames": 92,
+      "elapsed": 60.235504719000005
+    },
+    "steady_playback": {
+      "from_media_time": 5.115,
+      "to_media_time": 60,
+      "wall_seconds": 55.059612791999996,
+      "totalFrames": 1642,
+      "droppedFrames": 86
+    },
+    "properties": {
+      "kBitrate": "5749470",
+      "kIsStreaming": "false",
+      "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+      "kIsRangeHeaderSupported": "true",
+      "kStartTime": "0.0",
+      "kRendererName": "RendererImpl",
+      "kTotalBytes": "0x291f985",
+      "kMaxDuration": "60.0",
+      "kIsSingleOrigin": "true",
+      "kFrameTitle": "Synthetic decoder validation",
+      "kVideoDecoderName": "VaapiVideoDecoder",
+      "kIsPlatformVideoDecoder": "true",
+      "kIsVideoDecryptingDemuxerStream": "false",
+      "kResolution": "1920x1080",
+      "kVideoPlaybackFreezingRatio": "1.181891818918189",
+      "kFramerate": "30.0",
+      "kVideoPlaybackRoughness": "65.142"
+    },
+    "physical_display_confirmed": false,
+    "acceptance": "diagnostic only; color correctness not qualified"
+  },
+  {
+    "case": "20261027-resumed-overlay-60s",
+    "playback": {
+      "time": 60,
+      "duration": 60,
+      "ended": true,
+      "error": null,
+      "totalFrames": 1800,
+      "droppedFrames": 84,
+      "elapsed": 60.673574590000044
+    },
+    "steady_playback": {
+      "from_media_time": 5.4208,
+      "to_media_time": 60,
+      "wall_seconds": 55.06109725500005,
+      "totalFrames": 1633,
+      "droppedFrames": 80
+    },
+    "properties": {
+      "kBitrate": "5749470",
+      "kVideoDecoderName": "VaapiVideoDecoder",
+      "kIsStreaming": "false",
+      "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+      "kIsPlatformVideoDecoder": "true",
+      "kIsRangeHeaderSupported": "true",
+      "kIsVideoDecryptingDemuxerStream": "false",
+      "kStartTime": "0.0",
+      "kResolution": "1920x1080",
+      "kRendererName": "RendererImpl",
+      "kTotalBytes": "0x291f985",
+      "kMaxDuration": "60.0",
+      "kIsSingleOrigin": "true",
+      "kFrameTitle": "Synthetic decoder validation",
+      "kVideoPlaybackFreezingRatio": "1.172141721417214",
+      "kFramerate": "30.0",
+      "kVideoPlaybackRoughness": "56.963"
+    },
+    "physical_display_confirmed": false,
+    "acceptance": "diagnostic only; color correctness not qualified"
+  },
+  {
+    "case": "20261027-resumed-software-60s",
+    "playback": {
+      "time": 60,
+      "duration": 60,
+      "ended": true,
+      "error": null,
+      "totalFrames": 1800,
+      "droppedFrames": 42,
+      "elapsed": 61.164305437999985
+    },
+    "steady_playback": {
+      "from_media_time": 5.1996,
+      "to_media_time": 60,
+      "wall_seconds": 54.94626728899999,
+      "totalFrames": 1637,
+      "droppedFrames": 11
+    },
+    "properties": {
+      "kBitrate": "5749470",
+      "kVideoDecoderName": "FFmpegVideoDecoder",
+      "kIsStreaming": "false",
+      "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+      "kIsPlatformVideoDecoder": "false",
+      "kIsRangeHeaderSupported": "true",
+      "kIsVideoDecryptingDemuxerStream": "false",
+      "kStartTime": "0.0",
+      "kResolution": "1920x1080",
+      "kRendererName": "RendererImpl",
+      "kTotalBytes": "0x291f985",
+      "kMaxDuration": "60.0",
+      "kIsSingleOrigin": "true",
+      "kFrameTitle": "Synthetic decoder validation",
+      "kVideoPlaybackFreezingRatio": "1.040650406504065",
+      "kFramerate": "30.0",
+      "kVideoPlaybackRoughness": "44.119"
+    },
+    "physical_display_confirmed": false,
+    "acceptance": "diagnostic only; color correctness not qualified"
+  }
+]

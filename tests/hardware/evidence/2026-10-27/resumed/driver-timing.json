@@ -1,0 +1,16 @@
+{
+  "decode_wait_ms": {
+    "count": 300,
+    "min": 4.94,
+    "median": 10.34,
+    "p95": 13.11,
+    "max": 16.24
+  },
+  "reader_wait_ms": {
+    "count": 300,
+    "min": 0.0,
+    "median": 0.02,
+    "p95": 0.03,
+    "max": 0.54
+  }
+}

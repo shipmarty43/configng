@@ -1,0 +1,1141 @@
+{
+  "media": "test-tagged-1080p-60s.mp4",
+  "preexport": true,
+  "software": false,
+  "backend": "wayland",
+  "driver_trace": false,
+  "wayland_overlay_delegation": false,
+  "captures": [
+    {
+      "file": "last-frame.png",
+      "time": 60
+    }
+  ],
+  "qualified": false,
+  "playback": {
+    "time": 60,
+    "duration": 60,
+    "ended": true,
+    "error": null,
+    "totalFrames": 1800,
+    "droppedFrames": 0,
+    "elapsed": 60.736340454000015
+  },
+  "samples": [
+    {
+      "time": 0,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 0,
+      "droppedFrames": 0,
+      "elapsed": 0.01700644499999271
+    },
+    {
+      "time": 0.3326,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 11,
+      "droppedFrames": 0,
+      "elapsed": 0.5332068390000018
+    },
+    {
+      "time": 0.8399,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 26,
+      "droppedFrames": 0,
+      "elapsed": 1.0396446340000125
+    },
+    {
+      "time": 1.3448,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 41,
+      "droppedFrames": 0,
+      "elapsed": 1.5431634239999994
+    },
+    {
+      "time": 1.8484,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 56,
+      "droppedFrames": 0,
+      "elapsed": 2.0466072560000157
+    },
+    {
+      "time": 2.3519,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 71,
+      "droppedFrames": 0,
+      "elapsed": 2.550036129000034
+    },
+    {
+      "time": 2.8552,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 86,
+      "droppedFrames": 0,
+      "elapsed": 3.053346586000032
+    },
+    {
+      "time": 3.3585,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 101,
+      "droppedFrames": 0,
+      "elapsed": 3.556774376000021
+    },
+    {
+      "time": 3.862,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 116,
+      "droppedFrames": 0,
+      "elapsed": 4.0601642490000245
+    },
+    {
+      "time": 4.3668,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 131,
+      "droppedFrames": 0,
+      "elapsed": 4.566608919000032
+    },
+    {
+      "time": 4.8729,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 146,
+      "droppedFrames": 0,
+      "elapsed": 5.072619755000005
+    },
+    {
+      "time": 5.3789,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 161,
+      "droppedFrames": 0,
+      "elapsed": 5.578596632999961
+    },
+    {
+      "time": 5.8848,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 176,
+      "droppedFrames": 0,
+      "elapsed": 6.084582009999963
+    },
+    {
+      "time": 6.391,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 191,
+      "droppedFrames": 0,
+      "elapsed": 6.590793597000015
+    },
+    {
+      "time": 6.8965,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 206,
+      "droppedFrames": 0,
+      "elapsed": 7.095450097000025
+    },
+    {
+      "time": 7.4017,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 221,
+      "droppedFrames": 0,
+      "elapsed": 7.601491683000063
+    },
+    {
+      "time": 7.9078,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 236,
+      "droppedFrames": 0,
+      "elapsed": 8.107482019000031
+    },
+    {
+      "time": 8.4137,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 251,
+      "droppedFrames": 0,
+      "elapsed": 8.614029438999978
+    },
+    {
+      "time": 8.9204,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 266,
+      "droppedFrames": 0,
+      "elapsed": 9.12012848400002
+    },
+    {
+      "time": 9.4264,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 282,
+      "droppedFrames": 0,
+      "elapsed": 9.62622340300004
+    },
+    {
+      "time": 9.9323,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 297,
+      "droppedFrames": 0,
+      "elapsed": 10.131931405000046
+    },
+    {
+      "time": 10.4381,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 312,
+      "droppedFrames": 0,
+      "elapsed": 10.637965491000045
+    },
+    {
+      "time": 10.9442,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 327,
+      "droppedFrames": 0,
+      "elapsed": 11.143958994000059
+    },
+    {
+      "time": 11.4502,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 342,
+      "droppedFrames": 0,
+      "elapsed": 11.650054705000002
+    },
+    {
+      "time": 11.9561,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 357,
+      "droppedFrames": 0,
+      "elapsed": 12.155869081999981
+    },
+    {
+      "time": 12.4621,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 372,
+      "droppedFrames": 0,
+      "elapsed": 12.661950335000029
+    },
+    {
+      "time": 12.968,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 387,
+      "droppedFrames": 0,
+      "elapsed": 13.16765392000002
+    },
+    {
+      "time": 13.4739,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 402,
+      "droppedFrames": 0,
+      "elapsed": 13.673692547999963
+    },
+    {
+      "time": 13.9798,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 417,
+      "droppedFrames": 0,
+      "elapsed": 14.179542258999959
+    },
+    {
+      "time": 14.4857,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 432,
+      "droppedFrames": 0,
+      "elapsed": 14.685576261000051
+    },
+    {
+      "time": 14.9919,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 447,
+      "droppedFrames": 0,
+      "elapsed": 15.191748931000006
+    },
+    {
+      "time": 15.4979,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 462,
+      "droppedFrames": 0,
+      "elapsed": 15.697745767000015
+    },
+    {
+      "time": 16.0038,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 477,
+      "droppedFrames": 0,
+      "elapsed": 16.203507435999995
+    },
+    {
+      "time": 16.5097,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 492,
+      "droppedFrames": 0,
+      "elapsed": 16.709449396999958
+    },
+    {
+      "time": 17.0157,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 507,
+      "droppedFrames": 0,
+      "elapsed": 17.21555864900006
+    },
+    {
+      "time": 17.5218,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 522,
+      "droppedFrames": 0,
+      "elapsed": 17.72149094400004
+    },
+    {
+      "time": 18.0275,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 537,
+      "droppedFrames": 0,
+      "elapsed": 18.22713348700006
+    },
+    {
+      "time": 18.5334,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 552,
+      "droppedFrames": 0,
+      "elapsed": 18.733226282000032
+    },
+    {
+      "time": 19.0413,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 575,
+      "droppedFrames": 0,
+      "elapsed": 19.242422455999986
+    },
+    {
+      "time": 19.5499,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 590,
+      "droppedFrames": 0,
+      "elapsed": 19.750906129999976
+    },
+    {
+      "time": 20.058,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 605,
+      "droppedFrames": 0,
+      "elapsed": 20.25819109300005
+    },
+    {
+      "time": 20.5769,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 620,
+      "droppedFrames": 0,
+      "elapsed": 20.779015370000025
+    },
+    {
+      "time": 21.0861,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 635,
+      "droppedFrames": 0,
+      "elapsed": 21.286540625000043
+    },
+    {
+      "time": 21.5934,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 650,
+      "droppedFrames": 0,
+      "elapsed": 21.793816420999974
+    },
+    {
+      "time": 22.1015,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 665,
+      "droppedFrames": 0,
+      "elapsed": 22.302012219000062
+    },
+    {
+      "time": 22.6091,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 680,
+      "droppedFrames": 0,
+      "elapsed": 22.810049016999983
+    },
+    {
+      "time": 23.1172,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 695,
+      "droppedFrames": 0,
+      "elapsed": 23.31727643800002
+    },
+    {
+      "time": 23.6237,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 710,
+      "droppedFrames": 0,
+      "elapsed": 23.82340202399996
+    },
+    {
+      "time": 24.1296,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 725,
+      "droppedFrames": 0,
+      "elapsed": 24.329411485000037
+    },
+    {
+      "time": 24.6354,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 740,
+      "droppedFrames": 0,
+      "elapsed": 24.835164695999993
+    },
+    {
+      "time": 25.1414,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 755,
+      "droppedFrames": 0,
+      "elapsed": 25.341280949000065
+    },
+    {
+      "time": 25.6475,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 770,
+      "droppedFrames": 0,
+      "elapsed": 25.847380575999978
+    },
+    {
+      "time": 26.1538,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 785,
+      "droppedFrames": 0,
+      "elapsed": 26.353776662999962
+    },
+    {
+      "time": 26.6601,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 800,
+      "droppedFrames": 0,
+      "elapsed": 26.859909291000008
+    },
+    {
+      "time": 27.1661,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 815,
+      "droppedFrames": 0,
+      "elapsed": 27.365936501999954
+    },
+    {
+      "time": 27.6722,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 830,
+      "droppedFrames": 0,
+      "elapsed": 27.87191692099998
+    },
+    {
+      "time": 28.1781,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 845,
+      "droppedFrames": 0,
+      "elapsed": 28.377884924
+    },
+    {
+      "time": 28.6831,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 860,
+      "droppedFrames": 0,
+      "elapsed": 28.881208088999983
+    },
+    {
+      "time": 29.1865,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 875,
+      "droppedFrames": 0,
+      "elapsed": 29.385139921000018
+    },
+    {
+      "time": 29.6903,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 890,
+      "droppedFrames": 0,
+      "elapsed": 29.888552627999957
+    },
+    {
+      "time": 30.1937,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 905,
+      "droppedFrames": 0,
+      "elapsed": 30.391910458999973
+    },
+    {
+      "time": 30.697,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 920,
+      "droppedFrames": 0,
+      "elapsed": 30.89515720700001
+    },
+    {
+      "time": 31.2004,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 935,
+      "droppedFrames": 0,
+      "elapsed": 31.398619663999966
+    },
+    {
+      "time": 31.7038,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 950,
+      "droppedFrames": 0,
+      "elapsed": 31.901987536999968
+    },
+    {
+      "time": 32.2072,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 965,
+      "droppedFrames": 0,
+      "elapsed": 32.40532486899997
+    },
+    {
+      "time": 32.711,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 980,
+      "droppedFrames": 0,
+      "elapsed": 32.909942828
+    },
+    {
+      "time": 33.2162,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 995,
+      "droppedFrames": 0,
+      "elapsed": 33.415902372000005
+    },
+    {
+      "time": 33.7221,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1010,
+      "droppedFrames": 0,
+      "elapsed": 33.92192666599999
+    },
+    {
+      "time": 34.2279,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1025,
+      "droppedFrames": 0,
+      "elapsed": 34.42765637700006
+    },
+    {
+      "time": 34.7339,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1040,
+      "droppedFrames": 0,
+      "elapsed": 34.93362742099998
+    },
+    {
+      "time": 35.2399,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1055,
+      "droppedFrames": 0,
+      "elapsed": 35.43968384000004
+    },
+    {
+      "time": 35.7458,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1070,
+      "droppedFrames": 0,
+      "elapsed": 35.94555655099998
+    },
+    {
+      "time": 36.2511,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1085,
+      "droppedFrames": 0,
+      "elapsed": 36.449963884
+    },
+    {
+      "time": 36.7562,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1101,
+      "droppedFrames": 0,
+      "elapsed": 36.95599863699999
+    },
+    {
+      "time": 37.2623,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1116,
+      "droppedFrames": 0,
+      "elapsed": 37.462057931000004
+    },
+    {
+      "time": 37.7683,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1131,
+      "droppedFrames": 0,
+      "elapsed": 37.96805814200002
+    },
+    {
+      "time": 38.2744,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1146,
+      "droppedFrames": 0,
+      "elapsed": 38.47437035400003
+    },
+    {
+      "time": 38.7806,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1161,
+      "droppedFrames": 0,
+      "elapsed": 38.98041219000004
+    },
+    {
+      "time": 39.2866,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1176,
+      "droppedFrames": 0,
+      "elapsed": 39.48650102600004
+    },
+    {
+      "time": 39.7927,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1191,
+      "droppedFrames": 0,
+      "elapsed": 39.99243973700004
+    },
+    {
+      "time": 40.2986,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1206,
+      "droppedFrames": 0,
+      "elapsed": 40.498368822999964
+    },
+    {
+      "time": 40.8051,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1221,
+      "droppedFrames": 0,
+      "elapsed": 41.00557328599996
+    },
+    {
+      "time": 41.3113,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1236,
+      "droppedFrames": 0,
+      "elapsed": 41.51007478600002
+    },
+    {
+      "time": 41.8156,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1251,
+      "droppedFrames": 0,
+      "elapsed": 42.01415711799996
+    },
+    {
+      "time": 42.3196,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1266,
+      "droppedFrames": 0,
+      "elapsed": 42.520620871999995
+    },
+    {
+      "time": 42.8258,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1281,
+      "droppedFrames": 0,
+      "elapsed": 43.02401812000005
+    },
+    {
+      "time": 43.3292,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1296,
+      "droppedFrames": 0,
+      "elapsed": 43.52740186799997
+    },
+    {
+      "time": 43.8326,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1311,
+      "droppedFrames": 0,
+      "elapsed": 44.03094524200003
+    },
+    {
+      "time": 44.3375,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1334,
+      "droppedFrames": 0,
+      "elapsed": 44.537211057000036
+    },
+    {
+      "time": 44.8433,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1349,
+      "droppedFrames": 0,
+      "elapsed": 45.042076079000026
+    },
+    {
+      "time": 45.3491,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1364,
+      "droppedFrames": 0,
+      "elapsed": 45.54979206400003
+    },
+    {
+      "time": 45.8566,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1379,
+      "droppedFrames": 0,
+      "elapsed": 46.057115339999996
+    },
+    {
+      "time": 46.3643,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1394,
+      "droppedFrames": 0,
+      "elapsed": 46.56460874100003
+    },
+    {
+      "time": 46.8717,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1409,
+      "droppedFrames": 0,
+      "elapsed": 47.072469143000035
+    },
+    {
+      "time": 47.3798,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1424,
+      "droppedFrames": 0,
+      "elapsed": 47.580645170000025
+    },
+    {
+      "time": 47.8878,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1439,
+      "droppedFrames": 0,
+      "elapsed": 48.088252947
+    },
+    {
+      "time": 48.3953,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1454,
+      "droppedFrames": 0,
+      "elapsed": 48.59581130599997
+    },
+    {
+      "time": 48.9029,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1469,
+      "droppedFrames": 0,
+      "elapsed": 49.10385233299996
+    },
+    {
+      "time": 49.4109,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1484,
+      "droppedFrames": 0,
+      "elapsed": 49.61154431800003
+    },
+    {
+      "time": 49.9186,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1499,
+      "droppedFrames": 0,
+      "elapsed": 50.11889726100003
+    },
+    {
+      "time": 50.4252,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1514,
+      "droppedFrames": 0,
+      "elapsed": 50.625008243000025
+    },
+    {
+      "time": 50.9313,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1529,
+      "droppedFrames": 0,
+      "elapsed": 51.13100443400003
+    },
+    {
+      "time": 51.4373,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1544,
+      "droppedFrames": 0,
+      "elapsed": 51.63711916600005
+    },
+    {
+      "time": 51.9433,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1559,
+      "droppedFrames": 0,
+      "elapsed": 52.143116814999985
+    },
+    {
+      "time": 52.4494,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1574,
+      "droppedFrames": 0,
+      "elapsed": 52.649170337999976
+    },
+    {
+      "time": 52.9555,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1589,
+      "droppedFrames": 0,
+      "elapsed": 53.155210029000045
+    },
+    {
+      "time": 53.4614,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1604,
+      "droppedFrames": 0,
+      "elapsed": 53.661276678000036
+    },
+    {
+      "time": 53.9674,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1619,
+      "droppedFrames": 0,
+      "elapsed": 54.167135201000065
+    },
+    {
+      "time": 54.4734,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1634,
+      "droppedFrames": 0,
+      "elapsed": 54.67317234999996
+    },
+    {
+      "time": 54.9796,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1649,
+      "droppedFrames": 0,
+      "elapsed": 55.17936041600001
+    },
+    {
+      "time": 55.4855,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1664,
+      "droppedFrames": 0,
+      "elapsed": 55.685428064999996
+    },
+    {
+      "time": 55.9916,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1679,
+      "droppedFrames": 0,
+      "elapsed": 56.191225422
+    },
+    {
+      "time": 56.4977,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1694,
+      "droppedFrames": 0,
+      "elapsed": 56.697435821
+    },
+    {
+      "time": 57.0034,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1709,
+      "droppedFrames": 0,
+      "elapsed": 57.20257842600006
+    },
+    {
+      "time": 57.5089,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1724,
+      "droppedFrames": 0,
+      "elapsed": 57.70868244999997
+    },
+    {
+      "time": 58.0154,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1739,
+      "droppedFrames": 0,
+      "elapsed": 58.215893101000006
+    },
+    {
+      "time": 58.5214,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1754,
+      "droppedFrames": 0,
+      "elapsed": 58.719885997000006
+    },
+    {
+      "time": 59.0262,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1769,
+      "droppedFrames": 0,
+      "elapsed": 59.22534422800004
+    },
+    {
+      "time": 59.5306,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1784,
+      "droppedFrames": 0,
+      "elapsed": 59.72882928900003
+    },
+    {
+      "time": 60,
+      "duration": 60,
+      "ended": false,
+      "error": null,
+      "totalFrames": 1799,
+      "droppedFrames": 0,
+      "elapsed": 60.232388642000046
+    },
+    {
+      "time": 60,
+      "duration": 60,
+      "ended": true,
+      "error": null,
+      "totalFrames": 1800,
+      "droppedFrames": 0,
+      "elapsed": 60.736340454000015
+    }
+  ],
+  "steady_playback": {
+    "from_media_time": 5.3789,
+    "to_media_time": 60,
+    "wall_seconds": 55.157743821000054,
+    "totalFrames": 1639,
+    "droppedFrames": 0
+  },
+  "properties": {
+    "kBitrate": "5749470",
+    "kVideoDecoderName": "VaapiVideoDecoder",
+    "kIsStreaming": "false",
+    "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+    "kIsPlatformVideoDecoder": "true",
+    "kIsRangeHeaderSupported": "true",
+    "kIsVideoDecryptingDemuxerStream": "false",
+    "kStartTime": "0.0",
+    "kResolution": "1920x1080",
+    "kRendererName": "RendererImpl",
+    "kTotalBytes": "0x291f985",
+    "kMaxDuration": "60.0",
+    "kIsSingleOrigin": "true",
+    "kFrameTitle": "Synthetic decoder validation"
+  },
+  "capture_complete": true,
+  "physical_display_confirmed": false,
+  "acceptance": "INVALID for display performance: atomic KMS failed; user saw no browser/video"
+}

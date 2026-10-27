@@ -1,0 +1,9 @@
+[01:44:00.276] DRM: does not support atomic modesetting
+[01:44:00.276] DRM: supports GBM modifiers
+[01:44:00.276] DRM: does not support Atomic async page flip
+[01:44:00.276] DRM: supports picture aspect ratio
+[01:44:00.501] GL renderer: Mali-G31 MC1 (Panfrost)
+[01:44:00.776] Output 'HDMI-A-1' attempts EOTF mode SDR and colorimetry mode default.
+[01:44:00.776] Output 'HDMI-A-1' using color profile: stock sRGB color profile
+[01:44:00.778] Output 'HDMI-A-1' enabled with head(s) HDMI-A-1
+[01:44:00.820] activating session

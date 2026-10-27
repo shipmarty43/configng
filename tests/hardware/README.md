@@ -29,6 +29,9 @@ Results describe one H618 board and image, not universal Armbian support.
 
 The [2026-10-27 follow-up](zero2w-browser-followup-2026-10-27.md) records minute-long
 frame-drop measurements, isolated EGL color tests and the power-outage checkpoint.
+The [resumed direct-HDMI report](zero2w-browser-direct-2026-10-27.md) records the
+legacy-KMS workaround, reduced synthetic frame drops, warmed streaming failures
+and the separately confirmed manual YouTube playback.
 
 ## Integration boundaries and remaining acceptance
 
@@ -41,7 +44,7 @@ frame-drop measurements, isolated EGL color tests and the power-outage checkpoin
 | OpenGL ES | Panfrost pixel readback and accelerated XFCE | Sustained workloads, games, frame pacing and thermal behavior |
 | Vulkan graphics / compute | PanVK cube on HDMI; 524,288 integer compute results checked | Experimental opt-in only; floating-point/workload qualification and driver stability |
 | Video decoder | Cedrus GStreamer: H.264, HEVC, VP8, MPEG-2; VA-API H.264 byte-exact readback | Realistic resolution/bitrate, audio sync, display import, long playback |
-| Browser / YouTube | [Experimental DMA-BUF patch + nested Wayland](zero2w-browser-wayland-2026-10-26.md): visible hardware H.264 at 720p/1080p and a short YouTube 480p stream | Fix BT.709 conversion and frame drops; qualify long/adaptive playback, driver lifecycle and normal desktop integration |
+| Browser / YouTube | [Experimental DMA-BUF patch + nested Wayland](zero2w-browser-wayland-2026-10-26.md): visible hardware H.264 at 720p/1080p and a short YouTube 480p stream | Direct legacy-KMS reduced drops; manual playback confirmed beyond one minute. Fix BT.709, qualify warmed long/adaptive playback, CMA sizing and desktop integration |
 | Hardware encoding | No encoder exposed by tested stack; VA-API reports decode entrypoints | Separate kernel/userspace driver research; do not advertise hardware encoding |
 | CVBS | Offline Android/vendor research in [CVBS notes](zero2w-cvbs.md) | Native driver bring-up and capture through expansion board + EasyCAP |
 | FT232H | Not connected, no capture performed | Select/validate acquisition mode and bandwidth, then protocol captures |

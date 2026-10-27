@@ -1,0 +1,58 @@
+Running as unit: opi-compositor-trial.service; invocation ID: 7823981bbdc54401b5c7fa15429aa140
+initial compositor: true
+{
+  "media": "<isolated-test-root>/test-tagged-1080p-60s.mp4",
+  "preexport": true,
+  "software": false,
+  "backend": "wayland",
+  "captures": [
+    {
+      "file": "last-frame.png",
+      "time": 60
+    }
+  ],
+  "qualified": false,
+  "playback": {
+    "time": 60,
+    "duration": 60,
+    "ended": true,
+    "error": null,
+    "totalFrames": 1800,
+    "droppedFrames": 92,
+    "elapsed": 60.235504719000005
+  },
+  "steady_playback": {
+    "from_media_time": 5.115,
+    "to_media_time": 60,
+    "wall_seconds": 55.059612791999996,
+    "totalFrames": 1642,
+    "droppedFrames": 86
+  },
+  "properties": {
+    "kBitrate": "5749470",
+    "kIsStreaming": "false",
+    "kVideoTracks": "[{\"alpha mode\":\"is_opaque\",\"codec\":\"h264\",\"coded size\":\"1920x1080\",\"color space\":{\"matrix\":\"BT709\",\"primaries\":\"BT709\",\"range\":\"LIMITED\",\"transfer\":\"BT709\"},\"encryption scheme\":\"Unencrypted\",\"has extra data\":true,\"hdr metadata\":{},\"natural size\":\"1920x1080\",\"orientation\":\"0\u00b0\",\"profile\":\"h264 high\",\"visible rect\":\"0,0 1920x1080\"}]",
+    "kFrameUrl": "http://127.0.0.1:<ephemeral>/index.html",
+    "kIsRangeHeaderSupported": "true",
+    "kStartTime": "0.0",
+    "kRendererName": "RendererImpl",
+    "kTotalBytes": "0x291f985",
+    "kMaxDuration": "60.0",
+    "kIsSingleOrigin": "true",
+    "kFrameTitle": "Synthetic decoder validation",
+    "kVideoDecoderName": "VaapiVideoDecoder",
+    "kIsPlatformVideoDecoder": "true",
+    "kIsVideoDecryptingDemuxerStream": "false",
+    "kResolution": "1920x1080",
+    "kVideoPlaybackFreezingRatio": "1.181891818918189",
+    "kFramerate": "30.0",
+    "kVideoPlaybackRoughness": "65.142"
+  },
+  "capture_complete": true
+}
+restored compositor: true
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 1min 19.834s
+             CPU time consumed: 41.688s
+                   Memory peak: 573.2M (swap: 0B)

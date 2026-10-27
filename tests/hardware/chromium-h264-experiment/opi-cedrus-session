@@ -1,0 +1,13 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Select at the display manager; do not start this from an active X11 desktop.
+set -euo pipefail
+if (( EUID == 0 )); then
+    echo 'The display manager must start this session as the logged-in user.' >&2
+    exit 1
+fi
+# Scoped workaround for observed atomic KMS EINVAL on this Zero 2W image.
+# Keep the working HDMI mode; do not change system Weston or kernel defaults.
+exec env -u DISPLAY -u WAYLAND_DISPLAY WESTON_DISABLE_ATOMIC=1 \
+    weston --backend=drm --renderer=gl --current-mode --no-config \
+    --idle-time=0 --socket=opi-cedrus -- /usr/local/bin/opi-cedrus-browser
