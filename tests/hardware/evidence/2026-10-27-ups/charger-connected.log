@@ -1,0 +1,30 @@
+Operator reports external charger connected; no charger-status register available.
+boot_id=dc3bf1f5-6933-4fd2-a5a3-a25dbf6063d5
+{"time": "2026-10-27T05:40:18.421583+00:00", "elapsed_s": 0.0, "present": "1", "capacity": "29", "voltage_now": "3855000", "status": "Unknown"}
+{"time": "2026-10-27T05:40:28.430921+00:00", "elapsed_s": 10.0, "present": "1", "capacity": "29", "voltage_now": "3875000", "status": "Unknown"}
+{"time": "2026-10-27T05:40:38.434205+00:00", "elapsed_s": 20.0, "present": "1", "capacity": "29", "voltage_now": "3875000", "status": "Unknown"}
+{"time": "2026-10-27T05:40:48.437409+00:00", "elapsed_s": 30.0, "present": "1", "capacity": "29", "voltage_now": "3875000", "status": "Unknown"}
+{"time": "2026-10-27T05:40:58.440741+00:00", "elapsed_s": 40.0, "present": "1", "capacity": "29", "voltage_now": "3875000", "status": "Unknown"}
+{"time": "2026-10-27T05:41:08.443991+00:00", "elapsed_s": 50.0, "present": "1", "capacity": "29", "voltage_now": "3875000", "status": "Unknown"}
+{"time": "2026-10-27T05:41:18.447290+00:00", "elapsed_s": 60.0, "present": "1", "capacity": "30", "voltage_now": "3875000", "status": "Unknown"}
+{"time": "2026-10-27T05:41:28.450552+00:00", "elapsed_s": 70.0, "present": "1", "capacity": "30", "voltage_now": "3895000", "status": "Unknown"}
+{"time": "2026-10-27T05:41:38.453736+00:00", "elapsed_s": 80.0, "present": "1", "capacity": "30", "voltage_now": "3895000", "status": "Unknown"}
+{"time": "2026-10-27T05:41:48.457005+00:00", "elapsed_s": 90.0, "present": "1", "capacity": "30", "voltage_now": "3895000", "status": "Unknown"}
+{"time": "2026-10-27T05:41:58.460313+00:00", "elapsed_s": 100.0, "present": "1", "capacity": "30", "voltage_now": "3895000", "status": "Unknown"}
+{"time": "2026-10-27T05:42:08.463597+00:00", "elapsed_s": 110.0, "present": "1", "capacity": "30", "voltage_now": "3895000", "status": "Unknown"}
+{"time": "2026-10-27T05:42:18.466911+00:00", "elapsed_s": 120.0, "present": "1", "capacity": "30", "voltage_now": "3895000", "status": "Unknown"}
+power supply:         yes
+  updated:              Tue 27 Oct 2026 07:41:16 AM EET (62 seconds ago)
+  has history:          no
+  has statistics:       no
+  battery
+    present:             yes
+    state:               discharging
+    warning-level:       none
+    energy:              0 Wh
+    energy-full:         0 Wh
+    energy-rate:         0 W
+    charge-cycles:       N/A
+    percentage:          30%
+    icon-name:          'battery-good-symbolic'
+final_boot_id=dc3bf1f5-6933-4fd2-a5a3-a25dbf6063d5
