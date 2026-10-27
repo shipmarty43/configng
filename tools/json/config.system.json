@@ -62,6 +62,19 @@
                             "help": "Choose supported CPUFreq settings without changing voltages or boot configuration"
                         },
                         {
+                            "id": "USBR01",
+                            "description": "Inspect USB and configure USB0 host or device at boot on Orange Pi Zero 2W",
+                            "short": "USB host / device",
+                            "module": "module_generic",
+                            "command": [
+                                "module_usb_role select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_usb_role_available",
+                            "help": "Inspect roles and UDC; validate and save USB0 boot role with a backup. Device functions require separate configuration."
+                        },
+                        {
                             "id": "DTO001",
                             "description": "Manage device tree overlays",
                             "short": "Device Tree Overlays",

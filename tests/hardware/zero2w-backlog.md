@@ -17,6 +17,7 @@ numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 | 8 | GPU, video and desktop | Retain the browser checkpoint; color fix, CMA, long/adaptive playback, audio, floating-point compute and games remain |
 | 9 | Native CVBS | Android reference capture; DRM/kernel/DT bring-up and PAL/NTSC capture with EasyCAP |
 | 10 | Web UI and release | Real device data, authentication/access control, integration, install/update/rollback and branch consolidation |
+| 11 | USB host/device | [USB0 boot role module](zero2w-usb-role.md) added and tested locally; board off. Verify UPS/VBUS/cabling, both roles, USB1 modem/hub continuity, and separate gadget functions |
 
 Current accepted wiring: physical **32 ↔ 29 through 1 kOhm**, with stock
 `pwm1-pi11`. Older 37 ↔ 29 tests must not be rerun on this connection. FT232H is

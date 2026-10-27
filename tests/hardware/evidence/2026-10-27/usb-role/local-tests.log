@@ -1,0 +1,60 @@
+1..59
+ok 1 USB: status separates live DT, UDC and boot environment without writes
+ok 2 USB: host composes real overlays, preserves others, permissions and exact rollback
+ok 3 USB: device removes only usb0-host from boot config
+ok 4 USB: reject unknown role and board before replacing config
+ok 5 USB: refuse duplicate keys, custom paths, shell-like names and parameters
+ok 6 USB: missing overlay and invalid DT never publish boot environment
+ok 7 USB: conflicting composed DT is rejected for device mode
+ok 8 USB: reject host overlay that leaves OHCI0 disabled
+ok 9 USB: external edits prevent automatic restore and retain backup
+ok 10 USB: pending backup prevents another save
+ok 11 USB: environment, lock and backup symlinks are refused
+ok 12 USB: incomplete preparation cleans up and rename failure stays recoverable
+ok 13 USB: lock contention prevents changes
+ok 14 USB: unsupported boot path is refused
+ok 15 USB: cancelling menu or confirmation leaves config untouched
+ok 16 USB: no-op preserves file and leaves no pending backup
+ok 17 USB: composed overlays may not change USB1 host controllers
+ok 18 USB: manual edits during preparation prevent publication
+ok 19 CPU power: status lists all policies without changing files
+ok 20 CPU power: governor affects only the selected policy
+ok 21 CPU power: maximum changes without changing minimum
+ok 22 CPU power: reject invalid governors, policies and missing arguments
+ok 23 CPU power: reject invalid, overflowing and unavailable frequencies before write
+ok 24 CPU power: absent table allows driver-controlled range but not overclocking
+ok 25 CPU power: missing policies are reported
+ok 26 CPU power: write failures return failure
+ok 27 CPU power: a driver read-back mismatch is not reported as success
+ok 28 CPU power: cancelled menu does not change anything
+ok 29 CPU power: menu applies a supported governor without requiring EPP
+ok 30 CPU boot: persists global defaults without changing live state; exact restore
+ok 31 CPU boot: validates every policy before writing anything
+ok 32 CPU boot: rejects arguments, userspace and boost without modifying defaults
+ok 33 CPU boot: honours stored minimum and rejects shell syntax without executing it
+ok 34 CPU boot: restore preserves external edits and previous backup
+ok 35 CPU boot: a failed final rename keeps the original and allows recovery
+ok 36 CPU boot: refuses symbolic links and competing backend before changing file
+ok 37 CPU boot: cancellation of save leaves boot file unchanged
+ok 38 CPU boot: preserves permissions and refuses a concurrent editor
+ok 39 CPU boot: failed backup preparation leaves original and cleans incomplete state
+ok 40 Displays: DRM modes are reported without claiming current mode or CVBS support
+ok 41 Displays: headless kernel is a useful diagnostic result
+ok 42 Displays: launch GNOME settings in the user's manager with fixed arguments
+ok 43 Displays: X11 XFCE uses its own settings panel
+ok 44 Displays: reject remote, inactive, greeter, root and non-graphical sessions
+ok 45 Displays: reject malformed session and username data without executing it
+ok 46 Displays: refuse ambiguous sessions rather than target the wrong display
+ok 47 Displays: absent session environment never falls back to root's display
+ok 48 Displays: unsupported desktop or missing executable is reported
+ok 49 Displays: user manager and process startup failures propagate
+ok 50 Displays: menu cancellation never launches a panel
+ok 51 DM: installed list excludes removed packages and status keeps configured and live state separate
+ok 52 DM: invalid, missing or unconfirmed package cannot trigger reconfiguration
+ok 53 DM: explicit confirmation invokes native package dialog without editing the default directly
+ok 54 DM: package configuration failure is not reported as success
+ok 55 DM: declining interruption confirmation does not reconfigure
+ok 56 Dialog: whiptail No and Escape survive successful clear
+ok 57 Unassembled source checkout reports build instruction before sudo or sourcing
+ok 58 Incomplete installed package reports the missing library
+ok 59 Missing assembled menu is rejected before modules execute

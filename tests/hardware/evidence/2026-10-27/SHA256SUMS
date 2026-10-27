@@ -1,3 +1,8 @@
+ea08fad8803b94ef604b4167a12645bf64a9770c233e6fd49139b53c4a5f2048  ../../../../.github/workflows/controls-bats.yml
+0d4072901a160ac212446b47542eba7af2748a44658af87d4d6a9922f99991d7  ../../../../tools/include/markdown/USBR01-footer.md
+549c3eee2cfbf3ef81e2be28429b0193036e0c5b11744357dc42420017e1743d  ../../../../tools/json/config.system.json
+fcd583ba0e06c70722199e4a3fbc29bb1d362d81ba5cf6406465218c5ecf404f  ../../../../tools/modules/system/module_usb_role.sh
+98f3097cc95c204f8db5cd7dc3b1c5d5b6228767b3ed7652e694e9cd4337d948  ../../../bats/usb_role.bats
 b32ae6941ac55293802eb301d997ad126dbbd8baa2eadf6a9f97508a003a9ed1  ../../chromium-h264-experiment/README.md
 9b03b90243cc49a3762cb488ccff65ab9c94e17798ec36b3110b9203fd5e8499  ../../chromium-h264-experiment/h264.js
 2c8adc4b42054a5622b8b3bdc6654b635e3233804f649ebce6f8e12303ffa4dc  ../../chromium-h264-experiment/manifest.json
@@ -6,12 +11,13 @@ b32ae6941ac55293802eb301d997ad126dbbd8baa2eadf6a9f97508a003a9ed1  ../../chromium
 89cb8251c678f02a7c62a23ed133ea05d28d5707048c86a807e05eebe118a83a  ../../chromium-h264-experiment/opi-cedrus.desktop
 95bf6eb6acef453d5f74844abcffeb9589a8819512d7405241a718955acaadd2  ../../chromium-h264-experiment/test.cjs
 e0f097fc96c3f10459ad38e71f0ce75c253cd0eb98584928dcd41dcee80821b9  ../../patches/chromium-wayland-bt709-egl-import-draft.patch
-7dc4e2f47f852e5b2dcfa8a015ad6b05b28e9f479b38e12e3f697ac1eac0e9e7  ../../zero2w-backlog.md
+a06d847373fc2d15d52175c887232729fc61dc428257a456d08b1353cdd7fbbc  ../../zero2w-backlog.md
 305ce42bdac5d0fa7e5cb67100da685e261a899d72bf4b38a6e7c8be60d09f9c  ../../zero2w-browser-direct-2026-10-27.md
 62d47ed5b29e93995f9420be0db19592abb242b1aac9abcac8a15e34ad624ca9  ../../zero2w-browser-followup-2026-10-27.md
 c63668e2fd36cb9c2939780f1c95ed0daa9fd97d3cfdbfa40745c9c7318f1fad  ../../zero2w-browser-pixels.py
 ea7867ef54eaa5792d04a936d6f7ba82759dc33ab15add92268ce4494dcc152c  ../../zero2w-controls-2026-10-27.md
 a9277802fa5172f8eaeeca4ec0f5080fe680e1f5ecc8715015ab38cd47e929d7  ../../zero2w-egl-yuv-color.c
+2e62fe16dfdc8d3da0ab439851586aca3a3977b2503ba512dbfa32d99e04918f  ../../zero2w-usb-role.md
 c7d8370b16fc674c73e5b89a139fee3cc0aa58e8b830bc80902eab96eb856e5e  ../../zero2w-xfce-profile.sh
 9114c8f60e9964f5f8edc38de57d5b0fbdcb9a8818bb9f9adb6ec0f147f84178  ../../zero2w-youtube-smoke.py
 0d15991d5e6d5826861449e814ba2ab8687817046aafc3538fa76b00eba5d0a6  README.md
@@ -61,3 +67,4 @@ f4901ea428ce5e4312df41343f102bdb4351d5d348fe6759c002b7d54b781784  resumed/summar
 30b1952f05cdc7373ce60117a5e46394e1b28f648211aa0c964fef811f74756f  resumed/weston-direct-youtube-warm.log
 a872d046bb8bb8557c7fc72a43e66e25f939eb7f8a5d1f2e5eadf9b3b4832ec2  resumed/weston-direct-youtube.log
 24dee92fbbb57b70116d829692180ed89361cedc92011c2b9b682ce65dca7ce5  resumed/youtube-automated-summary.json
+a6a6e0fdc5f08c73d4ce7d51565e6593c68a9c6748517609f5c39b68723914e9  usb-role/local-tests.log

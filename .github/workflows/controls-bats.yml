@@ -1,0 +1,31 @@
+name: CPU, display and USB controls
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/modules/system/module_cpu_power.sh'
+      - 'tools/modules/system/module_usb_role.sh'
+      - 'tools/modules/desktops/**'
+      - 'tools/json/config.system.json'
+      - 'tests/bats/*controls.bats'
+      - 'tests/bats/cpu_power.bats'
+      - 'tests/bats/usb_role.bats'
+      - '.github/workflows/controls-bats.yml'
+  pull_request:
+    paths:
+      - 'tools/modules/**'
+      - 'tests/bats/**'
+      - '.github/workflows/controls-bats.yml'
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install test dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats jq device-tree-compiler
+      - name: Control tests with isolated sysfs and real DT composition
+        run: bats tests/bats/cpu_power.bats tests/bats/display_controls.bats tests/bats/usb_role.bats tests/bats/source_checkout.bats
