@@ -1,0 +1,12 @@
+/dts-v1/;
+/plugin/;
+/* Requires stock i2c1-pi; physical 3=PI8/SDA, 5=PI7/SCL. */
+/ { compatible = "allwinner,sun50i-h616";
+	fragment@0 { target = <&i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			ups@10 { compatible = "dfrobot,dfr0528"; reg = <0x10>; };
+		};
+	};
+};

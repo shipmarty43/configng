@@ -43,7 +43,8 @@ The [controls follow-up](zero2w-controls-2026-10-27.md) tracks work on backlog
 |---|---|---|
 | GPIO, IRQ, software PWM/tone | Real loopback, edges, timing and ownership tests in WiringPi | Protocol/device-specific tests; do not substitute software timing for hardware peripherals |
 | Hardware PWM1 | Stock overlay, physical 32 → 29, 10/100/1000 Hz and 0–100% duty tests | [Public PWM1 API tested](zero2w-controls-2026-10-27.md); qualify other channels and higher rates with suitable equipment |
-| CPU power controls | Runtime governor and frequency readback, invalid-value rejection, reboot reset | [Native Armbian boot defaults and exact rollback tested](zero2w-controls-2026-10-27.md); thermal/power measurements and MAX17043 integration |
+| CPU power controls | Runtime governor and frequency readback, invalid-value rejection, reboot reset | [Native Armbian boot defaults and exact rollback tested](zero2w-controls-2026-10-27.md); thermal/power measurements |
+| DFR0528 UPS | [Real MCU telemetry, kernel power_supply, UPower and reboot persistence](zero2w-ups-2026-10-27.md); XFCE percentage configured | Visible desktop check, charger/input sensing, load/switchover and orderly shutdown; MCU cannot report charging status |
 | Display / DM | XFCE panel, resolution switch/revert, LightDM boot with HDMI attached | [Named profile across login and operator-observed hotplug tested](zero2w-controls-2026-10-27.md); non-default profile across reboot, continuous hotplug capture and distinct-DM switch |
 | OpenGL ES | Panfrost pixel readback and accelerated XFCE | Sustained workloads, games, frame pacing and thermal behavior |
 | Vulkan graphics / compute | PanVK cube on HDMI; 524,288 integer compute results checked | Experimental opt-in only; floating-point/workload qualification and driver stability |

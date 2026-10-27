@@ -1,0 +1,77 @@
+2026-10-27T07:35:28+02:00
+Previous boot: 03034230-6720-4b40-bd2b-09c4611ba2dc
+Current boot: dc3bf1f5-6933-4fd2-a5a3-a25dbf6063d5
+6.18.57-current-sunxi64
+dfr0528-battery/0.1.0, 6.18.57-current-sunxi64, aarch64: installed
+DEVTYPE=power_supply
+OF_NAME=ups
+OF_FULLNAME=/soc/i2c@5002400/ups@10
+OF_COMPATIBLE_0=dfrobot,dfr0528
+OF_COMPATIBLE_N=1
+POWER_SUPPLY_NAME=dfr0528-2-0010
+POWER_SUPPLY_TYPE=Battery
+POWER_SUPPLY_STATUS=Unknown
+POWER_SUPPLY_PRESENT=1
+POWER_SUPPLY_VOLTAGE_NOW=3533750
+POWER_SUPPLY_CAPACITY=32
+POWER_SUPPLY_TYPE=Battery
+POWER_SUPPLY_SCOPE=System
+POWER_SUPPLY_MODEL_NAME=DFR0528
+POWER_SUPPLY_MANUFACTURER=DFRobot
+/sys/firmware/devicetree/base/soc/i2c@5002400/ups@10
+Device: /org/freedesktop/UPower/devices/battery_dfr0528_2_0010
+  native-path:          dfr0528-2-0010
+  vendor:               DFRobot
+  model:                DFR0528
+  power supply:         yes
+  updated:              Tue 27 Oct 2026 07:35:29 AM EET (0 seconds ago)
+  has history:          yes
+  has statistics:       yes
+  battery
+    present:             yes
+    rechargeable:        yes
+    state:               unknown
+    warning-level:       none
+    energy:              0 Wh
+    energy-empty:        0 Wh
+    energy-full:         0 Wh
+    energy-full-design:  0 Wh
+    energy-rate:         0 W
+    voltage:             3.53375 V
+    charge-cycles:       N/A
+    percentage:          32%
+    icon-name:          'battery-missing-symbolic'
+  History (charge):
+    1793079251	0.000	unknown
+  History (rate):
+    1793079251	0.000	unknown
+  History (voltage):
+    1793079251	0.000	unknown
+
+Device: /org/freedesktop/UPower/devices/DisplayDevice
+  power supply:         yes
+  updated:              Tue 27 Oct 2026 07:35:28 AM EET (1 seconds ago)
+  has history:          no
+  has statistics:       no
+  battery
+    present:             yes
+    state:               discharging
+    warning-level:       none
+    energy:              0 Wh
+    energy-full:         0 Wh
+    energy-rate:         0 W
+    charge-cycles:       N/A
+    percentage:          32%
+    icon-name:          'battery-good-symbolic'
+
+Daemon:
+  daemon-version:  1.91.1
+  on-battery:      yes
+  lid-is-closed:   no
+  lid-is-present:  no
+  critical-action: PowerOff
+Oct 27 07:33:50 zero2w-test-board kernel: dfr0528_battery: loading out-of-tree module taints kernel.
+Oct 27 07:33:50 zero2w-test-board kernel: dfr0528_battery 2-0010: DFR0528 firmware 1.3, read-only battery telemetry
+linux-headers-current-sunxi64	6.18.57-S2ff6-D68f5-P6641-C8cea-H0759-HK01ba-Vc222-Bc354-R448a
+upower	1.91.1-1
+xfce4-power-manager	4.20.0-1build1

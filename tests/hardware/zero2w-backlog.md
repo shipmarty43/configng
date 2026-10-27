@@ -10,7 +10,7 @@ numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 | 1 | SPI/I2C and overlays | Enable and verify the intended controllers on this image; real exchange with devices |
 | 2 | Shared pin map | Resolve CC1101/nRF24 chip-select and LoRa-reset/nRF24-CE conflicts |
 | 3 | Python GPIO | Connect the validated H618 backend to armbian-gui; C WiringPi does not replace OPi.GPIO automatically |
-| 4 | DFR0528 power board | Real adapter, identity, battery readings, unplug behavior and orderly shutdown |
+| 4 | DFR0528 power board | [Real I2C identity, battery telemetry, kernel/UPower integration and reboot persistence verified](zero2w-ups-2026-10-27.md); XFCE percentage configured, visible login pending. Charger sensing, unplug behavior and orderly shutdown remain |
 | 5 | Attached hardware modules | Individual PN532, CC1101, nRF24, SX1262 and GPS protocol/device tests |
 | **6** | **WiringPi API completeness** | PWM1 public API, SPI descriptor cleanup and serial API fixes implemented in the controls follow-up. Other pins/channels, I2C/SPI/UART hardware exchange and timing with external equipment remain |
 | **7** | **armbian-config fork** | Native CPUFreq boot defaults and rollback tested. Profile across login and operator-observed hotplug checked; profile across reboot, continuous hotplug capture and switching distinct display managers remain |

@@ -1,0 +1,6 @@
+Creating symlink /var/lib/dkms/dfr0528-battery/0.1.0/source -> /usr/src/dfr0528-battery-0.1.0
+The kernel is built without module signing facility, modules won't be signed
+
+Building module(s)...... done.
+Installing /lib/modules/6.18.57-current-sunxi64/updates/dkms/dfr0528_battery.ko
+Running depmod..... done.
