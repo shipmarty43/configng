@@ -9,9 +9,9 @@ numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 |---|---|---|
 | 1 | SPI/I2C and overlays | Enable and verify the intended controllers on this image; real exchange with devices |
 | 2 | Shared pin map | Resolve CC1101/nRF24 chip-select and LoRa-reset/nRF24-CE conflicts |
-| 3 | Python GPIO | Connect the validated H618 backend to armbian-gui; C WiringPi does not replace OPi.GPIO automatically |
-| 4 | DFR0528 power board | [Real I2C identity, battery telemetry, kernel/UPower integration and reboot persistence verified](zero2w-ups-2026-10-27.md); XFCE percentage configured, visible login pending. Charger sensing, unplug behavior and orderly shutdown remain |
-| 5 | Attached hardware modules | Individual PN532, CC1101, nRF24, SX1262 and GPS protocol/device tests |
+| 3 | Python GPIO | Next foundation: checked Python binding to the validated H618 backend, then migrate OPi.GPIO consumers; [ecosystem plan](zero2w-radio-ecosystem.md) |
+| 4 | DFR0528 power board | **Complete in the user-accepted scope (2026-10-27):** battery telemetry, kernel/UPower integration, overlay manager and reboot persistence. MAX17043 charging-status limitation retained; [acceptance boundary](zero2w-radio-ecosystem.md#accepted-ups-baseline) |
+| 5 | Attached hardware modules | Next: Waveshare SPI SX1262 433 MHz + GNSS, official Meshtastic and Reticulum adapters; [ordered acceptance plan](zero2w-radio-ecosystem.md). PN532, CC1101 and nRF24 tests remain |
 | **6** | **WiringPi API completeness** | PWM1 public API, SPI descriptor cleanup and serial API fixes implemented in the controls follow-up. Other pins/channels, I2C/SPI/UART hardware exchange and timing with external equipment remain |
 | **7** | **armbian-config fork** | Native CPUFreq boot defaults and rollback tested. Profile across login and operator-observed hotplug checked; profile across reboot, continuous hotplug capture and switching distinct display managers remain |
 | 8 | GPU, video and desktop | Retain the browser checkpoint; color fix, CMA, long/adaptive playback, audio, floating-point compute and games remain |

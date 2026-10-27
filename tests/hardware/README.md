@@ -40,6 +40,10 @@ The [controls follow-up](zero2w-controls-2026-10-27.md) tracks work on backlog
 The [DFR0528 overlay-manager follow-up](zero2w-ups-overlay-manager.md) adds a
 UPS submenu, driver/I2C checks and validated next-boot enable/disable controls.
 
+The [radio ecosystem plan](zero2w-radio-ecosystem.md) records the accepted UPS
+scope and the next Python GPIO, Waveshare SX1262/GNSS, Meshtastic and Reticulum
+integration boundaries. It is a design checkpoint, not radio test evidence.
+
 ## Integration boundaries and remaining acceptance
 
 | Area | Evidence obtained | Next development/acceptance step |
@@ -47,7 +51,7 @@ UPS submenu, driver/I2C checks and validated next-boot enable/disable controls.
 | GPIO, IRQ, software PWM/tone | Real loopback, edges, timing and ownership tests in WiringPi | Protocol/device-specific tests; do not substitute software timing for hardware peripherals |
 | Hardware PWM1 | Stock overlay, physical 32 → 29, 10/100/1000 Hz and 0–100% duty tests | [Public PWM1 API tested](zero2w-controls-2026-10-27.md); qualify other channels and higher rates with suitable equipment |
 | CPU power controls | Runtime governor and frequency readback, invalid-value rejection, reboot reset | [Native Armbian boot defaults and exact rollback tested](zero2w-controls-2026-10-27.md); thermal/power measurements |
-| DFR0528 UPS | [Real MCU telemetry, kernel power_supply, UPower and reboot persistence](zero2w-ups-2026-10-27.md); XFCE percentage configured | Visible desktop check, charger/input sensing, load/switchover and orderly shutdown; MCU cannot report charging status |
+| DFR0528 UPS | [Real MCU telemetry, kernel power_supply, UPower and reboot persistence](zero2w-ups-2026-10-27.md); XFCE percentage configured; overlay manager verified | **User-accepted complete scope.** Charging status remains unknown by design. Visual desktop observation and load/shutdown qualification were not performed; see [acceptance boundary](zero2w-radio-ecosystem.md#accepted-ups-baseline) |
 | Display / DM | XFCE panel, resolution switch/revert, LightDM boot with HDMI attached | [Named profile across login and operator-observed hotplug tested](zero2w-controls-2026-10-27.md); non-default profile across reboot, continuous hotplug capture and distinct-DM switch |
 | OpenGL ES | Panfrost pixel readback and accelerated XFCE | Sustained workloads, games, frame pacing and thermal behavior |
 | Vulkan graphics / compute | PanVK cube on HDMI; 524,288 integer compute results checked | Experimental opt-in only; floating-point/workload qualification and driver stability |

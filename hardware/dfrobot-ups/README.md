@@ -6,6 +6,11 @@ at I²C address `0x10`. No charger, cutoff, reset or address registers are writt
 The driver is kept separate from the configurator shell modules so it can later
 be packaged or proposed to the kernel independently.
 
+Project acceptance, 2026-10-27: the user considers DFR0528 support complete for
+this integration scope, including the overlay manager. The hardware limitations
+below remain part of the contract. This acceptance does not imply upstream kernel
+acceptance, a newly observed desktop icon, or qualification of automatic shutdown.
+
 ## Hardware and supported data
 
 On Orange Pi Zero 2W the standard 40-pin connection uses physical **3 (PI8,
