@@ -1,0 +1,3 @@
+334e6b4fb8049975ad99190adf51dc809c3ce7245a00ee9a6fa2ebc231d6d517  manager-test/tools/modules/system/module_ups_dfr0528.sh
+34320998b6087c10aadb01e84796009fb278407d3900f7308c5b8e128855c5b1  manager-test/tools/modules/system/module_devicetree_overlays.sh
+ba17bcb6c5ec70dc7b78af6432d5f76c3e9da733366739c5d8110910ce371fa1  manager-test/lib/armbian-config/config.system.sh

@@ -1,0 +1,6 @@
+remove tools/../lib/armbian-config
+All scripts have been combined and placed into tools/../lib/armbian-config
+Processing JSON files, please wait...
+JSON files rejoined into 'tools/../lib/armbian-config/config.jobs.json'.
+Software section: 72 per-app pages + 17 category hubs.
+User Markdown files created in 'docs' directory.

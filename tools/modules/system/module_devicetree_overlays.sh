@@ -5,7 +5,7 @@ module_options+=(
 ["module_devicetree_overlays,ref_link"]=""
 ["module_devicetree_overlays,feature"]="module_devicetree_overlays"
 ["module_devicetree_overlays,desc"]="Enable/disable device tree overlays"
-["module_devicetree_overlays,example"]="install remove edit show help"
+["module_devicetree_overlays,example"]="install remove edit show help ups"
 ["module_devicetree_overlays,status"]="Active"
 ["module_devicetree_overlays,group"]="Kernel"
 ["module_devicetree_overlays,port"]=""
@@ -14,6 +14,7 @@ module_options+=(
 ["module_devicetree_overlays,help_remove"]="Remove overlays from the boot config (overlays=foo,bar — comma delimited)"
 ["module_devicetree_overlays,help_edit"]="Interactive TUI for toggling overlays (default action)"
 ["module_devicetree_overlays,help_show"]="List currently-enabled overlays"
+["module_devicetree_overlays,help_ups"]="DFR0528 UPS: ups select|status|enable|disable"
 ["module_devicetree_overlays,help_help"]="Print this help"
 )
 #
@@ -49,7 +50,7 @@ function module_devicetree_overlays() {
 		;;
 		"${commands[2]}")
 			# edit
-			_dt_overlays_edit
+			_dt_overlays_select
 		;;
 		"${commands[3]}")
 			# show
@@ -58,9 +59,12 @@ function module_devicetree_overlays() {
 		"${commands[4]}")
 			# help
 			show_module_help "module_devicetree_overlays" "Device Tree Overlays" \
-				"Examples:\n  module_devicetree_overlays show\n  module_devicetree_overlays install overlays=uart3,spi-spidev\n  module_devicetree_overlays remove overlays=uart3\n  module_devicetree_overlays edit\n\nNotes:\n- install validates every name against the available .dtbo set;\n  if any name is unknown the whole batch is rejected.\n- remove silently skips names that are not currently enabled.\n- The boot config (/boot/armbianEnv.txt or /boot/firmware/config.txt)\n  is rewritten atomically and the previous version kept as <name>.bak." \
+				"Examples:\n  module_devicetree_overlays show\n  module_devicetree_overlays install overlays=uart3,spi-spidev\n  module_devicetree_overlays remove overlays=uart3\n  module_devicetree_overlays edit\n  module_devicetree_overlays ups status\n  module_devicetree_overlays ups enable\n\nNotes:\n- install validates every name against the available .dtbo set;\n  if any name is unknown the whole batch is rejected.\n- remove silently skips names that are not currently enabled.\n- The boot config (/boot/armbianEnv.txt or /boot/firmware/config.txt)\n  is rewritten atomically and the previous version kept as <name>.bak." \
 				"native"
 			return 0
+		;;
+		"${commands[5]}")
+			module_ups_dfr0528 "${@:-select}"
 		;;
 		*)
 			echo "Error: unknown subcommand '${cmd}'" >&2
@@ -189,9 +193,12 @@ function _dt_overlays_show() {
 	local current
 	current=$(_dt_overlays_read_current)
 	if [[ -z "$current" ]]; then
-		echo "(no overlays currently enabled)"
+		echo "(no stock overlays currently enabled)"
 	else
 		echo "$current"
+	fi
+	if [[ "$is_pi" != true ]]; then
+		awk -F= '/^user_overlays=/ {n=split($2,a," "); for(i=1;i<=n;i++) if(a[i]!="") print "user:" a[i]}' "$overlayconf"
 	fi
 }
 
@@ -325,16 +332,35 @@ function _dt_overlays_commit() {
 
 #
 # Atomically rewrite the boot config with the new overlay selection.
-# Writes to <conf>.tmp, copies the existing <conf> to <conf>.bak (so
+# Writes to a unique temporary file, copies the original to <conf>.bak (so
 # the user has one rollback hop), then mv's tmp into place. A failure
 # anywhere in the pipeline leaves the original file untouched.
 #
-function _dt_overlays_write_config() {
+# Shared lock with the UPS boot controls. The dependency guard also covers API
+# callers and the historic stock checklist, not just the new UPS menu.
+function _dt_overlays_write_config() (
+	local conf="$1" selected=" $3 " lockfd
+	[[ -f "$conf" && ! -L "$conf" && ! -L "$conf.overlay.lock" ]] || return 1
+	exec {lockfd}>"$conf.overlay.lock" || return 1
+	flock -x "$lockfd" || return 1
+	if [[ "$2" != true ]] && awk -F= '/^user_overlays=/ {n=split($2,a," "); for(i=1;i<=n;i++) if(a[i]=="zero2w-dfr0528") found=1} END {exit !found}' "$conf"; then
+		if [[ "$selected" != *' i2c1-pi '* ]]; then
+			echo 'Cannot disable i2c1-pi while DFR0528 UPS is enabled. Disable UPS in its overlay menu first.' >&2
+			return 1
+		fi
+	fi
+	_dt_overlays_write_config_unlocked "$@"
+)
+
+function _dt_overlays_write_config_unlocked() (
 	local conf="$1"
 	local is_pi="$2"
 	local newoverlays="$3"
-	local conf_tmp="${conf}.tmp"
+	local conf_tmp
 	local conf_bak="${conf}.bak"
+	[[ ! -L "$conf_bak" && ( ! -e "$conf_bak" || -f "$conf_bak" ) ]] || return 1
+	conf_tmp=$(mktemp "${conf}.tmp.XXXXXX") || return 1
+	trap 'rm -f "$conf_tmp"' EXIT
 
 	if [[ "$is_pi" == "true" ]]; then
 		{
@@ -367,7 +393,9 @@ function _dt_overlays_write_config() {
 		return 1
 	fi
 
-	cp -p "$conf" "$conf_bak" 2>/dev/null || true
+	cp -p "$conf" "$conf_bak" || return 1
+	chmod --reference="$conf" "$conf_tmp" && chown --reference="$conf" "$conf_tmp" || return 1
+	sync -f "$conf_bak" && sync -f "$conf_tmp" || return 1
 
 	if ! mv "$conf_tmp" "$conf"; then
 		echo "Error: failed to install ${conf}" >&2
@@ -375,8 +403,9 @@ function _dt_overlays_write_config() {
 		return 1
 	fi
 
+	sync -f "${conf%/*}" || return 1
 	echo "Updated ${conf} (previous version saved as ${conf_bak})"
-}
+)
 
 #
 # Interactive TUI (the historic primary mode). Shares all discovery
@@ -471,4 +500,21 @@ function _dt_overlays_edit() {
 				;;
 		esac
 	done
+}
+
+# Preserve the stock editor on other boards. On Zero 2W expose our user overlay
+# as a device with prerequisites rather than pretending it is a stock DTBO.
+function _dt_overlays_select() {
+	if ! declare -F _ups_dfr_board >/dev/null || ! _ups_dfr_board; then
+		_dt_overlays_edit
+		return $?
+	fi
+	local choice
+	choice=$(dialog_menu 'Device Tree Overlays' 'Select overlays to configure for the next boot.' 13 76 4 \
+		stock 'Stock Armbian overlays' \
+		ups 'DFR0528 UPS battery (I2C + installed driver)') || return 0
+	case "$choice" in
+		stock) _dt_overlays_edit ;;
+		ups) module_ups_dfr0528 select ;;
+	esac
 }

@@ -1,0 +1,17 @@
+1..16
+ok 1 UPS: enable composes DT, adds I2C dependency, preserves other overlays and permissions
+ok 2 UPS: disable removes only UPS and retains shared I2C, including when driver/DTBO is missing
+ok 3 UPS: reject missing driver before changing boot config
+ok 4 UPS: reject corrupt or missing overlays atomically
+ok 5 UPS: reject duplicate keys, shell-like names and DT fixup parameters
+ok 6 UPS: reject conflicting overlay that disables I2C after stock overlays
+ok 7 UPS: reject wrong board, unsupported boot route and symlink config
+ok 8 UPS: stock manager blocks I2C removal but permits unrelated changes and preserves user overlays
+ok 9 UPS: status distinguishes boot selection, driver and live telemetry
+ok 10 UPS: overlay TUI routes UPS action and cancellation without changes
+ok 11 UPS: disabled UPS node in another overlay is rejected
+ok 12 UPS: stock writer preserves mode and refuses an unsafe backup path
+ok 13 UPS: generic show includes user overlays and other boards retain stock TUI
+ok 14 UPS: failed rename leaves original config and recoverable before/after backup
+ok 15 UPS: concurrent manual edit is not overwritten
+ok 16 UPS: traversal and shell-like overlay tokens are rejected without executing them

@@ -1,0 +1,8 @@
+
+UPS boot configuration saved. Backup: /boot/armbianEnv.txt.ups-backups/change.6fGXMz
+Reboot to apply. Live battery monitoring is unchanged until reboot.
+
+UPS boot configuration saved. Backup: /boot/armbianEnv.txt.ups-backups/change.1wQV8s
+Reboot to apply. Live battery monitoring is unchanged until reboot.
+Disable/enable restored exact original boot file; live battery remained available.
+Installed /usr/local/bin/armbian-config-zero2w

@@ -82,6 +82,34 @@ protocol is qualified.
 
 ## Removal and rollback
 
+### Overlay manager in this fork
+
+On Zero 2W, **System → Hardware → Device Tree Overlays → DFR0528 UPS**
+provides status and next-boot enable/disable controls. The same backend is exposed
+through the API:
+
+```sh
+armbian-config --api module_devicetree_overlays ups status
+armbian-config --api module_devicetree_overlays ups enable
+armbian-config --api module_devicetree_overlays ups disable
+```
+
+Install the DKMS driver and custom DTBO using the instructions above first; this
+menu does not download/build them. Enable checks the running board, current-kernel
+driver and complete composed DT, then adds `i2c1-pi` and `zero2w-dfr0528` to their
+respective lists. Disable removes only the UPS user overlay and retains I²C for
+other devices. The stock overlay editor/API refuses to remove `i2c1-pi` while
+the UPS user overlay is enabled. Generic `show` also lists user overlays with
+the `user:` prefix.
+
+Changes are saved atomically under a shared overlay lock; before/after copies
+are retained in `/boot/armbianEnv.txt.ups-backups/change.*/`. Nothing is unloaded
+at runtime and the menu does not reboot automatically. Inspect status after your
+next reboot. Unsupported boot routes, DT fixup parameters and conflicting
+overlays are refused rather than silently dropping settings.
+
+### Manual removal
+
 Remove only `zero2w-dfr0528` from `user_overlays`, reboot and remove the DKMS
 package with `dkms remove -m dfr0528-battery -v 0.1.0 --all`. Then remove its
 source directory and `/boot/overlay-user/zero2w-dfr0528.dtbo`. Keep `i2c1-pi` if

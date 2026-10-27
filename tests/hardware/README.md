@@ -37,6 +37,9 @@ The [controls follow-up](zero2w-controls-2026-10-27.md) tracks work on backlog
 **6 (WiringPi API)** and **7 (armbian-config)**. These stable numbers refer to the
 [last numbered backlog](zero2w-backlog.md), not row numbers in the table below.
 
+The [DFR0528 overlay-manager follow-up](zero2w-ups-overlay-manager.md) adds a
+UPS submenu, driver/I2C checks and validated next-boot enable/disable controls.
+
 ## Integration boundaries and remaining acceptance
 
 | Area | Evidence obtained | Next development/acceptance step |

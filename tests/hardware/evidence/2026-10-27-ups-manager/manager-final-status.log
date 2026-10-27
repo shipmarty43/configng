@@ -1,0 +1,11 @@
+
+Next boot: overlays=pwm1-pi11 i2c1-pi
+Next boot: user_overlays=zero2w-dfr0528
+Driver for current kernel: installed
+UPS overlay: installed
+Live capacity: 56
+Live voltage_now: 4115000
+Live status: Unknown
+Live present: 1
+MAX17043 has no charging-status flag. DFR0528 does not export one over I2C.
+UPower may infer discharging even with a charger connected. No extra GPIO is used.

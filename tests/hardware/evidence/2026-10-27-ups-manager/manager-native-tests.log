@@ -1,0 +1,32 @@
+1..31
+ok 1 UPS: enable composes DT, adds I2C dependency, preserves other overlays and permissions
+ok 2 UPS: disable removes only UPS and retains shared I2C, including when driver/DTBO is missing
+ok 3 UPS: reject missing driver before changing boot config
+ok 4 UPS: reject corrupt or missing overlays atomically
+ok 5 UPS: reject duplicate keys, shell-like names and DT fixup parameters
+ok 6 UPS: reject conflicting overlay that disables I2C after stock overlays
+ok 7 UPS: reject wrong board, unsupported boot route and symlink config
+ok 8 UPS: stock manager blocks I2C removal but permits unrelated changes and preserves user overlays
+ok 9 UPS: status distinguishes boot selection, driver and live telemetry
+ok 10 UPS: overlay TUI routes UPS action and cancellation without changes
+ok 11 UPS: disabled UPS node in another overlay is rejected
+ok 12 UPS: stock writer preserves mode and refuses an unsafe backup path
+ok 13 UPS: generic show includes user overlays and other boards retain stock TUI
+ok 14 USB: status separates live DT, UDC and boot environment without writes
+ok 15 USB: host composes real overlays, preserves others, permissions and exact rollback
+ok 16 USB: device removes only usb0-host from boot config
+ok 17 USB: reject unknown role and board before replacing config
+ok 18 USB: refuse duplicate keys, custom paths, shell-like names and parameters
+ok 19 USB: missing overlay and invalid DT never publish boot environment
+ok 20 USB: conflicting composed DT is rejected for device mode
+ok 21 USB: reject host overlay that leaves OHCI0 disabled
+ok 22 USB: external edits prevent automatic restore and retain backup
+ok 23 USB: pending backup prevents another save
+ok 24 USB: environment, lock and backup symlinks are refused
+ok 25 USB: incomplete preparation cleans up and rename failure stays recoverable
+ok 26 USB: lock contention prevents changes
+ok 27 USB: unsupported boot path is refused
+ok 28 USB: cancelling menu or confirmation leaves config untouched
+ok 29 USB: no-op preserves file and leaves no pending backup
+ok 30 USB: composed overlays may not change USB1 host controllers
+ok 31 USB: manual edits during preparation prevent publication
