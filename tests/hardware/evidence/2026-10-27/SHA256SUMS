@@ -15,13 +15,13 @@ b32ae6941ac55293802eb301d997ad126dbbd8baa2eadf6a9f97508a003a9ed1  ../../chromium
 89cb8251c678f02a7c62a23ed133ea05d28d5707048c86a807e05eebe118a83a  ../../chromium-h264-experiment/opi-cedrus.desktop
 95bf6eb6acef453d5f74844abcffeb9589a8819512d7405241a718955acaadd2  ../../chromium-h264-experiment/test.cjs
 e0f097fc96c3f10459ad38e71f0ce75c253cd0eb98584928dcd41dcee80821b9  ../../patches/chromium-wayland-bt709-egl-import-draft.patch
-99530ea002bc43278b7034adb2221fd20df5ffb9e36f4ac6401f4dcad98f862b  ../../zero2w-backlog.md
+15d46f798af63c29bef196d29c8bb5c76f91566eaf15020bd2b2ab92bd9420a1  ../../zero2w-backlog.md
 305ce42bdac5d0fa7e5cb67100da685e261a899d72bf4b38a6e7c8be60d09f9c  ../../zero2w-browser-direct-2026-10-27.md
 62d47ed5b29e93995f9420be0db19592abb242b1aac9abcac8a15e34ad624ca9  ../../zero2w-browser-followup-2026-10-27.md
 c63668e2fd36cb9c2939780f1c95ed0daa9fd97d3cfdbfa40745c9c7318f1fad  ../../zero2w-browser-pixels.py
 ea7867ef54eaa5792d04a936d6f7ba82759dc33ab15add92268ce4494dcc152c  ../../zero2w-controls-2026-10-27.md
 a9277802fa5172f8eaeeca4ec0f5080fe680e1f5ecc8715015ab38cd47e929d7  ../../zero2w-egl-yuv-color.c
-fbfd5a08339d02720d20cfb183502042ffc0ab7f3a5d52dc2f53021fc4954b2a  ../../zero2w-modem.md
+f9a77d2b787a0f6e3346db410c81adcbe15fea8b5ab267d749d968cabe9027f8  ../../zero2w-modem.md
 2e62fe16dfdc8d3da0ab439851586aca3a3977b2503ba512dbfa32d99e04918f  ../../zero2w-usb-role.md
 c7d8370b16fc674c73e5b89a139fee3cc0aa58e8b830bc80902eab96eb856e5e  ../../zero2w-xfce-profile.sh
 9114c8f60e9964f5f8edc38de57d5b0fbdcb9a8818bb9f9adb6ec0f147f84178  ../../zero2w-youtube-smoke.py
