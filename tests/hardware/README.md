@@ -33,14 +33,18 @@ The [resumed direct-HDMI report](zero2w-browser-direct-2026-10-27.md) records th
 legacy-KMS workaround, reduced synthetic frame drops, warmed streaming failures
 and the separately confirmed manual YouTube playback.
 
+The [controls follow-up](zero2w-controls-2026-10-27.md) tracks work on backlog
+**6 (WiringPi API)** and **7 (armbian-config)**. These stable numbers refer to the
+[last numbered backlog](zero2w-backlog.md), not row numbers in the table below.
+
 ## Integration boundaries and remaining acceptance
 
 | Area | Evidence obtained | Next development/acceptance step |
 |---|---|---|
 | GPIO, IRQ, software PWM/tone | Real loopback, edges, timing and ownership tests in WiringPi | Protocol/device-specific tests; do not substitute software timing for hardware peripherals |
-| Hardware PWM1 | Stock overlay, physical 32 → 29, 10/100/1000 Hz and 0–100% duty tests | Implement WiringPi public hardware PWM API; measure higher rates with suitable equipment |
-| CPU power controls | Runtime governor and frequency readback, invalid-value rejection, reboot reset | Explicit persistent policy with rollback; thermal/power measurements and MAX17043 integration |
-| Display / DM | XFCE panel, resolution switch/revert, LightDM boot with HDMI attached | Saved profile persistence, repeated hotplug, switching distinct DMs |
+| Hardware PWM1 | Stock overlay, physical 32 → 29, 10/100/1000 Hz and 0–100% duty tests | [Public PWM1 API tested](zero2w-controls-2026-10-27.md); qualify other channels and higher rates with suitable equipment |
+| CPU power controls | Runtime governor and frequency readback, invalid-value rejection, reboot reset | [Native Armbian boot defaults and exact rollback tested](zero2w-controls-2026-10-27.md); thermal/power measurements and MAX17043 integration |
+| Display / DM | XFCE panel, resolution switch/revert, LightDM boot with HDMI attached | [Named profile across login and operator-observed hotplug tested](zero2w-controls-2026-10-27.md); non-default profile across reboot, continuous hotplug capture and distinct-DM switch |
 | OpenGL ES | Panfrost pixel readback and accelerated XFCE | Sustained workloads, games, frame pacing and thermal behavior |
 | Vulkan graphics / compute | PanVK cube on HDMI; 524,288 integer compute results checked | Experimental opt-in only; floating-point/workload qualification and driver stability |
 | Video decoder | Cedrus GStreamer: H.264, HEVC, VP8, MPEG-2; VA-API H.264 byte-exact readback | Realistic resolution/bitrate, audio sync, display import, long playback |

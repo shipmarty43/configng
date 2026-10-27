@@ -1,0 +1,8 @@
+
+Armbian boot defaults (all CPU policies): /etc/default/cpufrequtils
+ENABLE=false
+MIN_SPEED=480000
+MAX_SPEED=1512000
+GOVERNOR=ondemand
+BOOST=false
+Boot defaults do not describe current CPUFreq state. Use status for live read-back.

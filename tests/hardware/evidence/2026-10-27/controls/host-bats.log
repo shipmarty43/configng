@@ -1,0 +1,42 @@
+1..41
+ok 1 CPU power: status lists all policies without changing files
+ok 2 CPU power: governor affects only the selected policy
+ok 3 CPU power: maximum changes without changing minimum
+ok 4 CPU power: reject invalid governors, policies and missing arguments
+ok 5 CPU power: reject invalid, overflowing and unavailable frequencies before write
+ok 6 CPU power: absent table allows driver-controlled range but not overclocking
+ok 7 CPU power: missing policies are reported
+ok 8 CPU power: write failures return failure
+ok 9 CPU power: a driver read-back mismatch is not reported as success
+ok 10 CPU power: cancelled menu does not change anything
+ok 11 CPU power: menu applies a supported governor without requiring EPP
+ok 12 CPU boot: persists global defaults without changing live state; exact restore
+ok 13 CPU boot: validates every policy before writing anything
+ok 14 CPU boot: rejects arguments, userspace and boost without modifying defaults
+ok 15 CPU boot: honours stored minimum and rejects shell syntax without executing it
+ok 16 CPU boot: restore preserves external edits and previous backup
+ok 17 CPU boot: a failed final rename keeps the original and allows recovery
+ok 18 CPU boot: refuses symbolic links and competing backend before changing file
+ok 19 CPU boot: cancellation of save leaves boot file unchanged
+ok 20 CPU boot: preserves permissions and refuses a concurrent editor
+ok 21 CPU boot: failed backup preparation leaves original and cleans incomplete state
+ok 22 Displays: DRM modes are reported without claiming current mode or CVBS support
+ok 23 Displays: headless kernel is a useful diagnostic result
+ok 24 Displays: launch GNOME settings in the user's manager with fixed arguments
+ok 25 Displays: X11 XFCE uses its own settings panel
+ok 26 Displays: reject remote, inactive, greeter, root and non-graphical sessions
+ok 27 Displays: reject malformed session and username data without executing it
+ok 28 Displays: refuse ambiguous sessions rather than target the wrong display
+ok 29 Displays: absent session environment never falls back to root's display
+ok 30 Displays: unsupported desktop or missing executable is reported
+ok 31 Displays: user manager and process startup failures propagate
+ok 32 Displays: menu cancellation never launches a panel
+ok 33 DM: installed list excludes removed packages and status keeps configured and live state separate
+ok 34 DM: invalid, missing or unconfirmed package cannot trigger reconfiguration
+ok 35 DM: explicit confirmation invokes native package dialog without editing the default directly
+ok 36 DM: package configuration failure is not reported as success
+ok 37 DM: declining interruption confirmation does not reconfigure
+ok 38 Dialog: whiptail No and Escape survive successful clear
+ok 39 Unassembled source checkout reports build instruction before sudo or sourcing
+ok 40 Incomplete installed package reports the missing library
+ok 41 Missing assembled menu is rejected before modules execute

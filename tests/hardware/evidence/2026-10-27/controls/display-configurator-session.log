@@ -1,0 +1,22 @@
+
+84 <user> 1000 x11 xfce
+
+card0-HDMI-A-1
+  status:
+    connected
+  enabled:
+    enabled
+  modes:
+    1024x600
+    800x450
+Modes are advertised choices, not the current mode. A connector does not prove a working picture.
+CVBS requires a working TV encoder driver and device tree; a settings panel cannot add missing hardware support.
+
+Configured display manager: /usr/sbin/lightdm
+Installed supported packages:
+lightdm
+Systemd state (may differ from the configured default):
+Id=lightdm.service
+LoadState=loaded
+ActiveState=active
+FragmentPath=/usr/lib/systemd/system/lightdm.service

@@ -6,6 +6,11 @@ setup() {
 	CPU_FIXTURE="$BATS_TEST_TMPDIR/cpufreq"
 	mkdir -p "$CPU_FIXTURE/policy0" "$CPU_FIXTURE/policy4"
 	_cpu_power_root() { printf '%s\n' "$CPU_FIXTURE"; }
+	BOOT_FILE="$BATS_TEST_TMPDIR/cpufrequtils"
+	printf '# original defaults\nENABLE=false\nMIN_SPEED=480000\nMAX_SPEED=1512000\nGOVERNOR="ondemand"\nBOOST=false\n' > "$BOOT_FILE"
+	cp "$BOOT_FILE" "$BOOT_FILE.original"
+	_cpu_power_boot_file() { printf '%s\n' "$BOOT_FILE"; }
+	_cpu_power_boot_backend() { return 0; }
 	local policy
 	for policy in policy0 policy4; do
 		printf 'ondemand\n' >"$CPU_FIXTURE/$policy/scaling_governor"
@@ -113,4 +118,127 @@ setup() {
 	[ "$status" -eq 0 ]
 	[[ "$output" == *'CPU power applied'* ]]
 	[ "$(cat "$CPU_FIXTURE/policy0/scaling_governor")" = powersave ]
+}
+
+@test "CPU boot: persists global defaults without changing live state; exact restore" {
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -eq 0 ]
+	grep -Fxq GOVERNOR=schedutil "$BOOT_FILE"
+	grep -Fxq MAX_SPEED=1008000 "$BOOT_FILE"
+	grep -Fxq MIN_SPEED=480000 "$BOOT_FILE"
+	grep -Fxq BOOST=false "$BOOT_FILE"
+	cmp "$BOOT_FILE.original" "$BOOT_FILE.armbian-config-backup/before"
+	[ "$(cat "$CPU_FIXTURE/policy0/scaling_governor")" = ondemand ]
+	run module_cpu_power boot-status
+	[ "$status" -eq 0 ]
+	[[ "$output" == *'all CPU policies'* && "$output" == *restore-boot* ]]
+	run module_cpu_power restore-boot
+	[ "$status" -eq 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	[ ! -d "$BOOT_FILE.armbian-config-backup" ]
+}
+
+@test "CPU boot: validates every policy before writing anything" {
+	echo 'powersave performance' > "$CPU_FIXTURE/policy4/scaling_available_governors"
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	[ ! -e "$BOOT_FILE.armbian-config-backup" ]
+}
+
+@test "CPU boot: rejects arguments, userspace and boost without modifying defaults" {
+	for args in 'bogus 1008000' 'schedutil 99999999999999999' 'userspace 1008000' 'schedutil -1'; do
+		read -r -a params <<< "$args"
+		run module_cpu_power persist "${params[@]}"
+		[ "$status" -ne 0 ]
+		cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	done
+	echo 'BOOST=true' >> "$BOOT_FILE"
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	[ ! -e "$BOOT_FILE.armbian-config-backup" ]
+}
+
+@test "CPU boot: honours stored minimum and rejects shell syntax without executing it" {
+	echo 'MIN_SPEED=1512000' >> "$BOOT_FILE"
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	printf 'GOVERNOR=$(touch %s/pwned)\n' "$BATS_TEST_TMPDIR" >> "$BOOT_FILE"
+	run module_cpu_power persist schedutil 1512000
+	[ "$status" -ne 0 ]
+	[ ! -e "$BATS_TEST_TMPDIR/pwned" ]
+	[ ! -e "$BOOT_FILE.armbian-config-backup" ]
+}
+
+@test "CPU boot: restore preserves external edits and previous backup" {
+	module_cpu_power persist schedutil 1008000
+	echo '# user edit' >> "$BOOT_FILE"
+	cp "$BOOT_FILE" "$BOOT_FILE.edited"
+	run module_cpu_power restore-boot
+	[ "$status" -ne 0 ]
+	[[ "$output" == *externally* ]]
+	cmp "$BOOT_FILE" "$BOOT_FILE.edited"
+	cmp "$BOOT_FILE.original" "$BOOT_FILE.armbian-config-backup/before"
+	run module_cpu_power persist powersave 480000
+	[ "$status" -ne 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.edited"
+}
+
+@test "CPU boot: a failed final rename keeps the original and allows recovery" {
+	mv() { return 1; }
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	unset -f mv
+	run module_cpu_power restore-boot
+	[ "$status" -eq 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+}
+
+@test "CPU boot: refuses symbolic links and competing backend before changing file" {
+	_cpu_power_boot_backend() { echo 'power manager conflict' >&2; return 1; }
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	_cpu_power_boot_backend() { return 0; }
+	rm "$BOOT_FILE"
+	ln -s "$BOOT_FILE.original" "$BOOT_FILE"
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	[ -L "$BOOT_FILE" ]
+}
+
+@test "CPU boot: cancellation of save leaves boot file unchanged" {
+	dialog_menu() { echo persist; }
+	dialog_inputbox() { echo schedutil; }
+	dialog_yesno() { return 1; }
+	run _cpu_power_boot_select
+	[ "$status" -eq 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	[ ! -e "$BOOT_FILE.armbian-config-backup" ]
+}
+
+@test "CPU boot: preserves permissions and refuses a concurrent editor" {
+	chmod 640 "$BOOT_FILE"
+	exec {testlock}>"$BOOT_FILE.armbian-config.lock"
+	flock "$testlock"
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	exec {testlock}>&-
+	module_cpu_power persist schedutil 1008000
+	[ "$(stat -c %a "$BOOT_FILE")" = 640 ]
+	module_cpu_power restore-boot
+	[ "$(stat -c %a "$BOOT_FILE")" = 640 ]
+}
+
+@test "CPU boot: failed backup preparation leaves original and cleans incomplete state" {
+	cp() {
+		[[ "${*: -1}" != */after ]] || return 1
+		command cp "$@"
+	}
+	run module_cpu_power persist schedutil 1008000
+	[ "$status" -ne 0 ]
+	cmp "$BOOT_FILE" "$BOOT_FILE.original"
+	[ ! -e "$BOOT_FILE.armbian-config-backup" ]
 }
