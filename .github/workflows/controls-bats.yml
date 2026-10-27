@@ -1,4 +1,4 @@
-name: CPU, display and USB controls
+name: CPU, display, USB and modem controls
 on:
   workflow_dispatch:
   push:
@@ -6,6 +6,9 @@ on:
       - 'tools/modules/system/module_cpu_power.sh'
       - 'tools/modules/system/module_usb_role.sh'
       - 'tools/modules/desktops/**'
+      - 'tools/modules/network/module_modem.sh'
+      - 'tools/json/config.network.json'
+      - 'tests/bats/modem.bats'
       - 'tools/json/config.system.json'
       - 'tests/bats/*controls.bats'
       - 'tests/bats/cpu_power.bats'
@@ -26,6 +29,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Install test dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats jq device-tree-compiler
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats jq device-tree-compiler network-manager
       - name: Control tests with isolated sysfs and real DT composition
-        run: bats tests/bats/cpu_power.bats tests/bats/display_controls.bats tests/bats/usb_role.bats tests/bats/source_checkout.bats
+        run: bats tests/bats/cpu_power.bats tests/bats/display_controls.bats tests/bats/usb_role.bats tests/bats/modem.bats tests/bats/source_checkout.bats

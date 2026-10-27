@@ -18,6 +18,19 @@
                     "help": "Configure basic network settings for wired and wireless interfaces"
                 },
                 {
+                    "id": "MDM001",
+                    "description": "Configure mobile broadband APN, roaming and connections",
+                    "short": "Mobile modem",
+                    "module": "module_generic",
+                    "command": [
+                        "module_modem select"
+                    ],
+                    "status": "Preview",
+                    "author": "@shipmarty43",
+                    "condition": "",
+                    "help": "Use existing ModemManager and NetworkManager. Creates device-bound GSM profiles without changing wired or Wi-Fi profiles."
+                },
+                {
                     "id": "BNS002",
                     "description": "Remove Fallback DHCP Configuration",
                     "about": "Drop preinstalled automatic DHCP on all wired interfaces after your configuration is setup.",

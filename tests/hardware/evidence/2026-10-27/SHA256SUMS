@@ -1,7 +1,11 @@
-ea08fad8803b94ef604b4167a12645bf64a9770c233e6fd49139b53c4a5f2048  ../../../../.github/workflows/controls-bats.yml
+eb948be7f0eee4910b6773f320fecc19c54f1912549fbeb1119162e9f99b0545  ../../../../.github/workflows/controls-bats.yml
+880d4dfb3821529bf31426bddbc45bff980305aa36fe2d717eb309634714eee9  ../../../../tools/include/markdown/MDM001-footer.md
 0d4072901a160ac212446b47542eba7af2748a44658af87d4d6a9922f99991d7  ../../../../tools/include/markdown/USBR01-footer.md
+f578fb1079d9aed64559a1383479150036493b397f4ce4998488288af02f611f  ../../../../tools/json/config.network.json
 549c3eee2cfbf3ef81e2be28429b0193036e0c5b11744357dc42420017e1743d  ../../../../tools/json/config.system.json
+f620735fbd9aa2002e2126fd285e0a553c2fe75a517f0094ddc9dd6cd97e7f0f  ../../../../tools/modules/network/module_modem.sh
 fcd583ba0e06c70722199e4a3fbc29bb1d362d81ba5cf6406465218c5ecf404f  ../../../../tools/modules/system/module_usb_role.sh
+4e1507f5df881b0cb43d3d457f680724d61accaae3ee2d066d977d05b394bc6a  ../../../bats/modem.bats
 98f3097cc95c204f8db5cd7dc3b1c5d5b6228767b3ed7652e694e9cd4337d948  ../../../bats/usb_role.bats
 b32ae6941ac55293802eb301d997ad126dbbd8baa2eadf6a9f97508a003a9ed1  ../../chromium-h264-experiment/README.md
 9b03b90243cc49a3762cb488ccff65ab9c94e17798ec36b3110b9203fd5e8499  ../../chromium-h264-experiment/h264.js
@@ -11,12 +15,13 @@ b32ae6941ac55293802eb301d997ad126dbbd8baa2eadf6a9f97508a003a9ed1  ../../chromium
 89cb8251c678f02a7c62a23ed133ea05d28d5707048c86a807e05eebe118a83a  ../../chromium-h264-experiment/opi-cedrus.desktop
 95bf6eb6acef453d5f74844abcffeb9589a8819512d7405241a718955acaadd2  ../../chromium-h264-experiment/test.cjs
 e0f097fc96c3f10459ad38e71f0ce75c253cd0eb98584928dcd41dcee80821b9  ../../patches/chromium-wayland-bt709-egl-import-draft.patch
-a06d847373fc2d15d52175c887232729fc61dc428257a456d08b1353cdd7fbbc  ../../zero2w-backlog.md
+99530ea002bc43278b7034adb2221fd20df5ffb9e36f4ac6401f4dcad98f862b  ../../zero2w-backlog.md
 305ce42bdac5d0fa7e5cb67100da685e261a899d72bf4b38a6e7c8be60d09f9c  ../../zero2w-browser-direct-2026-10-27.md
 62d47ed5b29e93995f9420be0db19592abb242b1aac9abcac8a15e34ad624ca9  ../../zero2w-browser-followup-2026-10-27.md
 c63668e2fd36cb9c2939780f1c95ed0daa9fd97d3cfdbfa40745c9c7318f1fad  ../../zero2w-browser-pixels.py
 ea7867ef54eaa5792d04a936d6f7ba82759dc33ab15add92268ce4494dcc152c  ../../zero2w-controls-2026-10-27.md
 a9277802fa5172f8eaeeca4ec0f5080fe680e1f5ecc8715015ab38cd47e929d7  ../../zero2w-egl-yuv-color.c
+fbfd5a08339d02720d20cfb183502042ffc0ab7f3a5d52dc2f53021fc4954b2a  ../../zero2w-modem.md
 2e62fe16dfdc8d3da0ab439851586aca3a3977b2503ba512dbfa32d99e04918f  ../../zero2w-usb-role.md
 c7d8370b16fc674c73e5b89a139fee3cc0aa58e8b830bc80902eab96eb856e5e  ../../zero2w-xfce-profile.sh
 9114c8f60e9964f5f8edc38de57d5b0fbdcb9a8818bb9f9adb6ec0f147f84178  ../../zero2w-youtube-smoke.py
@@ -44,6 +49,7 @@ de7b47a6f29d6ecc3c44f98b3402a18b7e605d36ded984fdc25877f614c7f58d  controls/pwm-a
 b7b6b1aa555820d7edd9571e3758df8aa326b191ae64f63342e487eead5410c2  controls/pwm-api-first-partial-pulse.log
 a5796775ca3c8a282e0038c7f4b1b13f045f0ab669a2b9fa42ce5b25d2ec730b  controls/pwm-api.log
 fac8299ed5f10e7653411f97af0468890f42c293c04aa77be73d527ad73efe84  egl-yuv-color.log
+15a17b3acc28aeb11326f486f4e7a925a6b9c13469af64b1f9c7a4be04bb04ae  modem/local-tests.log
 eb3dcf30a821fbcbe4f1058e6beccc53160df2941fbcf062e0dc0f62d1bef9dd  ondemand-summary.json
 23e1b3fbbd4baaee51a0aa6e7d69348adfa9d246989c3649c659a2c854176e9f  resumed/README.md
 82a22818157b57e072c1fc43f671662d44f7d3f25effc21a976a0545e4063a3f  resumed/compositor-trial.log

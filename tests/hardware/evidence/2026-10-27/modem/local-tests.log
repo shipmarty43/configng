@@ -1,0 +1,79 @@
+1..78
+ok 1 Modem: structured discovery and filtered status exclude private identifiers and credentials
+ok 2 Modem: no modem distinguishes Ethernet-style devices
+ok 3 Modem: default create binds device and never auto-connects or takes default route
+ok 4 Modem: Internet and roaming are explicit profile settings
+ok 5 Modem: invalid modem, APN, name, policy and username cause no mutation
+ok 6 Modem: missing stable identity refuses a wildcard device profile
+ok 7 Modem: daemon failures propagate without success messages
+ok 8 Modem: list and management use UUID and ownership marker
+ok 9 Modem: configure only inactive own profile and disable autoconnect
+ok 10 Modem: connect and disconnect target only the explicit UUID with bounded waits
+ok 11 Modem: autoconnect requires explicit yes/no and invalid UUID is refused
+ok 12 Modem: PIN/password prompting requires a real terminal
+ok 13 Modem: inactive owned profile removal is scoped by UUID
+ok 14 Modem: cancellation never creates or activates a profile
+ok 15 Modem: entrypoint suppresses raw modem fields in xtrace
+ok 16 Modem: native nmcli offline accepts generated profile properties without D-Bus writes
+ok 17 Modem: inactive daemons are reported without changing service or renderer
+ok 18 Modem: interactive activation keeps native prompts attached to terminal
+ok 19 Modem: profile inspection requests explicit non-secret fields
+ok 20 USB: status separates live DT, UDC and boot environment without writes
+ok 21 USB: host composes real overlays, preserves others, permissions and exact rollback
+ok 22 USB: device removes only usb0-host from boot config
+ok 23 USB: reject unknown role and board before replacing config
+ok 24 USB: refuse duplicate keys, custom paths, shell-like names and parameters
+ok 25 USB: missing overlay and invalid DT never publish boot environment
+ok 26 USB: conflicting composed DT is rejected for device mode
+ok 27 USB: reject host overlay that leaves OHCI0 disabled
+ok 28 USB: external edits prevent automatic restore and retain backup
+ok 29 USB: pending backup prevents another save
+ok 30 USB: environment, lock and backup symlinks are refused
+ok 31 USB: incomplete preparation cleans up and rename failure stays recoverable
+ok 32 USB: lock contention prevents changes
+ok 33 USB: unsupported boot path is refused
+ok 34 USB: cancelling menu or confirmation leaves config untouched
+ok 35 USB: no-op preserves file and leaves no pending backup
+ok 36 USB: composed overlays may not change USB1 host controllers
+ok 37 USB: manual edits during preparation prevent publication
+ok 38 CPU power: status lists all policies without changing files
+ok 39 CPU power: governor affects only the selected policy
+ok 40 CPU power: maximum changes without changing minimum
+ok 41 CPU power: reject invalid governors, policies and missing arguments
+ok 42 CPU power: reject invalid, overflowing and unavailable frequencies before write
+ok 43 CPU power: absent table allows driver-controlled range but not overclocking
+ok 44 CPU power: missing policies are reported
+ok 45 CPU power: write failures return failure
+ok 46 CPU power: a driver read-back mismatch is not reported as success
+ok 47 CPU power: cancelled menu does not change anything
+ok 48 CPU power: menu applies a supported governor without requiring EPP
+ok 49 CPU boot: persists global defaults without changing live state; exact restore
+ok 50 CPU boot: validates every policy before writing anything
+ok 51 CPU boot: rejects arguments, userspace and boost without modifying defaults
+ok 52 CPU boot: honours stored minimum and rejects shell syntax without executing it
+ok 53 CPU boot: restore preserves external edits and previous backup
+ok 54 CPU boot: a failed final rename keeps the original and allows recovery
+ok 55 CPU boot: refuses symbolic links and competing backend before changing file
+ok 56 CPU boot: cancellation of save leaves boot file unchanged
+ok 57 CPU boot: preserves permissions and refuses a concurrent editor
+ok 58 CPU boot: failed backup preparation leaves original and cleans incomplete state
+ok 59 Displays: DRM modes are reported without claiming current mode or CVBS support
+ok 60 Displays: headless kernel is a useful diagnostic result
+ok 61 Displays: launch GNOME settings in the user's manager with fixed arguments
+ok 62 Displays: X11 XFCE uses its own settings panel
+ok 63 Displays: reject remote, inactive, greeter, root and non-graphical sessions
+ok 64 Displays: reject malformed session and username data without executing it
+ok 65 Displays: refuse ambiguous sessions rather than target the wrong display
+ok 66 Displays: absent session environment never falls back to root's display
+ok 67 Displays: unsupported desktop or missing executable is reported
+ok 68 Displays: user manager and process startup failures propagate
+ok 69 Displays: menu cancellation never launches a panel
+ok 70 DM: installed list excludes removed packages and status keeps configured and live state separate
+ok 71 DM: invalid, missing or unconfirmed package cannot trigger reconfiguration
+ok 72 DM: explicit confirmation invokes native package dialog without editing the default directly
+ok 73 DM: package configuration failure is not reported as success
+ok 74 DM: declining interruption confirmation does not reconfigure
+ok 75 Dialog: whiptail No and Escape survive successful clear
+ok 76 Unassembled source checkout reports build instruction before sudo or sourcing
+ok 77 Incomplete installed package reports the missing library
+ok 78 Missing assembled menu is rejected before modules execute
