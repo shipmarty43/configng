@@ -20,8 +20,13 @@ integer percentage (fraction discarded, clamped to 100). Invalid or missing
 telemetry invalidates the sample instead of keeping stale battery readings.
 The high byte is rechecked to reject pairs crossing a register rollover.
 
-The protocol provides **no external-power/charging flag, current, energy capacity
-or remaining time**. Kernel status is always `Unknown`; UPower/desktop heuristics
+**MAX17043 limitation:** the fuel gauge has no charging-status flag or current
+measurement. Its `ALRT` output indicates low battery, not charging; see the
+[MAX17043 datasheet](https://www.analog.com/media/en/technical-documentation/data-sheets/max17043-max17044.pdf).
+The DFR0528 board has a charging LED, but its documented MCU protocol does not
+export that status. The integration therefore provides **no external-power/charging
+flag, current, energy capacity or remaining time**. No extra GPIO or trend-based
+charging-status estimate is used. Kernel status stays `Unknown`; UPower/desktop heuristics
 may infer a state, but that is not a hardware measurement. Tested UPower 1.91.1
 sets the aggregate display to `discharging` and `on-battery=yes` even though the
 individual battery stays `unknown`. This can activate existing battery power
