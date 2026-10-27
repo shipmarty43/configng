@@ -1,0 +1,27 @@
+[Unit]
+Description=Experimental Zero 2W LoRaWAN Class A node
+Wants=time-sync.target
+After=time-sync.target
+Conflicts=meshtasticd.service opi-reticulum-radio.service opi-radio-diagnostics.service
+
+[Service]
+Type=simple
+User=root
+UMask=0077
+StateDirectory=opi-lorawan
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/opi-lorawan run /etc/opi-lorawan/lorawan.conf /etc/opi-lorawan/credentials.conf /var/lib/opi-lorawan
+# Failures require inspection; do not turn a persistent fault into repeated joins.
+Restart=no
+TimeoutStopSec=20
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/run/lock
+RestrictAddressFamilies=AF_UNIX
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target

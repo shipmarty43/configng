@@ -1,0 +1,14 @@
+# Copy to /etc/opi-lorawan/lorawan.conf, owned by root, mode 0600.
+# The SPI number below is an EXAMPLE, not the verified route on your image.
+schema=1
+enabled=false
+wiring_verified=false
+region=EU433
+class=A
+activation=OTAA-1.0.4
+spidev=/dev/spidev1.0
+interval_seconds=300
+fport=10
+confirmed=false
+# Fixed smoke-test payload. No automatic battery/location transmission in v1.
+payload_hex=010203

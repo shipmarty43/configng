@@ -75,6 +75,19 @@
                             "help": "Inspect roles and UDC; validate and save USB0 boot role with a backup. Device functions require separate configuration."
                         },
                         {
+                            "id": "LORA01",
+                            "description": "Inspect and control the optional SX1262 LoRaWAN node service",
+                            "short": "LoRaWAN node",
+                            "module": "module_generic",
+                            "command": [
+                                "module_lorawan select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "[ -x /usr/local/bin/opi-lorawan ]",
+                            "help": "EU433, OTAA, Class A. Check configuration and service state; starting transmits. Hardware qualification is pending."
+                        },
+                        {
                             "id": "DTO001",
                             "description": "Manage device tree overlays",
                             "short": "Device Tree Overlays",

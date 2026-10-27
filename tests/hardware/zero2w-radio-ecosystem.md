@@ -156,7 +156,7 @@ integration boundary, but two copies of our own adapter exchanging bytes would
 not prove RNode interoperability. Never report “Reticulum over LoRa ready” from
 the LAN service milestone alone. LXMF can follow as the messaging application.
 
-For one physical radio, offer **Off / Meshtastic / Reticulum / Diagnostics**.
+For one physical radio, offer **Off / Meshtastic / Reticulum / LoRaWAN / Diagnostics**.
 Switching must stop the old owner, wait for release, acquire a shared lock,
 start the chosen backend and verify health; failed activation restores the
 previous configuration without creating two owners. Combine systemd conflicts,
@@ -189,5 +189,15 @@ broadcasts and network bridges explicit configuration choices.
    switching radio services releases all resources, overlay rollback preserves
    unrelated settings, and status distinguishes absence/failure from simulation.
 
-No implementation of the new radio or Python binding is claimed by this plan.
-The next executable work is step 1; GPIO tests on the powered-off board wait.
+## LoRaWAN software follow-up
+
+The user subsequently requested the LoRaWAN software implementation. The
+[optional native component](../../hardware/lorawan/README.md) now implements
+EU433 Class A / OTAA-1.0.4 using pinned RadioLib and the existing H618 WiringPi
+backend, private configuration, persistent nonces/session with write-ahead
+recovery, exclusive radio ownership and configurator service controls. It is
+disabled by default and has only host validation so far. This is an end device;
+a matching gateway/server is required for network acceptance.
+
+Python GPIO, Meshtastic/Reticulum adapters, the HAT overlay and physical radio
+acceptance remain separate work. No implementation of those is claimed here.

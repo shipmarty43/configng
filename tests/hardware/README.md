@@ -44,6 +44,10 @@ The [radio ecosystem plan](zero2w-radio-ecosystem.md) records the accepted UPS
 scope and the next Python GPIO, Waveshare SX1262/GNSS, Meshtastic and Reticulum
 integration boundaries. It is a design checkpoint, not radio test evidence.
 
+The [LoRaWAN software checkpoint](../../hardware/lorawan/README.md) adds an
+optional EU433 Class A node service and configurator controls. Host tests cover
+configuration and persistence; no board/gateway exchange has been performed.
+
 ## Integration boundaries and remaining acceptance
 
 | Area | Evidence obtained | Next development/acceptance step |
