@@ -1,10 +1,13 @@
 # Zero 2W hardware and radio ecosystem
 
-Design checkpoint, 2026-10-27. The user confirmed a **SPI Waveshare SX1262
+Design checkpoint, 2026-10-27; hardware clarification, 2026-10-31. The user confirmed a **SPI Waveshare SX1262
 433 MHz HAT with GNSS** and identified **markqvist/Reticulum** as the requested
 project. The board is now powered off. No radio, GNSS, GPIO or modem trial was
-performed for this checkpoint. Exact HAT revision and current bus routing still
-need verification. This plan does not install services or enable transmission.
+performed for this checkpoint. The user confirmed that the Waveshare is mounted
+directly as a 40-pin shield using its standard pinout. There are two GNSS
+sources: the HAT and the SIM7600G-H modem. Linux bus routing and physical
+operation still need verification. This plan does not install services or
+enable transmission.
 
 ## Accepted UPS baseline
 
@@ -44,12 +47,13 @@ writer. A future HAT module must use the same lock, composed-DT validation,
 backup and rollback rules as the UPS module. Distinguish requested next-boot
 configuration, loaded hardware, running service and tested connectivity.
 
-## Candidate HAT mapping
+## Standard shield mapping
 
 The official [Meshtastic Waveshare profile](https://github.com/meshtastic/firmware/blob/eaba8b95bebab04c4f13a27b63e000ebdc1e5fac/bin/config.d/lora-waveshare-sxxx.yaml)
 uses Raspberry Pi BCM numbering. Translated to physical header positions and
-the existing WiringPi Zero 2W map, it gives the following **candidate**, not an
-instruction to drive pins before checking the actual HAT revision:
+the existing WiringPi Zero 2W map, it gives the standard shield profile below.
+The user confirmed direct mounting, so no custom wire assignment is needed.
+This documents the intended wiring; it does not establish working kernel pinmux:
 
 | Signal | Physical pin | Zero 2W SoC signal | Note |
 |---|---:|---|---|
@@ -65,8 +69,8 @@ instruction to drive pins before checking the actual HAT revision:
 | Host UART RX ← GNSS TX | 10 | PH1 | GNSS is separate from the SPI radio |
 
 The [manufacturer product](https://www.waveshare.com/product/raspberry-pi/sx1262-lorawan-hat.htm)
-identifies the GNSS part as L76K with a default 9600-baud UART. Confirm the
-schematic for this physical revision before applying the candidate mapping.
+identifies the GNSS part as L76K with a default 9600-baud UART. Use the
+manufacturer shield wiring, then verify the SPI/UART routing on the installed OS.
 DFR0528 uses physical 3/5, so this map has no direct signal-pin overlap with its
 I2C connection. Stack clearance, shared supply loading and other attached HATs
 still need checking. The current PWM test resistor at 32–29 is separate.
@@ -84,9 +88,9 @@ Inspected `armbian-gui` revision `caa06d88313cddedd15ace4aa8c67c7b06c8a37b`:
 
 - `config/main.yaml` enables LoRa with 868 MHz / `EU_868`, inconsistent with the
   user's 433 MHz hardware. RESET/BUSY/DIO1 values 18/24/23 are consumed as BOARD
-  pins by `core/resources.py`; they do not match the candidate HAT table.
+  pins by `core/resources.py`; they do not match the standard HAT table.
 - `sx1262_driver.py` starts at 868 MHz independently of configuration. It opens
-  SPI 0.0 by default and does not implement the candidate pin-40 CS / pin-31
+  SPI 0.0 by default and does not implement the standard pin-40 CS / pin-31
   antenna-switch arrangement. Merely changing the frequency field is insufficient.
 - `meshtastic_protocol.py` uses its own `struct.pack` layout and byte-sum
   checksum. This is not the official Meshtastic protobuf/radio implementation.
@@ -165,12 +169,46 @@ lock. Reticulum may keep running on LAN while Meshtastic owns the radio.
 Simultaneous independent LoRa meshes require a second radio; automatic time
 sharing and a Meshtastic–Reticulum message bridge are outside the first release.
 
-GNSS needs one UART reader. Prefer a system GNSS provider such as gpsd and
-consumer adapters; verify support in the selected meshtasticd version before
-promising direct gpsd integration. If it requires exclusive serial access,
-define a single owner or an explicit forwarding adapter. Battery data comes
-from UPower/power_supply, never competing reads of the UPS MCU. Keep location
-broadcasts and network bridges explicit configuration choices.
+## Two GNSS sources
+
+User-confirmed inventory, 2026-10-31. The shared provider and selection controls
+below are planned, not implemented or hardware-tested.
+
+| Source | Host connection | Planned owner / adapter |
+|---|---|---|
+| Waveshare L76K | Header UART, physical 8/10, default 9600 baud | One serial reader, preferably gpsd; resolve the actual UART and console conflict |
+| SIM7600G-H GNSS | Modem USB connection on USB1 | ModemManager location adapter, subject to detected GPS capabilities |
+
+The [ModemManager Location API](https://www.freedesktop.org/software/ModemManager/doc/latest/ModemManager/gdbus-org.freedesktop.ModemManager1.Modem.Location.html)
+exposes supported/enabled sources and GPS raw/NMEA results. Discover capabilities
+on this modem before selecting an adapter; do not hardcode a ttyUSB number or
+open a competing AT session. Preserve existing location-source settings and
+location-signal policy when enabling GNSS. Cellular registration or a working
+data connection is not evidence of a GNSS fix. Modem trials remain deferred at
+the user's request.
+
+Planned common interface and configurator acceptance:
+
+- Offer **Auto / Waveshare / Modem / Off**, with configurable priority in Auto.
+  Manual selection must not silently substitute another receiver.
+- Keep separate source status: absent, disabled, acquiring, valid fix, stale or
+  error. Publish source identity, fix timestamp, age and available quality data;
+  distinguish unavailable accuracy/satellite fields from measured zero.
+- Auto chooses only a fresh, valid fix, falls back when it becomes unusable, and
+  uses recovery hysteresis to prevent repeated switching. Define and test age
+  and recovery thresholds. Never present an old coordinate as a current fix or
+  average two receivers' coordinates without a separate fusion design.
+- Keep one owner per physical interface. The two receivers can operate
+  independently; switching the SX1262 radio backend must not reset GNSS.
+- Expose the selected fix and each source's health to application clients.
+  Verify the selected meshtasticd version's supported location input before
+  promising direct gpsd integration; use an explicit adapter where required.
+- Test missing devices, no fix, stale NMEA, USB reconnect, service restart and
+  source recovery on the host first, then qualify each receiver and failover on
+  the board. Confirm modem GNSS does not disrupt mobile data or USB1 devices.
+
+Battery data comes from UPower/power_supply, never competing reads of the UPS
+MCU. Keep location broadcasts and network bridges explicit configuration choices.
 
 ## Delivery order and completion evidence
 
@@ -179,13 +217,14 @@ broadcasts and network bridges explicit configuration choices.
 2. Board/HAT profile and overlay manager: resolve controller and CS, validate
    resource conflicts, UART console migration and reversible boot changes.
 3. SX1262/GNSS bring-up: bounded SPI status/BUSY/reset/IRQ checks, correct RF
-   switch behavior, NMEA reception and real GNSS fix. Record exact hardware and
+   switch behavior, NMEA reception and real GNSS fix from each source. Record exact hardware and
    software versions. FT232H captures can validate protocol/timing once attached.
 4. Meshtastic: known-good peer exchange, long-message/CRC qualification, daemon
    restart/reboot recovery, client UI. Label this HAT's upstream limitation.
 5. Reticulum: LAN service first, then SPI adapter and independent peer exchange,
    boundary-size packets, interruption/recovery and verified radio ownership.
-6. Ecosystem acceptance: UPS remains visible, GNSS has no competing reader,
+6. Ecosystem acceptance: UPS remains visible, both GNSS sources have a single
+   owner per interface and source selection rejects stale fixes,
    switching radio services releases all resources, overlay rollback preserves
    unrelated settings, and status distinguishes absence/failure from simulation.
 

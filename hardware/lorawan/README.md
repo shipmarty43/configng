@@ -93,9 +93,10 @@ cannot detect such a valid old copy. No counter-reset command is provided.
 
 The fixed physical map is CS **40**, DIO1 **36**, RESET **12**, BUSY **38**,
 TX/antenna switch **31**, SPI MOSI/MISO/CLK **19/21/23**. See the
-[candidate profile and source](../../tests/hardware/zero2w-radio-ecosystem.md).
-Check the exact HAT revision before enabling it. The HAL requires both Zero 2W
-and H618 DT compatibles and checks WiringPi's physical-to-SoC map.
+[standard shield profile and source](../../tests/hardware/zero2w-radio-ecosystem.md).
+The user confirmed direct 40-pin shield mounting. Kernel routing and resource
+ownership still require verification before enabling it. The HAL requires both
+Zero 2W and H618 DT compatibles and checks WiringPi's physical-to-SoC map.
 
 The `spidev` path in the example is a placeholder. Verify its controller, mux,
 and other users on the actual image. The kernel must allow `SPI_NO_CS`; PI3

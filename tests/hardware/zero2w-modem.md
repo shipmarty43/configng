@@ -87,3 +87,12 @@ no D-Bus writes. [Retained local log](evidence/2026-10-27/modem/local-tests.log)
 Primary API references: [NetworkManager GSM settings](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/nm-settings-nmcli.html),
 [nmcli commands](https://networkmanager.pages.freedesktop.org/NetworkManager/NetworkManager/nmcli.html),
 [ModemManager output keys](https://github.com/linux-mobile-broadband/ModemManager/blob/main/cli/mmcli-output.c).
+
+## GNSS follow-up (2026-10-31)
+
+The user also uses SIM7600G-H as a GNSS source, alongside the Waveshare HAT's
+L76K. Add ModemManager location-capability discovery and an adapter to the
+[shared two-source GNSS plan](zero2w-radio-ecosystem.md#two-gnss-sources).
+The existing mobile-data module does not implement this adapter. GNSS fix,
+freshness, source selection and mobile-data continuity need separate acceptance;
+no modem test or GNSS activation was performed for this documentation update.
