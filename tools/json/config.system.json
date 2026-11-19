@@ -62,6 +62,19 @@
                             "help": "Choose supported CPUFreq settings without changing voltages or boot configuration"
                         },
                         {
+                            "id": "GPIO01",
+                            "description": "Inspect GPIO ownership on the Orange Pi Zero 2W header",
+                            "short": "GPIO header",
+                            "module": "module_generic",
+                            "command": [
+                                "module_zero2w_gpio select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_zero2w_gpio_board",
+                            "help": "Show physical pin numbers, sunxi names and kernel consumers with the Zero 2W Python binding. Reading this table leaves all lines available to their owners."
+                        },
+                        {
                             "id": "USBR01",
                             "description": "Inspect USB and configure USB0 host or device at boot on Orange Pi Zero 2W",
                             "short": "USB host / device",

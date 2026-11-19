@@ -108,6 +108,11 @@ under its custom license into the independently licensed system components.
 
 ## Python GPIO first
 
+The [2026-11-20 verification record](zero2w-python-gpio.md) covers the implemented
+line API, events, PWM1, ownership UIs and both loopback procedures. The design
+below records the original acceptance criteria. Per-device migration and
+electrical qualification are tracked separately.
+
 Build a small, separately packaged Python binding in the WiringPi fork, then
 use it from `armbian-gui`. Do not revive a second H618 register map inside
 OPi.GPIO or shell out once per GPIO write: ownership must persist in-process.

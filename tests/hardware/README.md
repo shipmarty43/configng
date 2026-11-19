@@ -42,8 +42,11 @@ The [controls follow-up](zero2w-controls-2026-10-27.md) tracks work on backlog
 The [DFR0528 overlay-manager follow-up](zero2w-ups-overlay-manager.md) adds a
 UPS submenu, driver/I2C checks and validated next-boot enable/disable controls.
 
+The [Python GPIO verification record](zero2w-python-gpio.md) covers the new
+header inventory, ARM64 gpio-sim run and Python loopback tests for the board.
+
 The [radio ecosystem plan](zero2w-radio-ecosystem.md) records the accepted UPS
-scope and the next Python GPIO, Waveshare SX1262/GNSS, Meshtastic and Reticulum
+scope and the Waveshare SX1262/GNSS, Meshtastic and Reticulum
 integration boundaries. It is a design checkpoint, not radio test evidence.
 
 The [LoRaWAN software checkpoint](../../hardware/lorawan/README.md) adds an
