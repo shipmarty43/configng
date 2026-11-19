@@ -1,6 +1,6 @@
 # Orange Pi Zero 2W: native CVBS bring-up
 
-Status, 2026-10-26: **research / hardware validation pending**. This is not an
+Status, 2026-11-19: **TVE/DAC0 core implemented and cross-built, DRM integration and board validation pending**. See the [encoder code, Android comparison and build results](../../hardware/cvbs/README.md). This is not an
 enablement overlay or a claim that TV-out works on the current Armbian image.
 The owner has the 24-pin expansion board and an EasyCAP USB capture device.
 The target is the board's native CVBS output, not HDMI-to-AV conversion.
@@ -95,7 +95,7 @@ remaining repeatability tests.
 | Item | Evidence required | Current state |
 |---|---|---|
 | Board + expansion revision | Schematic and verified CVBS wiring | Pending |
-| Kernel + DTB | Exact commits, patches, build and schema checks | Target image unselected |
+| Kernel + DTB | Exact commits, patches, build and schema checks | Armbian 6.18.57 DTB inspected and encoder core cross-built; DRM/DT integration open |
 | DRM encoder | Probe, connector, advertised modes, clean disable | Pending |
 | PAL / NTSC | Capture clips, settings and EasyCAP USB ID | Pending |
 | Recovery / repeatability | Boot, mode switching, cable tests | Pending |

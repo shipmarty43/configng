@@ -114,5 +114,5 @@ The source board configuration and the packed TVE configuration now agree.
 The packaged Android userspace/HAL has not yet been matched to the community
 HAL, and there is still no capture from this physical board. Continue with
 the [EasyCAP hardware procedure](zero2w-cvbs.md), retaining a separate test SD,
-and select the target Armbian kernel before implementing a DRM encoder port.
+and the [6.18.57 encoder port](../../hardware/cvbs/README.md), whose register core has since been cross-built and tested against the BSP.
 Do not copy vendor `disp2` nodes straight into a mainline DRM device tree.
