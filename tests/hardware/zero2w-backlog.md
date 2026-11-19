@@ -1,7 +1,7 @@
 # Orange Pi Zero 2W backlog
 
 Stable numbering from the last numbered task list in the project conversation.
-Updated 2026-11-19. Earlier lists used different numbering; use these names with
+Updated 2026-11-20. Earlier lists used different numbering; use these names with
 numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 `codex/display-controls`; its remaining limitations are retained separately.
 
@@ -15,7 +15,7 @@ numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 | **6** | **WiringPi API completeness** | PWM1 public API, SPI descriptor cleanup and serial API fixes implemented in the controls follow-up. Other pins/channels, I2C/SPI/UART hardware exchange and timing with external equipment remain |
 | **7** | **armbian-config fork** | Native CPUFreq boot defaults and rollback tested. Profile across login and operator-observed hotplug checked; profile across reboot, continuous hotplug capture and switching distinct display managers remain |
 | 8 | GPU, video and desktop | Retain the browser checkpoint; color fix, CMA, long/adaptive playback, audio, floating-point compute and games remain |
-| 9 | Native CVBS | [DRM connector, TCON route and stock-DTB verification](../../hardware/cvbs/README.md) complete offline. DE33 colour conversion, test kernel boot, Android reference and Armbian PAL/NTSC captures with EasyCAP remain |
+| 9 | Native CVBS | [DRM route, stock DTB, DE33 colour and diagnostic kernel](../../hardware/cvbs/README.md) tested offline. Cold boot on Zero 2W, Android reference and Armbian PAL/NTSC captures with EasyCAP, then HDMI recovery remain |
 | 10 | Web UI and release | Real device data, authentication/access control, integration, install/update/rollback and branch consolidation |
 | 11 | USB host/device | [USB0 boot role module](zero2w-usb-role.md) added and tested locally; board off. Verify UPS/VBUS/cabling, both roles, USB1 modem/hub continuity, and separate gadget functions |
 | 12 | Mobile modem | [MM/NM profile controls](zero2w-modem.md) added; SIM7600G-H / Kyivstar identified, initial APN internet; verify USB driver/composition, SIM, routes/DNS, reconnection and autoconnect on USB1. Add GNSS capability discovery and the shared location adapter; hardware modem trials remain deferred |

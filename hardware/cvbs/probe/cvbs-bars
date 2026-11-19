@@ -1,0 +1,57 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+set -eu
+standard=${1:-}
+driver=sun4i-drm
+connector_type=Composite
+case "$standard" in
+PAL) mode=720x576i; size=720x576 ;;
+NTSC) mode=720x480i; size=720x480 ;;
+--vkms-smoke) mode=640x480; size=$mode; driver=vkms; connector_type=Virtual ;;
+*) echo "usage: cvbs-bars PAL|NTSC" >&2; exit 2 ;;
+esac
+
+# The diagnostic DT and VKMS each provide one CRTC on the selected card.
+# Read the connector's mode index, TV enum and primary XR24 plane from KMS.
+resources=$(modetest -M "$driver" -a -c -p)
+selection=$(printf '%s\n' "$resources" | awk -v kind="$connector_type" -v mode="$mode" -v std="$standard" '
+	/^Connectors:|^CRTCs:|^Planes:/ { section = $1; next }
+	section == "Connectors:" {
+		if (/^[0-9]/) {
+			selected = ($3 == "connected" && index($4, kind "-") == 1)
+			if (selected) { id = $1; nconnectors++ }
+		}
+		if (!selected) next
+		if ($1 ~ /^#[0-9]+$/ && $2 == mode) index_arg = $1
+		if ($2 == "TV" && $3 == "mode:") tv = 1
+		if (tv && $1 == "enums:") {
+			for (i = 2; i <= NF; i++) {
+				split($i, pair, "=")
+				if (pair[1] == std) value = pair[2]
+			}
+			tv = 0
+		}
+	}
+	section == "CRTCs:" && /^[0-9]/ { crtc = $1; ncrtc++ }
+	section == "Planes:" {
+		if (/^[0-9]/) { plane = $1; xr24 = 0; type_prop = 0 }
+		if ($1 == "formats:") xr24 = ($0 ~ /[[:space:]]XR24([[:space:]]|$)/)
+		if ($2 == "type:") type_prop = 1
+		if (type_prop && $1 == "value:") {
+			if ($2 == 1 && xr24) primary = plane
+			type_prop = 0
+		}
+	}
+	END {
+		if (nconnectors != 1 || !index_arg || ncrtc != 1 || !primary || (std != "--vkms-smoke" && !length(value))) exit 1
+		print id, index_arg, crtc, primary, value
+	}') || { echo "Missing $mode, single CRTC, primary XR24 plane or TV standard on $driver" >&2; exit 1; }
+# The parsed fields contain only a DRM mode index and numeric object IDs.
+read -r id index_arg crtc plane value <<END
+$selection
+END
+set -- -M "$driver" -a -s "$id@$crtc:$index_arg" -P "$plane@$crtc:$size+0+0@XR24" -F smpte
+if [ "$driver" = sun4i-drm ]; then
+	set -- "$@" -w "$id:TV mode:$value"
+fi
+exec modetest "$@"

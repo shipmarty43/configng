@@ -3,7 +3,7 @@
 # Emit one git-apply patch for the already Armbian-patched 6.18 kernel tree.
 set -eu
 cd "$(dirname "$0")"
-cat sun4i-h618-route.patch
+cat sun4i-h618-route.patch sun4i-de33-cvbs-color.patch
 for file in h618-*.[ch] allwinner,sun50i-h618-tv-encoder.yaml; do
 	case "$file" in
 	*.yaml) target=Documentation/devicetree/bindings/display/$file ;;

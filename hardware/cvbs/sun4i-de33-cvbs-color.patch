@@ -1,0 +1,184 @@
+diff --git a/drivers/gpu/drm/sun4i/sun8i_csc.c b/drivers/gpu/drm/sun4i/sun8i_csc.c
+index 70fc9b0..9fce674 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_csc.c
++++ b/drivers/gpu/drm/sun4i/sun8i_csc.c
+@@ -3,6 +3,8 @@
+  * Copyright (C) Jernej Skrabec <jernej.skrabec@siol.net>
+  */
+ 
++#include <drm/drm_atomic.h>
++#include <drm/drm_encoder.h>
+ #include <drm/drm_fourcc.h>
+ #include <drm/drm_framebuffer.h>
+ #include <drm/drm_plane.h>
+@@ -15,6 +17,7 @@ enum sun8i_csc_mode {
+ 	SUN8I_CSC_MODE_OFF,
+ 	SUN8I_CSC_MODE_YUV2RGB,
+ 	SUN8I_CSC_MODE_YVU2RGB,
++	SUN8I_CSC_MODE_RGB2YUV601,
+ };
+ 
+ static const u32 ccsc_base[][2] = {
+@@ -227,6 +230,28 @@ static void sun8i_de33_convert_table(const u32 *src, u32 *dst)
+ 	dst[14] &= 0xffff;
+ }
+ 
++/*
++ * Full-range RGB to limited-range BT.601, from Allwinner DE330 r2y[0]
++ * (Copyright 2017 Allwinner). Three input offsets, then three Q17 rows,
++ * each followed by its 10-bit output offset, in hardware register order.
++ */
++static const u32 de33_rgb_to_yuv601[] = {
++	0, 0, 0,
++	0x0000837a, 0x0001021d, 0x00003221, 0x040,
++	0xffffb41c, 0xffff6b03, 0x0000e0e1, 0x200,
++	0x0000e0e1, 0xffff43b1, 0xffffdb6e, 0x200,
++};
++
++bool sun8i_de33_is_composite(const struct drm_crtc_state *state)
++{
++	struct drm_encoder *encoder;
++
++	drm_for_each_encoder_mask(encoder, state->crtc->dev, state->encoder_mask)
++		if (encoder->encoder_type == DRM_MODE_ENCODER_TVDAC)
++			return true;
++	return false;
++}
++
+ static void sun8i_de33_ccsc_setup(struct regmap *map, int layer,
+ 				  enum sun8i_csc_mode mode,
+ 				  enum drm_color_encoding encoding,
+@@ -240,6 +265,11 @@ static void sun8i_de33_ccsc_setup(struct regmap *map, int layer,
+ 	base = DE33_CCSC_BASE + layer * DE33_CH_SIZE;
+ 
+ 	switch (mode) {
++	case SUN8I_CSC_MODE_RGB2YUV601:
++		regmap_bulk_write(map, SUN50I_CSC_COEFF(base, 0),
++				  de33_rgb_to_yuv601, ARRAY_SIZE(de33_rgb_to_yuv601));
++		val = SUN8I_CSC_CTRL_EN;
++		break;
+ 	case SUN8I_CSC_MODE_OFF:
+ 		val = 0;
+ 		break;
+@@ -271,7 +301,8 @@ static void sun8i_de33_ccsc_setup(struct regmap *map, int layer,
+ 	regmap_write(map, SUN8I_CSC_CTRL(base), val);
+ }
+ 
+-static u32 sun8i_csc_get_mode(struct drm_plane_state *state)
++static enum sun8i_csc_mode sun8i_csc_get_mode(struct sun8i_layer *layer,
++					      struct drm_plane_state *state)
+ {
+ 	const struct drm_format_info *format;
+ 
+@@ -279,8 +310,16 @@ static u32 sun8i_csc_get_mode(struct drm_plane_state *state)
+ 		return SUN8I_CSC_MODE_OFF;
+ 
+ 	format = state->fb->format;
+-	if (!format->is_yuv)
++	if (!format->is_yuv) {
++		if (layer->cfg->de_type == SUN8I_MIXER_DE33) {
++			struct drm_crtc_state *crtc_state;
++
++			crtc_state = drm_atomic_get_new_crtc_state(state->state, state->crtc);
++			if (sun8i_de33_is_composite(crtc_state))
++				return SUN8I_CSC_MODE_RGB2YUV601;
++		}
+ 		return SUN8I_CSC_MODE_OFF;
++	}
+ 
+ 	switch (format->format) {
+ 	case DRM_FORMAT_YVU411:
+@@ -296,7 +335,7 @@ static u32 sun8i_csc_get_mode(struct drm_plane_state *state)
+ void sun8i_csc_config(struct sun8i_layer *layer,
+ 		      struct drm_plane_state *state)
+ {
+-	u32 mode = sun8i_csc_get_mode(state);
++	enum sun8i_csc_mode mode = sun8i_csc_get_mode(layer, state);
+ 	u32 base;
+ 
+ 	if (layer->cfg->de_type == SUN8I_MIXER_DE3) {
+diff --git a/drivers/gpu/drm/sun4i/sun8i_csc.h b/drivers/gpu/drm/sun4i/sun8i_csc.h
+index d2ba5f8..fca77db 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_csc.h
++++ b/drivers/gpu/drm/sun4i/sun8i_csc.h
+@@ -8,6 +8,7 @@
+ 
+ #include <drm/drm_color_mgmt.h>
+ 
++struct drm_crtc_state;
+ struct drm_plane_state;
+ struct sun8i_layer;
+ 
+@@ -28,6 +29,7 @@ struct sun8i_layer;
+ 
+ #define SUN8I_CSC_CTRL_EN		BIT(0)
+ 
++bool sun8i_de33_is_composite(const struct drm_crtc_state *state);
+ void sun8i_csc_config(struct sun8i_layer *layer,
+ 		      struct drm_plane_state *state);
+ 
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+index 248c651..1d7d7b1 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+@@ -26,6 +26,7 @@
+ 
+ #include "sun4i_drv.h"
+ #include "sun50i_planes.h"
++#include "sun8i_csc.h"
+ #include "sun8i_mixer.h"
+ #include "sun8i_ui_layer.h"
+ #include "sun8i_vi_layer.h"
+@@ -262,6 +263,16 @@ int sun8i_mixer_drm_format_to_hw(u32 format, u32 *hw_format)
+ 	return -EINVAL;
+ }
+ 
++static void sun8i_de33_set_blend_space(struct regmap *regs, u32 base, bool composite)
++{
++	u32 black = composite ? 0xff108080 : SUN8I_MIXER_BLEND_COLOR_BLACK;
++
++	regmap_update_bits(regs, SUN8I_MIXER_BLEND_OUTCTL(base), GENMASK(9, 8),
++			   composite ? BIT(8) : 0);
++	regmap_write(regs, SUN8I_MIXER_BLEND_BKCOLOR(base), black);
++	regmap_write(regs, SUN8I_MIXER_BLEND_ATTR_FCOLOR(base, 0), black);
++}
++
+ static void sun8i_mixer_commit(struct sunxi_engine *engine,
+ 			       struct drm_crtc *crtc,
+ 			       struct drm_atomic_state *state)
+@@ -274,6 +285,14 @@ static void sun8i_mixer_commit(struct sunxi_engine *engine,
+ 
+ 	DRM_DEBUG_DRIVER("Committing changes\n");
+ 
++	if (mixer->cfg->de_type == SUN8I_MIXER_DE33) {
++		struct drm_crtc_state *new = drm_atomic_get_new_crtc_state(state, crtc);
++
++		if (drm_atomic_crtc_needs_modeset(new))
++			sun8i_de33_set_blend_space(engine->regs, bld_base,
++						   sun8i_de33_is_composite(new));
++	}
++
+ 	drm_for_each_plane(plane, state->dev) {
+ 		struct sun8i_layer *layer = plane_to_sun8i_layer(plane);
+ 		int w, h, x, y, zpos;
+diff --git a/drivers/gpu/drm/sun4i/sun8i_ui_layer.c b/drivers/gpu/drm/sun4i/sun8i_ui_layer.c
+index 185e4ae..8113217 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_ui_layer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_ui_layer.c
+@@ -20,6 +20,7 @@
+ #include <drm/drm_gem_dma_helper.h>
+ #include <drm/drm_probe_helper.h>
+ 
++#include "sun8i_csc.h"
+ #include "sun8i_mixer.h"
+ #include "sun8i_ui_layer.h"
+ #include "sun8i_ui_scaler.h"
+@@ -210,6 +211,8 @@ static void sun8i_ui_layer_atomic_update(struct drm_plane *plane,
+ 		return;
+ 	}
+ 
++	if (layer->cfg->de_type == SUN8I_MIXER_DE33)
++		sun8i_csc_config(layer, new_state);
+ 	sun8i_ui_layer_update_attributes(layer, plane);
+ 	sun8i_ui_layer_update_coord(layer, plane);
+ 	sun8i_ui_layer_update_buffer(layer, plane);

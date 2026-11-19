@@ -1,0 +1,53 @@
+#!/bin/busybox sh
+export PATH=/bin
+/bin/busybox --install -s /bin
+mount -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t debugfs debugfs /sys/kernel/debug
+exec </dev/console >/dev/console 2>&1
+
+echo "Zero 2W CVBS diagnostic / $(uname -r)"
+cat /proc/cmdline
+case " $(cat /proc/cmdline) " in
+*" cvbs.smoke=1 "*)
+	# Only for the emulated virt machine. Hold a VKMS framebuffer during inspection.
+	for connector in /sys/class/drm/card*-Virtual-*; do
+		[ -r "$connector/connector_id" ] || continue
+		card=${connector##*/card}
+		card=${card%%-*}
+		mkfifo /tmp/modetest-input
+		exec 3<>/tmp/modetest-input
+		cvbs-bars --vkms-smoke <&3 >/tmp/modetest.log 2>&1 &
+		client=$!
+		for step in 1 2 3 4 5; do
+			grep -q 'active=1' "/sys/kernel/debug/dri/$card/state" && break
+			sleep 1
+		done
+		state=/sys/kernel/debug/dri/$card/state
+		if kill -0 "$client" 2>/dev/null && grep -q 'active=1' "$state" &&
+		   grep -Eq 'fb=[1-9][0-9]*' "$state"; then
+			echo "VKMS active with modetest holding the framebuffer"
+			printf '\n' >&3
+			if wait "$client" && ! grep -q 'Atomic Commit failed' /tmp/modetest.log &&
+			   grep -q 'active=0' "$state"; then
+				echo "PASS virtual KMS modeset and disable"
+			fi
+		fi
+		cat /tmp/modetest.log
+		break
+	done
+	poweroff -f
+	;;
+*)
+	for step in 1 2 3 4 5 6 7 8 9 10; do
+		for path in /sys/class/drm/card*-Composite-*; do
+			[ -r "$path/connector_id" ] && break 2
+		done
+		sleep 1
+	done
+	modetest -M sun4i-drm -c -e
+	echo 'Run cvbs-bars PAL or cvbs-bars NTSC. Press Enter to release the display.'
+	while :; do setsid cttyhack sh; done
+	;;
+esac

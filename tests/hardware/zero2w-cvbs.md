@@ -1,9 +1,9 @@
 # Orange Pi Zero 2W: native CVBS bring-up
 
-Status, 2026-11-19: **DRM Composite and the TCON-TV0 → TVE0 → DAC0 route are
+Status, 2026-11-20: **DRM Composite and the TCON-TV0 → TVE0 → DAC0 route are
 implemented and tested offline against the Zero 2W Armbian 6.18.57 DTB.**
-The experimental boot profile dedicates TV0 to CVBS. DE33 output colour
-conversion and live acceptance are still open. See the
+The experimental boot profile dedicates TV0 to CVBS. The DE33 BT.601 conversion passed ARM64 register tests. The diagnostic kernel
+booted in QEMU and displayed a virtual framebuffer. Physical acceptance is pending. See the
 [kernel patch, overlay and test results](../../hardware/cvbs/README.md).
 The owner has the 24-pin expansion board and an EasyCAP USB capture device.
 The target is the board's native CVBS output, not HDMI-to-AV conversion.
@@ -69,8 +69,8 @@ root configurator. No MMIO writes or SD changes are part of this feature.
    manual and any licensed vendor reference driver. Confirm H618 differences.
 2. Verify the expansion-board CVBS path and DAC supply from the schematic.
    Retain serial-console/SSH recovery during display development.
-3. Complete DE33 colour conversion, build a bootable kernel, and test live
-   clock/reset sequencing, calibration and atomic enable/disable.
+3. Boot the [RAM diagnostic](../../hardware/cvbs/probe/README.md) from the serial
+   console. Test live clock/reset sequencing, calibration and atomic enable/disable.
 4. Confirm the running kernel exposes the intended composite connector and
    inspect its advertised modes/properties with `modetest -c` or `drm_info`.
    Do not substitute an invented connector name or copy HDMI timings.
@@ -97,7 +97,7 @@ remaining repeatability tests.
 | Item | Evidence required | Current state |
 |---|---|---|
 | Board + expansion revision | Schematic and verified CVBS wiring | Pending |
-| Kernel + DTB | Exact commits, patches, build and schema checks | Overlay applied to exact Armbian DTB, scoped schemas and sun4i Kbuild passed. Bootable image pending |
+| Kernel + DTB | Exact commits, patches, build and schema checks | Exact Armbian DTB verified. Diagnostic Image and initramfs booted in QEMU with VKMS. Physical H618 boot pending |
 | DRM encoder | Probe, connector, advertised modes, clean disable | PAL/NTSC atomic mode checks passed in QEMU; live probe and signal pending |
 | PAL / NTSC | Capture clips, settings and EasyCAP USB ID | Pending |
 | Recovery / repeatability | Boot, mode switching, cable tests | Pending |

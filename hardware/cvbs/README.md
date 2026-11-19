@@ -124,6 +124,8 @@ git -C "$KERNEL" apply "$out/h618-cvbs.patch"
 make -C "$HEADERS" ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- W=1 \
     M="$KERNEL/drivers/gpu/drm/sun4i" MO="$out/sun4i" built-in.a
 "$cvbs/tests/check-arm64.sh" "$HEADERS" "$KERNEL"
+"$cvbs/tests/check-de33.sh" "$HEADERS" "$KERNEL"
+"$cvbs/tests/check-bars.sh"
 python3 "$cvbs/tests/check-dtb.py" "$STOCK_DTB" "$HEADERS" --output "$out/profile"
 ```
 
@@ -136,17 +138,31 @@ python3 "$cvbs/tests/check-dtb.py" "$STOCK_DTB" "$HEADERS" --output "$out/profil
 | Kernel build | Combined patch applied cleanly. The target sun4i DRM directory built with ARM64 Kbuild W=1 and the archived configuration. |
 | QEMU AArch64 | Executed the component's mode validation and atomic check with the Linux DRM mode helpers. Both wire-to-input conversions passed. Mismatched TV standard, clone and altered timings were rejected. |
 
-## Remaining work for a picture
+## DE33 colour and boot test, 2026-11-20
 
-The H618 TVE expects YUV input. The Armbian DE33 mixer currently blends RGB;
-the older sun4i TV driver's output CSC offset is outside this mixer's
-0x20000-byte register window. Implement and verify the DE33 colour conversion
-before judging the colour bars. The BSP uses per-channel CSC.
-[DE33 vendor colour path](https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/de330/de_rtmx.c)
+The target DE33 driver advertises RGB framebuffers on both UI and VI planes.
+When the CRTC selects the TVDAC encoder, each visible RGB plane programs its
+channel CSC with the vendor DE330 full-range RGB to limited-range BT.601
+matrix. The blender selects YCbCr and uses Y=16, Cb=Cr=128 for background and
+pipe fill. When the CRTC selects HDMI the plane conversion is bypassed and the
+black level returns to RGB zero. This uses the physical plane register window
+at channel offset `0x800 + channel * 0x20000`. The SUN50IW9 BSP also disables
+the TCON colour unit’s range limiter for TV output.
+[Vendor conversion table](https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/de330/de_csc_table.c) ·
+[Vendor TV path](https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/disp_al_tcon.c)
 
-Build and boot a test kernel with recovery over SSH/serial for the first live
-test. Check DRM probe and both modes, followed by cold PAL/NTSC sync, colour,
-and HDMI recovery with the overlay removed. The offline checks cover the
-subsystem build and binary graph. The analog supply, signal and connector
-enumeration still require the board. [EasyCAP procedure](../../tests/hardware/zero2w-cvbs.md)
-· [Official Android image evidence](../../tests/hardware/zero2w-official-android.md)
+| Check | Result |
+|---|---|
+| Kbuild ARM64 CSC and mixer code, bounded register windows | Eight RGB bars decoded to their expected BT.601 values on channels 0, 6, 7, 1, 2 and 8. CVBS → HDMI → CVBS restored the plane and blender settings. |
+| Stock-board DTB | Overlay reapplied. The merged DTB matched the previously verified SHA-256. |
+| Diagnostic kernel | The complete ARM64 Image linked and booted to an external initramfs in QEMU with 256 MiB RAM. |
+| Virtual DRM scanout | The guest held a 640×480 XR24 framebuffer on VKMS. DRM debugfs showed an active CRTC with a framebuffer, then an inactive CRTC after release. |
+| PAL/NTSC diagnostic commands | Fixture checked the exact mode index, plane, TV enum (including NTSC=0) and rejection of a missing standard. The encoder timings and register sequences also passed the ARM64 tests above. |
+
+The [RAM boot and serial-console guide](probe/README.md) covers rebuilding the
+kernel, repeating the QEMU check and booting it once from U-Boot. The first
+physical milestone is a cold probe of the Composite connector and an EasyCAP
+capture in each standard. Record sync, colour, shutdown and HDMI recovery on
+the normal boot profile.
+[EasyCAP procedure](../../tests/hardware/zero2w-cvbs.md) ·
+[Official Android image evidence](../../tests/hardware/zero2w-official-android.md)
