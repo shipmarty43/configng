@@ -1,0 +1,217 @@
+diff --git a/Documentation/devicetree/bindings/display/allwinner,sun8i-r40-tcon-top.yaml b/Documentation/devicetree/bindings/display/allwinner,sun8i-r40-tcon-top.yaml
+index 7d849c4..a59378b 100644
+--- a/Documentation/devicetree/bindings/display/allwinner,sun8i-r40-tcon-top.yaml
++++ b/Documentation/devicetree/bindings/display/allwinner,sun8i-r40-tcon-top.yaml
+@@ -39,10 +39,14 @@ properties:
+     const: 1
+ 
+   compatible:
+-    enum:
+-      - allwinner,sun8i-r40-tcon-top
+-      - allwinner,sun20i-d1-tcon-top
+-      - allwinner,sun50i-h6-tcon-top
++    oneOf:
++      - enum:
++          - allwinner,sun8i-r40-tcon-top
++          - allwinner,sun20i-d1-tcon-top
++          - allwinner,sun50i-h6-tcon-top
++      - items:
++          - const: allwinner,sun50i-h616-tcon-top
++          - const: allwinner,sun50i-h6-tcon-top
+ 
+   reg:
+     maxItems: 1
+@@ -182,8 +186,7 @@ allOf:
+   - if:
+       properties:
+         compatible:
+-          contains:
+-            const: allwinner,sun50i-h6-tcon-top
++          const: allwinner,sun50i-h6-tcon-top
+ 
+     then:
+       properties:
+@@ -201,6 +204,28 @@ allOf:
+           items:
+             - description: TCON TV0 output clock name
+ 
++  - if:
++      properties:
++        compatible:
++          contains:
++            const: allwinner,sun50i-h616-tcon-top
++    then:
++      properties:
++        clocks:
++          minItems: 2
++          items:
++            - description: Interface clock
++            - description: TV0 clock from CCU
++            - description: TVE0 module clock supplying TV0 through the deflicker
++        clock-names:
++          minItems: 2
++          items:
++            - const: bus
++            - const: tcon-tv0
++            - const: tve0
++        clock-output-names:
++          maxItems: 1
++
+ examples:
+   - |
+     #include <dt-bindings/interrupt-controller/arm-gic.h>
+diff --git a/drivers/gpu/drm/sun4i/Makefile b/drivers/gpu/drm/sun4i/Makefile
+index a3b9c7d..424d7bc 100644
+--- a/drivers/gpu/drm/sun4i/Makefile
++++ b/drivers/gpu/drm/sun4i/Makefile
+@@ -29,6 +29,8 @@ sun4i-tcon-y			+= sun4i_rgb.o
+ 
+ obj-$(CONFIG_DRM_SUN4I)		+= sun4i-drm.o
+ obj-$(CONFIG_DRM_SUN4I)		+= sun4i-tcon.o
++sun50i-h618-tv-y := h618-drm.o h618-tve.o h618-tve-resources.o
++obj-$(CONFIG_DRM_SUN4I)		+= sun50i-h618-tv.o
+ obj-$(CONFIG_DRM_SUN4I)		+= sun4i_tv.o
+ obj-$(CONFIG_DRM_SUN4I)		+= sun6i_drc.o
+ 
+diff --git a/drivers/gpu/drm/sun4i/sun4i_drv.c b/drivers/gpu/drm/sun4i/sun4i_drv.c
+index 6986b32..b7c82f5 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_drv.c
++++ b/drivers/gpu/drm/sun4i/sun4i_drv.c
+@@ -153,7 +153,8 @@ static const struct component_master_ops sun4i_drv_master_ops = {
+ 
+ static bool sun4i_drv_node_is_connector(struct device_node *node)
+ {
+-	return of_device_is_compatible(node, "hdmi-connector");
++	return of_device_is_compatible(node, "hdmi-connector") ||
++	       of_device_is_compatible(node, "composite-video-connector");
+ }
+ 
+ static bool sun4i_drv_node_is_frontend(struct device_node *node)
+diff --git a/drivers/gpu/drm/sun4i/sun4i_tcon.c b/drivers/gpu/drm/sun4i/sun4i_tcon.c
+index d24dc19..8af5b09 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_tcon.c
++++ b/drivers/gpu/drm/sun4i/sun4i_tcon.c
+@@ -1289,10 +1289,15 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
+ 				   tcon->id);
+ 	}
+ 
+-	if (tcon->quirks->hdmi_pad)
++	if (tcon->quirks->hdmi_pad) {
++		struct device_node *out = of_graph_get_remote_node(dev->of_node, 1, 0);
++		bool cvbs = of_device_is_compatible(out, "allwinner,sun50i-h618-tv-encoder");
++
++		of_node_put(out);
+ 		regmap_update_bits(tcon->regs, SUN4I_TCON_GCTL_REG,
+ 				   SUN4I_TCON_GCTL_PAD_SEL,
+-				   SUN4I_TCON_GCTL_PAD_SEL);
++				   cvbs ? 0 : SUN4I_TCON_GCTL_PAD_SEL);
++	}
+ 
+ 	list_add_tail(&tcon->list, &drv->tcon_list);
+ 
+diff --git a/drivers/gpu/drm/sun4i/sun8i_tcon_top.c b/drivers/gpu/drm/sun4i/sun8i_tcon_top.c
+index 8adda57..daf8b3b 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_tcon_top.c
++++ b/drivers/gpu/drm/sun4i/sun8i_tcon_top.c
+@@ -121,6 +121,67 @@ static struct clk_hw *sun8i_tcon_top_register_gate(struct device *dev,
+ 				    bit, 0, lock);
+ };
+ 
++/* H618 boot profiles can give TV0 exclusively to its native deflicker.
++ * The pin and CCF gate must see the same parent, including the TVE divider.
++ * The TOP bus is on and its gates are still closed during component bind.
++ */
++static struct clk_hw *sun8i_tcon_top_register_tv0(struct device *dev,
++						  struct sun8i_tcon_top *top)
++{
++	struct device_node *tcon, *tve, *hdmi;
++	struct clk_hw *pixel;
++	struct clk *module;
++	const char *name;
++	bool cvbs;
++	u32 val;
++	int ret;
++
++	if (!of_device_is_compatible(dev->of_node, "allwinner,sun50i-h616-tcon-top"))
++		goto ccu_parent;
++
++	tcon = of_graph_get_remote_node(dev->of_node, 1, 2);
++	tve = tcon ? of_graph_get_remote_node(tcon, 1, 0) : NULL;
++	cvbs = of_device_is_compatible(tve, "allwinner,sun50i-h618-tv-encoder");
++	of_node_put(tve);
++	of_node_put(tcon);
++
++	val = readl(top->regs + TCON_TOP_TCON_TV_SETUP_REG);
++	if (!cvbs) {
++		writel(val & ~TCON_TOP_TV0_CLK_FROM_TVE,
++		       top->regs + TCON_TOP_TCON_TV_SETUP_REG);
++		goto ccu_parent;
++	}
++
++	hdmi = of_graph_get_remote_node(dev->of_node, 5, 0);
++	if (hdmi) {
++		of_node_put(hdmi);
++		return ERR_PTR(dev_err_probe(dev, -EBUSY,
++					     "TV0 is shared with enabled HDMI\n"));
++	}
++
++	module = devm_clk_get(dev, "tve0");
++	if (IS_ERR(module))
++		return ERR_CAST(module);
++	if (clk_get_rate(module) != 216000000)
++		return ERR_PTR(dev_err_probe(dev, -ERANGE, "TVE0 requires 216 MHz\n"));
++	pixel = devm_clk_hw_register_fixed_factor_parent_hw(dev, "tv0-tve-pixel",
++			__clk_get_hw(module), 0, 1, 8);
++	if (IS_ERR(pixel))
++		return pixel;
++	ret = of_property_read_string_index(dev->of_node, "clock-output-names", 0, &name);
++	if (ret)
++		return ERR_PTR(ret);
++
++	writel(val | TCON_TOP_TV0_CLK_FROM_TVE, top->regs + TCON_TOP_TCON_TV_SETUP_REG);
++	return clk_hw_register_gate_parent_hw(dev, name, pixel, 0,
++			top->regs + TCON_TOP_GATE_SRC_REG, TCON_TOP_TCON_TV0_GATE,
++			0, &top->reg_lock);
++
++ccu_parent:
++	return sun8i_tcon_top_register_gate(dev, "tcon-tv0", top->regs,
++			&top->reg_lock, TCON_TOP_TCON_TV0_GATE, 0);
++}
++
+ static int sun8i_tcon_top_bind(struct device *dev, struct device *master,
+ 			       void *data)
+ {
+@@ -182,19 +243,8 @@ static int sun8i_tcon_top_bind(struct device *dev, struct device *master,
+ 	writel(0, regs + TCON_TOP_PORT_SEL_REG);
+ 	writel(0, regs + TCON_TOP_GATE_SRC_REG);
+ 
+-	/*
+-	 * TCON TOP has two muxes, which select parent clock for each TCON TV
+-	 * channel clock. Parent could be either TCON TV or TVE clock. For now
+-	 * we leave this fixed to TCON TV, since TVE driver for R40 is not yet
+-	 * implemented. Once it is, graph needs to be traversed to determine
+-	 * if TVE is active on each TCON TV. If it is, mux should be switched
+-	 * to TVE clock parent.
+-	 */
+-	i = 0;
+-	clk_data->hws[CLK_TCON_TOP_TV0] =
+-		sun8i_tcon_top_register_gate(dev, "tcon-tv0", regs,
+-					     &tcon_top->reg_lock,
+-					     TCON_TOP_TCON_TV0_GATE, i++);
++	clk_data->hws[CLK_TCON_TOP_TV0] = sun8i_tcon_top_register_tv0(dev, tcon_top);
++	i = 1;
+ 
+ 	if (quirks->has_tcon_tv1)
+ 		clk_data->hws[CLK_TCON_TOP_TV1] =
+diff --git a/drivers/gpu/drm/sun4i/sun8i_tcon_top.h b/drivers/gpu/drm/sun4i/sun8i_tcon_top.h
+index 0390584..946ca55 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_tcon_top.h
++++ b/drivers/gpu/drm/sun4i/sun8i_tcon_top.h
+@@ -10,6 +10,7 @@
+ #include <linux/spinlock.h>
+ 
+ #define TCON_TOP_TCON_TV_SETUP_REG	0x00
++#define TCON_TOP_TV0_CLK_FROM_TVE			BIT(0)
+ 
+ #define TCON_TOP_PORT_SEL_REG		0x1C
+ #define TCON_TOP_PORT_DE0_MSK			GENMASK(1, 0)

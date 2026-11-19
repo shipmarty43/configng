@@ -1,7 +1,10 @@
 # Orange Pi Zero 2W: native CVBS bring-up
 
-Status, 2026-11-19: **TVE/DAC0 core implemented and cross-built, DRM integration and board validation pending**. See the [encoder code, Android comparison and build results](../../hardware/cvbs/README.md). This is not an
-enablement overlay or a claim that TV-out works on the current Armbian image.
+Status, 2026-11-19: **DRM Composite and the TCON-TV0 → TVE0 → DAC0 route are
+implemented and tested offline against the Zero 2W Armbian 6.18.57 DTB.**
+The experimental boot profile dedicates TV0 to CVBS. DE33 output colour
+conversion and live acceptance are still open. See the
+[kernel patch, overlay and test results](../../hardware/cvbs/README.md).
 The owner has the 24-pin expansion board and an EasyCAP USB capture device.
 The target is the board's native CVBS output, not HDMI-to-AV conversion.
 
@@ -54,8 +57,8 @@ replacing modules and are not a known-working CVBS configuration.
 - Desktop/DM: choose a session and its display settings. Neither implements
   the missing encoder, and GPU 3D acceleration is a separate capability.
 
-Do not invent a loadable overlay before the target kernel and driver bindings
-are selected. Preserve the old SD; use a test image for kernel/DT changes.
+Use the Zero 2W overlay with a test kernel containing the H618 route patch.
+Preserve the old SD and use a test image for kernel/DT changes.
 Kernel work belongs in a kernel patch series, not register writes from this
 root configurator. No MMIO writes or SD changes are part of this feature.
 
@@ -66,9 +69,8 @@ root configurator. No MMIO writes or SD changes are part of this feature.
    manual and any licensed vendor reference driver. Confirm H618 differences.
 2. Verify the expansion-board CVBS path and DAC supply from the schematic.
    Retain serial-console/SSH recovery during display development.
-3. Implement/review the missing DRM encoder/DAC and DT binding changes. Test
-   resource cleanup, clock/reset sequencing, calibration and atomic enable/
-   disable. Build the kernel and validate DT schemas before booting the test SD.
+3. Complete DE33 colour conversion, build a bootable kernel, and test live
+   clock/reset sequencing, calibration and atomic enable/disable.
 4. Confirm the running kernel exposes the intended composite connector and
    inspect its advertised modes/properties with `modetest -c` or `drm_info`.
    Do not substitute an invented connector name or copy HDMI timings.
@@ -95,8 +97,8 @@ remaining repeatability tests.
 | Item | Evidence required | Current state |
 |---|---|---|
 | Board + expansion revision | Schematic and verified CVBS wiring | Pending |
-| Kernel + DTB | Exact commits, patches, build and schema checks | Armbian 6.18.57 DTB inspected and encoder core cross-built; DRM/DT integration open |
-| DRM encoder | Probe, connector, advertised modes, clean disable | Pending |
+| Kernel + DTB | Exact commits, patches, build and schema checks | Overlay applied to exact Armbian DTB, scoped schemas and sun4i Kbuild passed. Bootable image pending |
+| DRM encoder | Probe, connector, advertised modes, clean disable | PAL/NTSC atomic mode checks passed in QEMU; live probe and signal pending |
 | PAL / NTSC | Capture clips, settings and EasyCAP USB ID | Pending |
 | Recovery / repeatability | Boot, mode switching, cable tests | Pending |
 | Configurator controls | Only validated modes, reversible settings | Gated on driver validation |

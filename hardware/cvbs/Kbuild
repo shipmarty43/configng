@@ -1,3 +1,2 @@
 # SPDX-License-Identifier: GPL-2.0-only
-# Compile the encoder core for the target kernel. DRM binding follows separately.
-obj-y += h618-tve.o h618-tve-resources.o
+obj-y += h618-tve.o h618-tve-resources.o h618-drm.o

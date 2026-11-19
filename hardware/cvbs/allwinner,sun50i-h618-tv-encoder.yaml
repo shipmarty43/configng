@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/display/allwinner,sun50i-h618-tv-encoder.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Allwinner H618 composite TV encoder
+
+maintainers:
+  - shipmarty43 <shipmarty43@users.noreply.github.com>
+
+description:
+  TVE0 receives pixels from TCON-TV0. The TOP register window controls
+  the DAC and the encoder window controls the video standard and timing.
+
+properties:
+  compatible:
+    const: allwinner,sun50i-h618-tv-encoder
+
+  reg:
+    items:
+      - description: TVE TOP and DAC
+      - description: TVE0 encoder
+
+  reg-names:
+    items:
+      - const: top
+      - const: encoder
+
+  clocks:
+    items:
+      - description: TOP bus gate
+      - description: TVE module clock
+      - description: Encoder bus gate
+
+  clock-names:
+    items:
+      - const: top-bus
+      - const: tve
+      - const: bus
+
+  resets:
+    items:
+      - description: TOP reset
+      - description: Encoder reset
+
+  reset-names:
+    items:
+      - const: top
+      - const: encoder
+
+  nvmem-cells:
+    maxItems: 1
+    description: Raw little-endian SID word at offset 0x2c containing DAC0 trim.
+
+  nvmem-cell-names:
+    const: tvout
+
+  ports:
+    $ref: /schemas/graph.yaml#/properties/ports
+    properties:
+      port@0:
+        $ref: /schemas/graph.yaml#/properties/port
+        description: TCON-TV0 pixel input
+      port@1:
+        $ref: /schemas/graph.yaml#/properties/port
+        description: Composite connector on DAC0
+    required:
+      - port@0
+      - port@1
+
+required:
+  - compatible
+  - reg
+  - reg-names
+  - clocks
+  - clock-names
+  - resets
+  - reset-names
+  - nvmem-cells
+  - nvmem-cell-names
+  - ports
+
+additionalProperties: false
+...

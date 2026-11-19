@@ -1,10 +1,11 @@
-# Orange Pi Zero 2W native CVBS encoder core
+# Orange Pi Zero 2W native CVBS on Armbian
 
-This patch-development directory contains a Linux regmap implementation for the
-H618 encoder and DAC0. It targets the kernel used on the project's Zero 2W,
-Armbian `6.18.57-current-sunxi64`. A DRM connector and TCON routing are the
-next integration steps. Nothing here registers a platform driver or changes a
-boot configuration. The Zero 3W/A733 has a different display subsystem.
+This directory contains the experimental H618 DRM component, changes to the
+sun4i display driver, and a boot-time overlay for Orange Pi Zero 2W running
+Armbian `6.18.57-current-sunxi64`. The composite profile uses DAC0 on the
+24-pin expansion connector. PAL is the default. HDMI uses the same TCON-TV0
+and is disabled in this profile. Removing the overlay restores the stock
+graph on the next boot. The kernel patch must accompany the overlay.
 
 ## Driver contract
 
@@ -24,7 +25,7 @@ boot configuration. The Zero 3W/A733 has a different display subsystem.
   requires recovery by the caller. Android's optional idle cable detection
   would keep part of the analog block powered. This prototype uses a full mute.
 
-Proposed resource names for the future DT binding follow the driver's lookups:
+The [TVE binding](allwinner,sun50i-h618-tv-encoder.yaml) describes these resources.
 
 | Type | Name | Target reference |
 |---|---|---|
@@ -52,7 +53,7 @@ trace of the running Android binary.
 |---|---|
 | Native and static AArch64/QEMU differential tests | PAL: 48 start + 6 stop register accesses. NTSC: 46 + 6. Both matched, including trim values 1 and 1023 in boundary cases. |
 | Fault injection on every start access | The port returned the error and muted output after a single transient read/write failure at each tested position. |
-| ARM64 kernel objects | Both compiled with Kbuild W=1 against the original Armbian headers (deb SHA-256 187ee5a741f2277b67eb3a69be8e5fb149b30df1335b2b6b7a2c8c1441336838). |
+| ARM64 kernel objects | Both core objects compiled with Kbuild W=1 against the original Armbian headers (deb SHA-256 187ee5a741f2277b67eb3a69be8e5fb149b30df1335b2b6b7a2c8c1441336838). |
 | Actual ARM64 Kbuild power sequencing under QEMU with clock/reset test doubles | 12 enable and 3 disable failure positions, rejected rounded clock rate, duplicate enable and inactive disable. All tested resource references were released. |
 
 Run from the configng repository root with a local checkout of the BSP at the
@@ -72,21 +73,80 @@ The target kernel was built with GCC 14.2; this cross-build used GCC 15.2.
 These tests cover compiled code and resource bookkeeping. Physical clocks,
 NVMEM values, colour, sync and HDMI coexistence require the board.
 
-## Integration against the board DTB
+## DRM route and timings
 
-Inspected the original DTB directly from the local Zero 2W Armbian
-26.11.0-trunk.108 XFCE image without mounting or changing it. Its SHA-256 is
-`4b90c01af0137b2297fb7243f200c5b32c33ce7e9b0e3d15fbde8c9733363758`.
-TCON-TV0 at 0x06515000 has one output endpoint, linked to TCON_TOP's HDMI
-input (reciprocal phandles 0x42/0x49). TCON_TOP's HDMI output goes to HDMI
-(0x3a/0x43). The DT has no encoder at the two Android TVE register windows.
-The phandles describe this artifact and must not be embedded in an overlay.
+The board graph connects the DE33 mixer through TCON_TOP to TCON-TV0. The new
+branch uses output port 1, endpoint 0 on TCON-TV0, input port 0 on TVE, and
+output port 1 on TVE to the physical composite connector. The sun4i component
+master stops at the passive connector. The TVE component creates a TVDAC
+encoder, derives its CRTC mask from the input graph, and registers a DRM
+Composite connector with the standard TV mode property. There is no cable
+sensing in this version.
 
-Next, integrate the register core with the target sun4i DRM component, define
-the binding and alternate graph route, select the TCON TV clock source, and
-arrange the YUV colour path and interlaced timings. Account for shared clocks
-and route ownership with HDMI in the atomic check. The 216 MHz TVE module
-clock is distinct from the DRM pixel clock. First-board acceptance includes
-cold PAL/NTSC capture and HDMI recovery on a separate test image.
-[Hardware procedure](../../tests/hardware/zero2w-cvbs.md)
+| DRM mode at the jack | Input supplied to the encoder |
+|---|---|
+| PAL 720×576i, 50 fields/s | 720×576 progressive, 864×625 total, 27 MHz |
+| NTSC 720×480i, approximately 59.94 fields/s | 720×480 progressive, 858×525 total, 27 MHz |
+
+The BSP enables the TVE deflicker for both standards. Its divide-by-eight
+pixel clock comes from the 216 MHz TVE module. The TCON_TOP driver selects
+this parent in TV_SETUP bit 0 and registers the divider and gate with the
+common clock framework. The original CCU path is selected for HDMI boots.
+The connector checks the requested TV standard against the wire timing and
+rejects cloning. TCON and mixer receive the full-frame adjusted mode.
+[Vendor timing table](https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/tv/drv_tv.c)
+· [Vendor TCON route](https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/tcon/de_lcd.c)
+
+## Reproduce the offline checks
+
+The stock DTB was extracted from
+`/boot/dtb-6.18.57-current-sunxi64/allwinner/sun50i-h618-orangepi-zero2w.dtb`
+in the owner's `26.11.0-trunk.108` XFCE image. The image build revision is
+`fac57a02f`. The separate kernel package was built on October 21 and records
+Linux `2ff600d29ee478d0a8d46ef8a58afb5e038fe692` and patch hash
+`6641bab59d342c0a`. For the DRM build we reconstructed the sun4i directory
+from Linux 6.18.57 and applied the 43 enabled Armbian patches touching it
+in the package-date series, in order. Its Makefile matches the one in the
+archived board headers. [Armbian patch series](https://github.com/armbian/build/blob/e4de830005f0d616fed576a9c046f3a8aeb24ef8/patch/kernel/archive/sunxi-6.18/series.conf)
+
+From the configng checkout, set `KERNEL` to the already Armbian-patched kernel
+source, `HEADERS` to the prepared arm64 headers and `STOCK_DTB` to the original
+binary DTB. The following produces one kernel patch, applies it to the chosen
+source checkout and compiles the display subsystem. The DT test needs
+`cpp`, `dtc`, `fdtoverlay`, `fdtget` and `fdtput`.
+
+```sh
+cvbs=$PWD/hardware/cvbs
+out=$(mktemp -d)
+"$cvbs/kernel-patch.sh" > "$out/h618-cvbs.patch"
+git -C "$KERNEL" apply --check "$out/h618-cvbs.patch"
+git -C "$KERNEL" apply "$out/h618-cvbs.patch"
+make -C "$HEADERS" ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- W=1 \
+    M="$KERNEL/drivers/gpu/drm/sun4i" MO="$out/sun4i" built-in.a
+"$cvbs/tests/check-arm64.sh" "$HEADERS" "$KERNEL"
+python3 "$cvbs/tests/check-dtb.py" "$STOCK_DTB" "$HEADERS" --output "$out/profile"
+```
+
+| Offline check on 2026-11-19 | Result |
+|---|---|
+| SHA-256 of stock DTB | `4b90c01af0137b2297fb7243f200c5b32c33ce7e9b0e3d15fbde8c9733363758` |
+| DTBO and merged DTB with dtc 1.7.2 | SHA-256 `b5a01066debb8e6032faa5ba6cf0873318fbe6d62ccf09736453ee8b7290790b` and `f629e8d2a1b612d0534fee75aff395fecc113922da9cc7b23fa145453c5d01aa` |
+| Graph and resources | Reciprocal endpoints, disabled HDMI branch, CCU gates and resets, independent SID TV and Ethernet cells. Corrupted reverse link, second active output and short trim cell rejected by the checker. |
+| DT schemas | New TVE and revised TCON_TOP bindings passed dt-doc-validate. Scoped dt-validate on the merged DTB passed for TVE, TCON_TOP, the analog jack and fixed layout. |
+| Kernel build | Combined patch applied cleanly. The target sun4i DRM directory built with ARM64 Kbuild W=1 and the archived configuration. |
+| QEMU AArch64 | Executed the component's mode validation and atomic check with the Linux DRM mode helpers. Both wire-to-input conversions passed. Mismatched TV standard, clone and altered timings were rejected. |
+
+## Remaining work for a picture
+
+The H618 TVE expects YUV input. The Armbian DE33 mixer currently blends RGB;
+the older sun4i TV driver's output CSC offset is outside this mixer's
+0x20000-byte register window. Implement and verify the DE33 colour conversion
+before judging the colour bars. The BSP uses per-channel CSC.
+[DE33 vendor colour path](https://github.com/orangepi-xunlong/linux-orangepi/blob/3a4a29414d558664847202f4d8919b8ab8bcf4a8/drivers/video/fbdev/sunxi/disp2/disp/de/lowlevel_v33x/de330/de_rtmx.c)
+
+Build and boot a test kernel with recovery over SSH/serial for the first live
+test. Check DRM probe and both modes, followed by cold PAL/NTSC sync, colour,
+and HDMI recovery with the overlay removed. The offline checks cover the
+subsystem build and binary graph. The analog supply, signal and connector
+enumeration still require the board. [EasyCAP procedure](../../tests/hardware/zero2w-cvbs.md)
 · [Official Android image evidence](../../tests/hardware/zero2w-official-android.md)

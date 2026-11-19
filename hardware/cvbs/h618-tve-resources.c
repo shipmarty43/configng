@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* Resource operations for the future sun4i DRM component. */
+/* Resource operations for the H618 DRM component. */
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/nvmem-consumer.h>

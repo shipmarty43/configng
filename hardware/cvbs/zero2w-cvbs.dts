@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/sun50i-h616-ccu.h>
+#include <dt-bindings/reset/sun50i-h616-ccu.h>
+
+/ {
+	compatible = "xunlong,orangepi-zero2w";
+};
+
+&{/} {
+	cvbs-connector {
+		compatible = "composite-video-connector";
+		port {
+			cvbs_in: endpoint {
+				remote-endpoint = <&tve_out>;
+			};
+		};
+	};
+};
+
+&{/soc} {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	tv-encoder@6520000 {
+		compatible = "allwinner,sun50i-h618-tv-encoder";
+		reg = <0x06520000 0x100>, <0x06524000 0x3fc>;
+		reg-names = "top", "encoder";
+		clocks = <&ccu CLK_BUS_TVE_TOP>, <&ccu CLK_TVE0>,
+			 <&ccu CLK_BUS_TVE0>;
+		clock-names = "top-bus", "tve", "bus";
+		resets = <&ccu RST_BUS_TVE_TOP>, <&ccu RST_BUS_TVE0>;
+		reset-names = "top", "encoder";
+		nvmem-cells = <&tv_trim>;
+		nvmem-cell-names = "tvout";
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				tve_in: endpoint {
+					remote-endpoint = <&tv0_out>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+				tve_out: endpoint {
+					remote-endpoint = <&cvbs_in>;
+				};
+			};
+		};
+	};
+};
+
+&sid {
+	nvmem-layout {
+		compatible = "fixed-layout";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		tv_trim: tv-calibration@2c {
+			reg = <0x2c 4>;
+		};
+	};
+};
+
+&tcon_tv0_out {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	tv0_out: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&tve_in>;
+	};
+	endpoint@1 {
+		reg = <1>;
+		status = "disabled";
+	};
+};
+
+&tcon_top_hdmi_in_tcon_tv0 { status = "disabled"; };
+
+&tcon_top {
+	clocks = <&ccu CLK_BUS_TCON_TOP>, <&ccu CLK_TCON_TV0>, <&ccu CLK_TVE0>;
+	clock-names = "bus", "tcon-tv0", "tve0";
+	assigned-clocks = <&ccu CLK_TVE0>;
+	assigned-clock-rates = <216000000>;
+};
+
+/* TV0 has one timing generator and one input-clock selector. */
+&hdmi { status = "disabled"; };
