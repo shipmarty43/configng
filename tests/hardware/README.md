@@ -4,6 +4,8 @@ This directory preserves board evidence and reproducible experiments for future
 Armbian work. Start with the [2026-10-26 validation report](zero2w-validation-2026-10-26.md).
 Results describe one H618 board and image, not universal Armbian support.
 
+The [Zero 3W port assessment and PDF index](zero3w-port.md) compares this baseline with the A733 board.
+
 ## Baseline and source provenance
 
 - Board: Orange Pi Zero 2W, Allwinner H618, Mali-G31 MC1, 4 GB RAM.

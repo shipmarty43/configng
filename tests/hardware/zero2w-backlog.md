@@ -1,7 +1,7 @@
 # Orange Pi Zero 2W backlog
 
 Stable numbering from the last numbered task list in the project conversation.
-Updated 2026-10-31. Earlier lists used different numbering; use these names with
+Updated 2026-11-19. Earlier lists used different numbering; use these names with
 numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 `codex/display-controls`; its remaining limitations are retained separately.
 
@@ -19,6 +19,7 @@ numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 | 10 | Web UI and release | Real device data, authentication/access control, integration, install/update/rollback and branch consolidation |
 | 11 | USB host/device | [USB0 boot role module](zero2w-usb-role.md) added and tested locally; board off. Verify UPS/VBUS/cabling, both roles, USB1 modem/hub continuity, and separate gadget functions |
 | 12 | Mobile modem | [MM/NM profile controls](zero2w-modem.md) added; SIM7600G-H / Kyivstar identified, initial APN internet; verify USB driver/composition, SIM, routes/DNS, reconnection and autoconnect on USB1. Add GNSS capability discovery and the shared location adapter; hardware modem trials remain deferred |
+| 13 | Orange Pi Zero 3W / A733 port | [SoC manuals, board schematics, header comparison and ordered port tasks](zero3w-port.md). Schematic-level assessment complete. Target board profile, overlays and hardware acceptance pending. |
 
 Current accepted wiring: physical **32 ↔ 29 through 1 kOhm**, with stock
 `pwm1-pi11`. Older 37 ↔ 29 tests must not be rerun on this connection. FT232H is
