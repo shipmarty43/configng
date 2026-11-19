@@ -82,6 +82,21 @@ Do not select a spidev node belonging to SPI flash. UART use must not compete
 with a login console or kernel console; any console removal needs rollback.
 Do not copy TCXO voltage or RF-switch settings from a different SX1262 module.
 
+## Direct SPI HAT driver, 2026-11-20
+
+The [armbian-gui SX1262 driver, overlay and acceptance record](https://github.com/shipmarty43/armbian-gui/blob/cfe82a273301374e464aeaf0941305fb0611c199/docs/hardware/SX1262.md)
+implement the Python GPIO migration for this shield. RESET, BUSY, DIO1 and
+the external RF switch use individual checked line requests. The Armbian SPI
+core owns CS0 on PI3. The merged stock 6.18.57 DTB resolves to the header
+SPI1 controller with a 2 MHz radio endpoint. The driver discovers its Linux
+bus number. The 433.92 MHz profile starts in standby.
+
+The manufacturer demo drives external DIO4 (physical 31) LOW for TX and HIGH
+for RX and enables DIO2 RF-switch control in the chip. The ARM64 tests
+exercise both directions, ownership, delayed IRQs and fail-fast probing of
+a virtual spidev bus. The physical switch and RF link still need a peer and
+a board. [Waveshare demo](https://files.waveshare.com/wiki/SX1262-XXXM-LoRaWAN-GNSS-HAT/Sx126x_lorawan_hat_code.zip)
+
 ## Existing application audit
 
 Inspected `armbian-gui` revision `caa06d88313cddedd15ace4aa8c67c7b06c8a37b`:

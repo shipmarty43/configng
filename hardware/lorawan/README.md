@@ -105,6 +105,14 @@ This is not suitable for arbitrary concurrent spidev clients. The profile uses
 2 MHz mode 0, crystal operation (DIO3 TCXO voltage zero), DIO2 RF switch and the
 additional pin-31 transmit switch. No device-tree overlay is installed yet.
 
+A later [standalone SX1262 driver test](https://github.com/shipmarty43/armbian-gui/blob/cfe82a273301374e464aeaf0941305fb0611c199/docs/hardware/SX1262.md) established two porting issues
+for this native HAL. Linux 6.18.57 sun6i SPI does not advertise `SPI_NO_CS`;
+the Python driver's overlay uses kernel-managed CS on physical 40. This HAL
+still requests software CS. Also, RadioLib's current `setRfSwitchPins(NC,31)`
+drives physical 31 HIGH in TX, while the Waveshare example uses LOW in TX
+and HIGH in RX. Align CS ownership and switch polarity before radio trials.
+The Python driver's test results apply only to its own implementation.
+
 Only after checking these assumptions and arranging a matching gateway should
 both activation flags become true. Then use **System → Hardware → LoRaWAN node**
 in the fork, or:
