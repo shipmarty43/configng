@@ -2,7 +2,11 @@
 Description=Meshtastic local simulator
 
 [Service]
-ExecStart=/opt/opi-mesh/meshtasticd --sim --hwid=16843009 --port=4403 --fsdir=/var/lib/opi-meshtastic-sim
+# ip configures only this unit's private loopback namespace before the firmware starts.
+ExecStartPre=!/usr/sbin/ip link set lo multicast on
+ExecStartPre=!/usr/sbin/ip route replace 224.0.0.69/32 dev lo src 127.0.0.1
+ExecStartPre=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/sim_region.py
+ExecStart=/opt/opi-mesh/meshtasticd --config=/opt/opi-mesh/meshtastic-sim.yaml --port=4403 --fsdir=/var/lib/opi-meshtastic-sim
 DynamicUser=yes
 StateDirectory=opi-meshtastic-sim
 StateDirectoryMode=0700
@@ -14,8 +18,8 @@ PrivateTmp=yes
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
-Restart=on-failure
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+Restart=always
 RestartSec=3
 
 [Install]

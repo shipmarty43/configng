@@ -1,6 +1,5 @@
 """Private LXMF text mailbox for the Armbian configurator."""
 import argparse
-from contextlib import closing, contextmanager
 from datetime import datetime
 import fcntl
 import json
@@ -10,18 +9,10 @@ import re
 import sqlite3
 import sys
 import time
-import unicodedata
+from mesh_mail_store import database, display, user_text
 
 STATE = Path("/var/lib/opi-lxmf")
 PAGE = 16
-
-
-@contextmanager
-def database(state):
-    with closing(sqlite3.connect(state / "mailbox.sqlite", timeout=10)) as db:
-        db.row_factory = sqlite3.Row
-        with db:
-            yield db
 
 
 def initialize(state):
@@ -43,21 +34,6 @@ def address(value):
     if not isinstance(value, str) or not re.fullmatch(r"[a-fA-F0-9]{32}", value):
         raise ValueError("Enter the 32 hexadecimal digits of the LXMF delivery address.")
     return value.lower()
-
-
-def display(value, multiline=False):
-    # Keep message data out of terminal control sequences and dialog's markup.
-    text = "".join(c if (c == "\n" and multiline) or c.isprintable() else " " for c in value)
-    return text if multiline else text.replace("\\", "＼")
-
-
-def user_text(value, limit, required=True):
-    if not isinstance(value, str) or (required and not value.strip()):
-        raise ValueError("Text is empty.")
-    if len(value.encode("utf-8")) > limit or any(
-            unicodedata.category(c) == "Cc" and c not in "\n\t" for c in value):
-        raise ValueError(f"Enter UTF-8 text of at most {limit} bytes without control characters.")
-    return value
 
 
 def save_contact(db, name, dest):

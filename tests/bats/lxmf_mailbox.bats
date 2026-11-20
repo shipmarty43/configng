@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 setup() {
     declare -gA module_options=()
+    source "$BATS_TEST_DIRNAME/../../tools/modules/system/module_mesh_mail_ui.sh"
     source "$BATS_TEST_DIRNAME/../../tools/modules/system/module_lxmf.sh"
     calls="$BATS_TEST_TMPDIR/calls"
     _lxmf_cli() {

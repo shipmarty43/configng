@@ -1,0 +1,27 @@
+[Unit]
+Description=Messaging for the local Meshtastic simulator
+Requires=opi-meshtastic-sim.service
+After=opi-meshtastic-sim.service
+PartOf=opi-meshtastic-sim.service
+JoinsNamespaceOf=opi-meshtastic-sim.service
+
+[Service]
+ExecStart=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/meshtastic_mail.py serve
+DynamicUser=yes
+StateDirectory=opi-meshtastic-mail
+StateDirectoryMode=0700
+UMask=0077
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_NETLINK
+MemoryMax=160M
+TasksMax=48
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=opi-meshtastic-sim.service

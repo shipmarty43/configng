@@ -9,19 +9,22 @@ import subprocess
 import tempfile
 import time
 
-from meshtastic.tcp_interface import TCPInterface
+from sim_client import connect_simulator
 from pubsub import pub
 
 
-def start_node(stack, root, index):
+def start_node(stack, root, index, prepare_region=False):
     port = 14403 + index
     directory = root / str(index)
-    directory.mkdir()
+    directory.mkdir(exist_ok=True)
     config = directory / "config.yaml"
     config.write_text(
         "Lora:\n  Module: sim\nConfig:\n  EnableUDP: true\n"
         f'General:\n  MACAddress: "02:00:22:33:44:0{index + 1}"\n'
     )
+    if prepare_region:
+        from sim_region import prepare
+        prepare(directory, config, port)
     log = stack.enter_context((directory / "daemon.log").open("w+"))
     process = subprocess.Popen(
         ["/opt/opi-mesh/meshtasticd", "--config", str(config), "--port", str(port),
@@ -39,7 +42,7 @@ def start_node(stack, root, index):
     deadline = time.monotonic() + 15
     while process.poll() is None and time.monotonic() < deadline:
         try:
-            client = TCPInterface(hostname="127.0.0.1", portNumber=port, timeout=7)
+            client = connect_simulator(port, 7)
         except ConnectionRefusedError:
             time.sleep(0.2)
             continue

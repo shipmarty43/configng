@@ -1,0 +1,6 @@
+Lora:
+  Module: sim
+Config:
+  EnableUDP: true
+General:
+  MACAddress: "80:00:01:01:01:01"

@@ -9,7 +9,8 @@ GNSS selection and the LoRaWAN radio service have separate lifecycles.
 | Configurator action | Effect |
 |---|---|
 | Start / Stop | Changes the selected service for the current boot. State survives a stop and start. |
-| Inspect Meshtastic | Connects the official Python client to the simulator's phone API on port 4403 in its private network namespace. Prints node ID and firmware version. |
+| Inspect Meshtastic | Shows the node ID and firmware from the messaging client's handshake. When the messaging service is stopped, uses a temporary client. |
+| Meshtastic messages | Read received texts, choose a known remote node, compose a direct text and inspect acknowledgements. |
 | Inspect Reticulum | Runs `rnstatus` against the named shared instance using the daemon's account and state directory. Reports interface, peer and traffic statistics. |
 | LXMF mailbox | Opens the inbox, outbox, contact picker and composer. The background receiver keeps accepting messages after the menu closes. |
 
@@ -18,6 +19,65 @@ sudo armbian-config-zero2w --cmd MESH01
 sudo armbian-config-zero2w --api module_mesh_local meshtastic inspect
 sudo armbian-config-zero2w --api module_mesh_local reticulum inspect
 ```
+
+## Meshtastic messages
+
+Open **Mesh services → Meshtastic simulator → Read and send Meshtastic texts**.
+The background client listens on the simulator's private phone API while the
+menu is closed. Inbox entries identify the sender and distinguish direct text
+from channel traffic. Choose **Send direct text to a node**, select the remote
+name and `!nodeID`, then enter the message. The installed SDK accepts up to
+233 UTF-8 bytes. Only remote node IDs appear in the picker. A known node can
+be offline.
+
+**Discover simulator nodes** advertises the local firmware's own NodeInfo
+and requests peer NodeInfo over virtual multicast. Use it when a second
+simulator joins the private network. The outbox records `acknowledged` only
+for a matching routing ACK from the selected destination. A local send can
+also fail explicitly or remain `unconfirmed`. Interrupted submissions are
+never replayed automatically. An ACK is a node-level receipt.
+
+The simulator profile selects `Module: sim`. A private loopback route carries
+the simulated packets. On a fresh virtual filesystem the startup helper sets
+EU_433 through the local firmware API so that the firmware can generate its
+own DM key pair. An existing configured region is preserved. History is
+private to `/var/lib/opi-meshtastic-mail/` and survives service restarts.
+The official Python client handles addressed sends and receive events.
+[Meshtastic Python API](https://python.meshtastic.org/)
+
+### Two-simulator menu check
+
+After installing the files below, start the updated simulator and enable the
+mailbox with it:
+
+```sh
+sudo systemctl enable opi-meshtastic-mail.service
+sudo systemctl restart opi-meshtastic-sim.service
+```
+
+Run the peer in a second terminal on the board. Its persistent virtual state
+keeps the same peer keys across runs. Pick a fresh test label each time.
+
+```sh
+sudo systemd-run --quiet --wait --collect --pipe -p JoinsNamespaceOf=opi-meshtastic-sim.service \
+    -p PrivateNetwork=yes -p PrivateDevices=yes -p PrivateTmp=yes -p DynamicUser=yes \
+    -p User=opi-meshtxt-peer -p StateDirectory=opi-meshtxt-peer -p StateDirectoryMode=0700 \
+    -p MemoryMax=180M -p TasksMax=64 -p RuntimeMaxSec=300 \
+    /opt/opi-mesh/venv/bin/python -u /opt/opi-mesh/check_meshtastic_mail_menu.py \
+    /var/lib/opi-meshtxt-peer RUN_ID
+```
+
+When the peer is ready, choose **Discover simulator nodes**. Open the incoming
+text from `!22334402`, select that same node in the composer and reply with
+`Ответ из меню A [RUN_ID]`, substituting the test label. The independent client
+checks the exact text, source `!01010101` and destination `!22334402`.
+
+On the Zero 2W on 2026-11-20, two native firmware 2.7.26 instances and the
+2.7.11 Python SDK passed two round trips through the installed TUI. Outgoing
+packet IDs 4243036431 and 423149662 matched the peer's received IDs, and the
+outbox showed the peer ACK. The first conversation was reopened after a
+simulator restart. A clean virtual filesystem also produced a 32-byte public
+key in NodeInfo. Physical RF acceptance remains pending.
 
 ## LXMF mailbox
 
@@ -44,7 +104,7 @@ Install the fork containing the mailbox menu and run from its checkout:
 
 ```sh
 sudo /opt/opi-mesh/venv/bin/pip install --only-binary=:all: 'lxmf==1.3.1' 'rns==1.6.1'
-sudo install -m644 hardware/mesh/lxmf_mailbox.py /opt/opi-mesh/
+sudo install -m644 hardware/mesh/{lxmf_mailbox,mesh_mail_store}.py /opt/opi-mesh/
 sudo install -m644 hardware/mesh/opi-lxmf.service /usr/local/lib/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now opi-lxmf.service
@@ -74,6 +134,7 @@ sudo install -Dm755 "$stage/native/usr/bin/meshtasticd" /opt/opi-mesh/meshtastic
 sudo python3 -m venv --system-site-packages /opt/opi-mesh/venv
 sudo /opt/opi-mesh/venv/bin/pip install 'meshtastic==2.7.11' 'rns==1.6.1' 'lxmf==1.3.1'
 sudo install -m644 hardware/mesh/*.py /opt/opi-mesh/
+sudo install -m644 hardware/mesh/meshtastic-sim.yaml /opt/opi-mesh/
 sudo install -d /etc/opi-mesh /usr/local/lib/systemd/system
 # Preserve any existing site-specific TCP configuration on upgrade.
 if ! sudo test -e /etc/opi-mesh/reticulum.conf; then

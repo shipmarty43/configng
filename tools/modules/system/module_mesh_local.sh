@@ -16,8 +16,13 @@ function module_mesh_local() {
             service=$(dialog_menu 'Mesh services' 'Choose a software node' 14 76 3 -- \
                 meshtastic 'Meshtastic simulator (private network)' reticulum 'Reticulum over TCP' "${mailbox[@]}") || return 0
             if [[ "$service" == lxmf ]]; then module_lxmf select; return; fi
-            action=$(dialog_menu 'Mesh services' 'Choose an action' 16 76 4 -- \
-                status 'Show service state' inspect 'Query the running node' start 'Start for this boot' stop 'Stop service') || return 0
+            local -a messaging=()
+            if [[ "$service" == meshtastic && -f /opt/opi-mesh/meshtastic_mail.py ]]; then
+                messaging=(messages 'Read and send Meshtastic texts')
+            fi
+            action=$(dialog_menu 'Mesh services' 'Choose an action' 17 76 5 -- \
+                status 'Show service state' inspect 'Query the running node' start 'Start for this boot' stop 'Stop service' "${messaging[@]}") || return 0
+            if [[ "$action" == messages ]]; then module_meshtastic_mail select; return; fi
             output=$(module_mesh_local "$service" "$action" 2>&1) || result=$?
             dialog_msgbox 'Mesh services' "${output:-Done.}" 20 76
             return "$result" ;;
@@ -32,6 +37,10 @@ function module_mesh_local() {
         inspect)
             systemctl is-active --quiet "$service" || { echo 'Start the service first.' >&2; return 1; }
             if [[ "$1" == meshtastic ]]; then
+                if [[ -f /opt/opi-mesh/meshtastic_mail.py ]] && systemctl is-active --quiet opi-meshtastic-mail.service; then
+                    _meshtastic_mail_cli inspect
+                    return
+                fi
                 systemd-run --quiet --collect --wait --pipe -p "JoinsNamespaceOf=$service" \
                     -p PrivateNetwork=yes -p PrivateDevices=yes -p DynamicUser=yes \
                     -p RuntimeMaxSec=25 /opt/opi-mesh/venv/bin/python /opt/opi-mesh/sim_info.py
