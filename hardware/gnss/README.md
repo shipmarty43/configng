@@ -16,8 +16,11 @@ sudo systemctl daemon-reload
 ```
 
 Configure the board's UART for the L76K and give its verified path to gpsd at
-9600 baud. Check the active kernel console and serial getty before assigning
-the UART. In **GNSS receivers → Waveshare UART** enter the exact device path
+9600 baud. On the tested Zero 2W this is `/dev/ttyS0`. Use **System → Hardware
+→ Linux console TTY** to move the Linux console to `tty1`, then reboot and
+check the active console and serial login in Status. See the
+[console and L76K board test](../../tests/hardware/zero2w-console-tty.md).
+In **GNSS receivers → Waveshare UART** enter the exact device path
 that gpsd reports. The provider reads TPV on localhost port 2947. gpsd owns the
 serial descriptor. A missing path is reported as disabled. [gpsd TPV protocol](https://gpsd.gitlab.io/gpsd/gpsd_json.html)
 

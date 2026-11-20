@@ -48,6 +48,8 @@ header inventory, ARM64 gpio-sim run and Python loopback tests for the board.
 The [radio ecosystem plan](zero2w-radio-ecosystem.md) records the accepted UPS
 scope and the Waveshare SX1262/GNSS, Meshtastic and Reticulum
 integration boundaries. It is a design checkpoint, not radio test evidence.
+The [console selector and L76K board test](zero2w-console-tty.md) covers
+the reboot onto `tty1`, release of UART0 and reception of NMEA on the shield.
 
 The [LoRaWAN software checkpoint](../../hardware/lorawan/README.md) adds an
 optional EU433 Class A node service and configurator controls. Host tests cover

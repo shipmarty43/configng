@@ -88,6 +88,17 @@
                             "help": "Inspect roles and UDC; validate and save USB0 boot role with a backup. Device functions require separate configuration."
                         },
                         {
+                            "id": "CTTY01",
+                            "description": "Select the Linux console TTY for the next boot",
+                            "short": "Linux console TTY",
+                            "module": "module_generic",
+                            "command": ["module_console_tty select"],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_console_tty_available",
+                            "help": "Choose a local VT, an enabled UART, or UART plus display. Inspect the active console and restore saved settings."
+                        },
+                        {
                             "id": "GNSS01",
                             "description": "Select the local GNSS receiver and inspect fix age",
                             "short": "GNSS receivers",
