@@ -495,6 +495,36 @@ def write_software_section(top):
     return count
 
 
+def create_markdown_technical(item, level=1):
+    """Recursively create Markdown content for technical documentation from JSON."""
+    md_content = f"{'#' * level} {item['id']}\n\n"
+    md_content += f"**description:** {item.get('description', '')}\n\n"
+
+    if 'about' in item and item['about']:
+        md_content += f"**about:** \n{item['about']}\n\n"
+
+    if 'command' in item:
+        md_content += f"**Command:** \n~~~\n{', '.join(item['command'])}\n~~~\n\n"
+
+    if 'author' in item:
+        md_content += f"**Author:** {item['author']}\n\n"
+
+    if 'status' in item:
+        md_content += f"**Status:** {item['status']}\n\n"
+
+    if 'condition' in item:
+        md_content += f"**Condition:**\n~~~\n{item['condition']}\n~~~\n"
+
+    md_content += '\n'  # Add extra line for spacing
+
+    # Recursively add sub-items if they exist
+    if 'sub' in item:
+        for sub_item in item['sub']:
+            md_content += create_markdown_technical(sub_item, level + 1)
+
+    return md_content
+
+
 def write_technical_markdown_files(data):
     DOCS_DIR.mkdir(exist_ok=True)
     for item in data['menu']:
