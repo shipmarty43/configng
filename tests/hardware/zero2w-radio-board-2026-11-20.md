@@ -37,3 +37,28 @@ No SPI frame, RESET pulse or radio transmission was requested. The endpoint
 confirms Linux binding. The next chip-level test is a standby status read with
 the other radios physically isolated or with their wiring and idle state
 established. Release the header UART from console ownership before the GNSS test.
+
+## Isolated shield after power cycle
+
+The user disconnected CC1101 and nRF24 and powered the board up again.
+The host key, Zero 2W compatible, kernel version and the SPI1 device matched.
+All four known radio services were inactive. The per-device lock was acquired
+before opening spidev.
+
+* Two read-only GetStatus transfers at 500 kHz each returned bytes
+  `a2 22`. The status byte at index 1 indicated STBY_RC.
+* On the production Python driver's 2 MHz path, two consecutive reset,
+  initialization and close cycles returned status `0x22` and packet type
+  `0x01` (LoRa). GPIO 12, 31, 36 and 38 were claimed during initialization,
+  released on close, and the process lock could immediately be reacquired.
+* In a second two-cycle run, the radio generated its own receive-timeout IRQ.
+  For 50 ms and 150 ms receive windows, the rising edge at physical pin 36
+  was timestamped 50.51 ms and 150.76 ms after the host started the RX
+  command. Both reads returned IRQ flags `0x0200`. Clearing the flag
+  brought DIO1 low. Both cycles returned to standby and released ownership.
+
+The [reproducible board test](https://github.com/shipmarty43/armbian-gui/blob/3c9990d4d1dc268e690307f9a1d641acf99ac36a/tests/check_sx1262_board.py)
+uses config, read and optionally timed RX commands. The measurements include
+host command overhead. No transmit opcode or over-the-air peer was used.
+RF link and LoRaWAN gateway acceptance are pending. The GNSS UART remained
+assigned to the serial console.
