@@ -118,6 +118,8 @@ For future LAN use, configure the desired Reticulum TCP interface as described b
 
 ## Install on an ARM64 Zero 2W running Ubuntu 26.04
 
+The [offline package kit](../../packaging/zero2w/README.md) bundles the configurator, mesh services and ARM64 runtime for Resolute. It includes both versions for an APT upgrade and downgrade. The manual setup follows below.
+
 The board used the ARM64 package from the [Meshtastic beta PPA](https://meshtastic.org/docs/meshtasticd/installation/ubuntu/),
 the upstream Meshtastic Python client, and Mark Qvist's [Reticulum package](https://pypi.org/project/rns/1.6.1/).
 The following commands run from the fork checkout. Only the native executable is needed from the PPA package.

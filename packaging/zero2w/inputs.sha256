@@ -1,0 +1,14 @@
+6180a7be3b12eae3abb75a532c00333cf2254e4704c41c401cee5b555f55843d  meshtasticd_2.7.26.61~ppa54e0d8d~resolute_arm64.deb
+3cb08e03039f6e477c276252540416b287d4e3de63a86732780ff93a2f6e73ef  wheels/bleak-3.1.0-py3-none-any.whl
+e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1  wheels/certifi-2026.10.23-py3-none-any.whl
+8d86d6fc60743dc916eb79e2eb1ec4818e21e427731543af40a3021851174a13  wheels/charset_normalizer-3.5.2-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl
+0a772708d25c11e980642781f603882e3dc51b5767be19075ffc5a484c4d3411  wheels/dbus_fast-5.2.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl
+ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c  wheels/idna-3.20-py3-none-any.whl
+42795725445177c78522154c234bc0aabcdb93b7f85883a27921a37ec86d9416  wheels/lxmf-1.3.1-py3-none-any.whl
+adb020f2cd7ace53896c6bf487f2d2136498dd88052c41a2aa6fb7a4634971b5  wheels/meshtastic-2.7.11-py3-none-any.whl
+e11e1f0180583a2af89db6a2ecd9e8dc40aa6d2988ca175bfd0e6d12ea72d74e  wheels/protobuf-7.36.2-cp310-abi3-manylinux2014_aarch64.whl
+89c3e274e634fea19de881bb45152815d9c1aaa0120215f85200ba56843372f4  wheels/pypubsub-4.0.7-py3-none-any.whl
+c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0  wheels/pyserial-3.5-py2.py3-none-any.whl
+2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0  wheels/requests-2.34.2-py3-none-any.whl
+f276cb7d818df5cfd6ecc59a8a4f3344e47d46acdfdb48e75537400309547959  wheels/rns-1.6.1-0-py3-none-any.whl
+024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f  wheels/tabulate-0.9.0-py3-none-any.whl
