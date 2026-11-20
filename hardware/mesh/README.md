@@ -50,7 +50,7 @@ from the menu. The simulator uses a fixed test node ID and private
 `/var/lib/opi-meshtastic-sim` storage. Reticulum keeps its identity and state
 in `/var/lib/opi-reticulum`. Its service reads `/etc/opi-mesh/reticulum.conf`
 on every start. To accept LAN peers, set `listen_ip` to the board's intended
-LAN address and restart the Reticulum service. The tested profile uses loopback.
+LAN address and restart the Reticulum service. The default profile uses loopback.
 [Reticulum TCP interface configuration](https://reticulum.network/manual/interfaces)
 
 ## Reproduce the board checks
@@ -81,6 +81,47 @@ sudo systemd-run --quiet --collect --wait --pipe -p DynamicUser=yes \
     /opt/opi-mesh/venv/bin/python /opt/opi-mesh/check_reticulum_tcp.py
 ```
 
+### Two physical hosts over LAN
+
+Use a workstation running Python 3.14 and RNS 1.6.1, and the installed
+`opi-reticulum` on the board. During the acceptance run the daemon kept its
+loopback listener and temporarily added a TCP server on its Ethernet address.
+The systemd address filter allowed localhost and the workstation address.
+To repeat with the LAN profile above, restrict access to the intended peer
+while the listener is active.
+
+On the workstation, set `BOARD_IP` to the board's Ethernet address and
+`RNS_PYTHON` to the absolute path to the interpreter in the RNS environment.
+Run from the fork checkout:
+
+```sh
+systemd-run --user --quiet --wait --pipe -p MemoryHigh=160M -p MemoryMax=256M \
+    -p MemorySwapMax=0 -p CPUQuota=150% -p TasksMax=64 -p RuntimeMaxSec=565 \
+    --setenv=PYTHON_CPU_COUNT=2 "$RNS_PYTHON" \
+    "$PWD/hardware/mesh/check_reticulum_lan.py" workstation "$BOARD_IP"
+```
+
+Use the printed destination hash for `DESTINATION` on the board. The board
+role attaches to the running daemon and requests a path, so it can start
+after the workstation's first announcement. Neither host needs serial access.
+
+```sh
+sudo systemd-run --quiet --wait --pipe -p DynamicUser=yes -p User=opi-reticulum \
+    -p StateDirectory=opi-reticulum -p StateDirectoryMode=0700 -p PrivateDevices=yes \
+    -p PrivateTmp=yes -p MemoryHigh=160M -p MemoryMax=256M -p CPUQuota=100% \
+    -p TasksMax=64 -p RuntimeMaxSec=550 --setenv=PYTHON_CPU_COUNT=1 \
+    /opt/opi-mesh/venv/bin/python /opt/opi-mesh/check_reticulum_lan.py board "$DESTINATION"
+```
+
+On 2026-11-20, both kernels showed the direct TCP connection from the
+workstation to port 4242 of the board's Ethernet address. Over an established
+Reticulum link the board sent independent 32-byte and 768-byte random
+challenges. It compared both replies byte for byte, and the workstation
+observed both requests and link closure. Systemd reported peak memory of
+35.5 MiB for the workstation test and 28.2 MiB for the board test process.
+After restoring the profile, the runtime and persistent config matched the
+original files and the only listener on port 4242 was `127.0.0.1`.
+
 ## Zero 2W board results, 2026-11-20
 
 | Check | Result |
@@ -92,6 +133,6 @@ sudo systemd-run --quiet --collect --wait --pipe -p DynamicUser=yes \
 | Service lifecycle | Both choices appeared in the installed text menu. Each stopped cleanly, inspection of the stopped unit returned an error, and inspection succeeded again after starting it. Boot enablement stayed off. |
 | Device and network isolation | Both service device trees excluded SPI, GPIO and the GNSS UART. The simulator had only loopback in its network namespace. On the host, only `127.0.0.1:4242` listened on the two tested ports. `gpsd` and `opi-gnss` remained active. |
 
-External LAN peers, LXMF, a physical Meshtastic peer and Reticulum over a
+LXMF messaging between independent peers, a physical Meshtastic peer and Reticulum over a
 radio adapter remain separate milestones. The test profile has no GNSS or
 MQTT integration.
