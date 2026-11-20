@@ -50,6 +50,18 @@ check_rates() {
     [[ $(fdtget -t u "$workdir/current.dtb" /soc/spi@5011000/nfc@1 spi-max-frequency) == "$3" ]]
 }
 check_rates 18000000 2000000 5000000
+# A different chip at the same CS may retain exactly the same DT node path.
+sed 's/nxp,pn532/ti,cc1101/' "$workdir/spi.dts" > "$workdir/swapped.dts"
+dtc -q -@ -I dts -O dtb -o "$bootroot/dtb/allwinner/overlay/sun50i-h616-swapped.dtbo" "$workdir/swapped.dts"
+reject _dt_overlays_write_config "$conf" false swapped
+# A changed managed blob must not introduce extra properties into another boot.
+active_flash=$(awk '/^user_overlays=/{sub(/^user_overlays=/,""); for(i=1;i<=NF;i++) if($i~/^opi-sclk-spi0-cs0-/) print $i}' "$conf")
+blob="$bootroot/overlay-user/$active_flash.dtbo"
+cp "$blob" "$workdir/clock-original.dtbo"
+fdtput -t u "$blob" /fragment@0/__overlay__ unexpected-property 1234
+reject api set spi1 0 3300000
+cmp "$conf" "$workdir/saved"
+cp "$workdir/clock-original.dtbo" "$blob"
 reject api set spi0 0 40000001
 reject api set spi1 1 5000001
 reject api set spi1 0 2999
