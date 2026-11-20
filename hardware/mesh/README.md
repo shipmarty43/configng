@@ -11,12 +11,50 @@ GNSS selection and the LoRaWAN radio service have separate lifecycles.
 | Start / Stop | Changes the selected service for the current boot. State survives a stop and start. |
 | Inspect Meshtastic | Connects the official Python client to the simulator's phone API on port 4403 in its private network namespace. Prints node ID and firmware version. |
 | Inspect Reticulum | Runs `rnstatus` against the named shared instance using the daemon's account and state directory. Reports interface, peer and traffic statistics. |
+| LXMF mailbox | Opens the inbox, outbox, contact picker and composer. The background receiver keeps accepting messages after the menu closes. |
 
 ```sh
 sudo armbian-config-zero2w --cmd MESH01
 sudo armbian-config-zero2w --api module_mesh_local meshtastic inspect
 sudo armbian-config-zero2w --api module_mesh_local reticulum inspect
 ```
+
+## LXMF mailbox
+
+Open **System → Hardware → Mesh services → LXMF mailbox**. The direct entry
+to Mesh services on the board is `sudo armbian-config-zero2w --cmd MESH01`.
+
+- **My LXMF delivery address** displays the mailbox's persistent 32-digit address.
+- **Add or rename a contact** saves a name and LXMF delivery address. Saving
+  the same address again updates its label.
+- **Read incoming messages** lists newest arrivals first. Open a row to read
+  the message text, subject, sender address and signature status. Unknown or
+  invalid signatures are labelled `unverified`. The contact name is a local label.
+- **Send to a saved contact** shows each name and full address. Choose one,
+  enter an optional subject and a message, and press OK to queue it. Cancelling
+  the contact picker or composer leaves the outbox alone.
+- **Sent messages and delivery status** shows `queued` while waiting for a
+  known route, `sending` after handing the message to LXMF, and `delivered`
+  after LXMF confirms delivery. Route discovery expires after ten minutes.
+  An interrupted send with an unknown outcome is marked `unconfirmed`;
+  sending it again requires another explicit user action.
+
+The optional systemd service uses the board's shared Reticulum instance.
+Install the fork containing the mailbox menu and run from its checkout:
+
+```sh
+sudo /opt/opi-mesh/venv/bin/pip install --only-binary=:all: 'lxmf==1.3.1' 'rns==1.6.1'
+sudo install -m644 hardware/mesh/lxmf_mailbox.py /opt/opi-mesh/
+sudo install -m644 hardware/mesh/opi-lxmf.service /usr/local/lib/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now opi-lxmf.service
+```
+
+The service starts with `opi-reticulum`. It creates an independent mailbox
+under `/var/lib/opi-lxmf/` on first use. The private identity, contacts, inbox
+and outbox survive restarts. Message bodies are stored locally in SQLite.
+Earlier acceptance fixtures retain their own identities and inbox files.
+For future LAN use, configure the desired Reticulum TCP interface as described below.
 
 ## Install on an ARM64 Zero 2W running Ubuntu 26.04
 
@@ -34,7 +72,7 @@ sudo apt-get --no-install-recommends satisfy "$(dpkg-deb -f "$stage/$pkg" Depend
 sudo apt-get --no-install-recommends install python3-venv python3-cryptography
 sudo install -Dm755 "$stage/native/usr/bin/meshtasticd" /opt/opi-mesh/meshtasticd
 sudo python3 -m venv --system-site-packages /opt/opi-mesh/venv
-sudo /opt/opi-mesh/venv/bin/pip install 'meshtastic==2.7.11' 'rns==1.6.1'
+sudo /opt/opi-mesh/venv/bin/pip install 'meshtastic==2.7.11' 'rns==1.6.1' 'lxmf==1.3.1'
 sudo install -m644 hardware/mesh/*.py /opt/opi-mesh/
 sudo install -d /etc/opi-mesh /usr/local/lib/systemd/system
 # Preserve any existing site-specific TCP configuration on upgrade.
@@ -181,6 +219,30 @@ contained two distinct mode-0600 files. The first run peaked at 37.4 MiB on
 the workstation and 35.9 MiB on the board for the respective test clients.
 After the test the board again listened only on `127.0.0.1:4242`.
 
+### Mailbox acceptance through the configurator
+
+On 2026-11-20 a workstation connected directly to the Zero 2W test LAN
+listener. The operator path was exercised in the actual installed terminal UI:
+
+1. Open `MESH01`, choose **LXMF mailbox → Add or rename a contact**, and save
+   the workstation's address. Give the address under **My LXMF delivery address**
+   to the workstation client.
+2. Run the workstation half of `check_lxmf_lan.py` with that mailbox as its
+   peer and a fresh run label. It sends the initial signed message.
+3. In **Read incoming messages**, open the new row. The sender label, full
+   address, `verified` signature status and Cyrillic text were visible.
+4. Choose **Send to a saved contact**, select the workstation, and submit
+   the subject `LXMF board` and body `Плата приняла сообщение. [RUN_ID]`,
+   replacing `RUN_ID` with the workstation's run label.
+5. Open **Sent messages and delivery status**. The selected message reached
+   `delivered`. The workstation independently verified its signature and
+   exact title/body and reopened its saved copy.
+
+The exchange passed twice, including a mailbox-service restart. Both incoming
+IDs matched the workstation's delivery confirmations and both outgoing IDs
+matched the verified messages at the workstation. The contact, mailbox address
+and history were retained. The temporary LAN listener was then removed.
+
 ## Zero 2W board results, 2026-11-20
 
 | Check | Result |
@@ -192,6 +254,6 @@ After the test the board again listened only on `127.0.0.1:4242`.
 | Service lifecycle | Both choices appeared in the installed text menu. Each stopped cleanly, inspection of the stopped unit returned an error, and inspection succeeded again after starting it. Boot enablement stayed off. |
 | Device and network isolation | Both service device trees excluded SPI, GPIO and the GNSS UART. The simulator had only loopback in its network namespace. On the host, only `127.0.0.1:4242` listened on the two tested ports. `gpsd` and `opi-gnss` remained active. |
 
-Persistent user-facing LXMF inbox controls, physical Meshtastic peer tests and
-Reticulum over a radio adapter remain separate milestones. The test profile
+Physical Meshtastic peer tests and Reticulum over a radio adapter remain
+separate milestones. The test profile
 has no GNSS or MQTT integration.

@@ -11,8 +11,11 @@ function module_mesh_local() {
     local service action output result=0
     case "${1:-select}" in
         select)
+            local -a mailbox=()
+            if [[ -r /opt/opi-mesh/lxmf_mailbox.py ]]; then mailbox=(lxmf 'LXMF mailbox'); fi
             service=$(dialog_menu 'Mesh services' 'Choose a software node' 14 76 3 -- \
-                meshtastic 'Meshtastic simulator (private network)' reticulum 'Reticulum over TCP') || return 0
+                meshtastic 'Meshtastic simulator (private network)' reticulum 'Reticulum over TCP' "${mailbox[@]}") || return 0
+            if [[ "$service" == lxmf ]]; then module_lxmf select; return; fi
             action=$(dialog_menu 'Mesh services' 'Choose an action' 16 76 4 -- \
                 status 'Show service state' inspect 'Query the running node' start 'Start for this boot' stop 'Stop service') || return 0
             output=$(module_mesh_local "$service" "$action" 2>&1) || result=$?

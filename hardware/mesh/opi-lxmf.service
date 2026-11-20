@@ -1,0 +1,29 @@
+[Unit]
+Description=LXMF mailbox for Armbian
+Requires=opi-reticulum.service
+After=opi-reticulum.service
+PartOf=opi-reticulum.service
+
+[Service]
+ExecStart=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/lxmf_mailbox.py serve
+DynamicUser=yes
+User=opi-reticulum
+StateDirectory=opi-reticulum opi-lxmf
+StateDirectoryMode=0700
+UMask=0077
+PrivateDevices=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+Environment=PYTHON_CPU_COUNT=2
+MemoryMax=256M
+TasksMax=64
+KillMode=mixed
+TimeoutStopSec=20
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=opi-reticulum.service
