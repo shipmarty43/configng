@@ -1,5 +1,6 @@
 """The selector's transaction tests use in-memory workers and a real state directory."""
 from pathlib import Path
+import json
 import sys
 from tempfile import TemporaryDirectory
 import unittest
@@ -77,6 +78,16 @@ class Transaction(unittest.TestCase):
         with self.assertRaisesRegex(ModeError, "Unavailable"):
             self.s.change("reticulum")
         self.assertEqual(self.workers.calls, [("start", "meshtastic")])
+        self.assertEqual(self.s.read(), ("meshtastic", None))
+
+    def test_failed_handoff_records_reason_separately_from_committed_mode(self):
+        self.s.change("meshtastic")
+        self.workers.fail.add("reticulum")
+        with self.assertRaises(ModeError):
+            self.s.change("reticulum")
+        last = json.loads((self.s.directory / "no-radio-last-error.json").read_text())
+        self.assertEqual(last["action"], "reticulum")
+        self.assertIn("Rolled back to meshtastic", last["error"])
         self.assertEqual(self.s.read(), ("meshtastic", None))
 
     def test_start_failure_with_previous_off(self):

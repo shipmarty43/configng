@@ -12,7 +12,8 @@ import tempfile
 import rnode_adapter as adapter
 import sx1262_profile as board
 from rnode_adapter import Session, checked_route
-from rnode_wire import kiss
+from rnode_wire import Decoder, kiss
+from rnode_metrics import RxMetrics
 from sx1262_rx import Receiver
 
 route,hz=checked_route()
@@ -40,7 +41,7 @@ def lifecycle(root):
     with socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM) as notify:
         endpoint=str(root/"notify")
         notify.bind(endpoint); notify.settimeout(7)
-        worker=subprocess.Popen([sys.executable,__file__,str(root)],env=dict(os.environ,NOTIFY_SOCKET=endpoint),cwd=root)
+        worker=subprocess.Popen([sys.executable,__file__,str(root)],env=dict(os.environ,NOTIFY_SOCKET=endpoint,RUNTIME_DIRECTORY=str(root)),cwd=root)
         try:
             assert notify.recv(128)==b"READY=1"
             with lock.open() as contender:
@@ -68,7 +69,16 @@ with tempfile.TemporaryDirectory() as tmp, ExitStack() as stack:
     radio=Receiver.open(route,hz,stack)
     radio.on()
     Path("mock-irq").touch()
-    assert radio.poll()==b"" and not Path("mock-irq").exists()
+    metrics = RxMetrics()
+    rejected = radio.read_event()
+    assert rejected.irq == 0x42 and metrics.consume(rejected, 1) == b"" and metrics.crc == 1
+    assert metrics.last is None and not Path("mock-irq").exists()
+    Path("mock-good").touch()
+    good = radio.read_event()
+    assert good.rssi_dbm == -103.5 and good.snr_quarters == -29
+    assert list(Decoder().feed(metrics.consume(good, 2))) == [(0x23,b"\x36"),(0x24,b"\xe3"),(0,b"AB")]
+    assert not Path("mock-good").exists()
+    print("PASS: native GetPacketStatus (207, 227, 80) -> -103.5 dBm, -7.25 dB; KISS precedes DATA")
     assert radio.poll() is None
     s=Session(radio); s.online=True
     assert s.handle(0,b"negative TX test")==kiss(0x90,b"\x02")

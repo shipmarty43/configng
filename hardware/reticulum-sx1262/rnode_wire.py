@@ -40,21 +40,37 @@ class Decoder:
 class Reassembly:
     def __init__(self):
         self.first = None
+        self.abandoned = 0
+        self.orphans = 0
+
+    def discard(self):
+        if self.first is not None:
+            self.abandoned += 1
+            self.first = None
+
+    def expire(self, now):
+        if self.first and now - self.first[1] > 10:
+            self.discard()
 
     def accept(self, frame, now=None):
         now = time.monotonic() if now is None else now
+        self.expire(now)
         if not 2 <= len(frame) <= 255 or frame[0] & 0x0e:
-            self.first = None
+            self.discard()
             return None
         header, data = frame[0], frame[1:]
         if not header & 1:
-            self.first = None
+            self.discard()
             return data
-        first, self.first = self.first, None
-        if first and first[0] == header and now-first[1] <= 10:
-            return first[2] + data
+        if self.first and self.first[0] == header:
+            payload = self.first[2] + data
+            self.first = None
+            return payload
+        self.discard()
         if len(data) == 254:
             self.first = (header, now, data)
+        else:
+            self.orphans += 1
         return None
 
 

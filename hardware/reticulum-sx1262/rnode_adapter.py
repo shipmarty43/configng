@@ -9,10 +9,12 @@ import signal
 import socket
 import stat
 import sys
+import time
 
 import sx1262_profile as board
 import sx1262_spi
-from rnode_wire import Decoder, Reassembly, kiss
+from rnode_wire import Decoder, kiss
+from rnode_metrics import Publisher, RxMetrics
 from sx1262_rx import FREQUENCY, BANDWIDTH, SF, CR, PREAMBLE, Receiver
 
 ADDRESS = ("127.0.0.1", 7633)
@@ -23,11 +25,12 @@ ERROR = 0x90
 
 
 class Session:
-    def __init__(self, radio):
+    def __init__(self, radio, metrics=None):
         self.radio = radio
         self.online = False
         self.configured = set()
-        self.frames = Reassembly()
+        self.metrics = metrics if metrics is not None else RxMetrics()
+        self.metrics.host = "connected / standby"
 
     def handle(self, cmd, data):
         if cmd == 8 and data == b"s":
@@ -50,6 +53,7 @@ class Session:
                     return kiss(ERROR,b"\x01")
                 self.radio.on()
                 self.online = True
+                self.metrics.host = "connected / RX online"
             elif data == b"\x00":
                 self.close()
             return kiss(cmd, bytes([self.online]))
@@ -71,22 +75,26 @@ class Session:
         if self.online:
             self.radio.off()
         self.online = False
-        self.frames = Reassembly()
+        self.metrics.host = "connected / standby"
+        self.metrics.reassembly.discard()
 
     def poll(self):
         if self.online:
-            frame = self.radio.poll()
-            if frame is not None:
-                payload = self.frames.accept(frame)
-                if payload is not None:
-                    return kiss(0,payload)
+            now = time.monotonic()
+            self.metrics.reassembly.expire(now)
+            event = self.radio.read_event()
+            if event is not None:
+                return self.metrics.consume(event, now)
         return b""
 
 
-def serve(radio, listener, stopping):
+def serve(radio, listener, stopping, publisher=None):
+    metrics = RxMetrics()
     peer = session = None
     try:
         while not stopping():
+            if publisher:
+                publisher.update(metrics, time.monotonic())
             readable, _, _ = select.select([listener] + ([peer] if peer else []), [], [], .02 if peer else .25)
             if listener in readable:
                 conn, _ = listener.accept()
@@ -95,7 +103,7 @@ def serve(radio, listener, stopping):
                 else:
                     peer = conn
                     peer.settimeout(.5)
-                    session, decoder = Session(radio), Decoder()
+                    session, decoder = Session(radio, metrics), Decoder()
             if not peer:
                 continue
             try:
@@ -114,6 +122,7 @@ def serve(radio, listener, stopping):
                 peer.close()
                 peer = None
                 session.close()
+                metrics.host = "disconnected"
     finally:
         if peer:
             peer.close()
@@ -155,7 +164,9 @@ def start():
             if endpoint:
                 with socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM) as notify:
                     notify.sendto(b"READY=1", endpoint.replace("@","\0",1) if endpoint.startswith("@") else endpoint)
-            serve(radio,listener,lambda: stopped)
+            runtime = os.environ.get("RUNTIME_DIRECTORY")
+            publisher = Publisher(runtime, hz) if runtime and os.environ.get("INVOCATION_ID") else None
+            serve(radio, listener, lambda: stopped, publisher)
 
 
 def main():

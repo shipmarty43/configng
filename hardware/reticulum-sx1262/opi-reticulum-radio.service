@@ -7,6 +7,8 @@ PartOf=opi-reticulum.service
 
 [Service]
 Type=notify
+RuntimeDirectory=opi-reticulum-radio
+RuntimeDirectoryMode=0700
 ExecStart=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/rnode_adapter.py start
 ExecStartPost=/usr/bin/systemctl start opi-reticulum-rnode-link.service
 ExecStopPost=/usr/bin/systemctl stop opi-reticulum-rnode-link.service

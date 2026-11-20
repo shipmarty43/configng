@@ -1,5 +1,6 @@
 """Receive-only Waveshare SX1262 transport for the RNode profile on ARM64 Linux."""
 import ctypes
+from dataclasses import dataclass
 import fcntl
 import os
 from pathlib import Path
@@ -54,6 +55,14 @@ class Pins:
 
     def write(self, n, high):
         self.lines[n].set_value(n, self.active if high else self.low)
+
+
+@dataclass(frozen=True)
+class Reception:
+    frame: bytes
+    irq: int
+    rssi_dbm: float | None = None
+    snr_quarters: int | None = None
 
 
 class Receiver:
@@ -129,18 +138,29 @@ class Receiver:
         self.pins.write(271, True)
         self.command(0x82, b"\xff\xff\xff")
 
-    def poll(self):
+    def read_event(self):
         if not self.pins.read(76):
             return None
         self.off()
         flags = int.from_bytes(self.command(0x12, read=2), "big")
         if flags & 0x60 or not flags & 2:
             self.on()
-            return b""  # discard any pending split on a bad frame
+            return Reception(b"", flags)
         count, start = self.command(0x13, read=2)
         frame = self.command(0x1e, bytes([start]), count) if count else b""
+        if frame:
+            # GetPacketStatus is latched to this frame. Capture before SetRx.
+            rssi, snr, _signal_rssi = self.command(0x14, read=3)
+            result = Reception(frame, flags, -rssi / 2, snr if snr < 128 else snr - 256)
+        else:
+            result = Reception(b"", flags)
         self.on()
-        return frame
+        return result
+
+    def poll(self):
+        """Compatibility for callers that only consume FIFO data."""
+        event = self.read_event()
+        return event.frame if event is not None else None
 
     def send(self, payload):
         raise PermissionError("Hardware TX is disabled")

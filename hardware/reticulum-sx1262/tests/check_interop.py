@@ -69,7 +69,7 @@ class Model:
         assert rate==self.hz and bits==8 and cs==0 and delay==0 and not any(other)
         tx = ctypes.string_at(txbuf,size); op = tx[0]
         self.ops.append(tx)
-        assert op in {0x80,0x89,0x98,0x96,0x8a,0x11,0x9d,0x86,0x8b,0x8c,0x1d,0x0d,0x8f,8,2,0x82,0x12,0x13,0x1e}
+        assert op in {0x80,0x89,0x98,0x96,0x8a,0x11,0x9d,0x86,0x8b,0x8c,0x1d,0x0d,0x8f,8,2,0x82,0x12,0x13,0x14,0x1e}
         rx=bytearray(size); rx[1]=0x22
         if op==0x11: rx[2]=1
         if op==0x0d:
@@ -80,6 +80,9 @@ class Model:
             rx[4:]=bytes(self.registers.get(addr+i,0) for i in range(size-4))
         if op==0x12: rx[2:4]=self.pending[0].to_bytes(2,"big")
         if op==0x13: rx[2:4]=bytes([len(self.pending[1]),7])
+        if op==0x14:
+            assert size == 5 and self.pending and self.pending[0] == 2
+            rx[2:5] = bytes(self.pending[2] if len(self.pending) > 2 else (207,0xe3,80))
         if op==0x1e:
             assert tx[1]==7
             rx[3:]=self.pending[1]
@@ -90,7 +93,7 @@ class Model:
 
     def on(self): self.radio.on()
     def off(self): self.radio.off()
-    def poll(self): return self.radio.poll()
+    def read_event(self): return self.radio.read_event()
     def send(self,data):
         if not self.virtual_tx:
             return self.radio.send(data)
@@ -161,12 +164,12 @@ def run(oracle, hz):
             assert attached.online and not attached.OUT
             event=queue.Queue()
             dest=RNS.Destination(None,RNS.Destination.IN,RNS.Destination.PLAIN,"opirnode","proof")
-            dest.set_packet_callback(lambda data,packet: event.put(bytes(data)))
+            dest.set_packet_callback(lambda data,packet: event.put((bytes(data), packet.rssi, packet.snr)))
             target=RNS.Destination(None,RNS.Destination.OUT,RNS.Destination.PLAIN,"opirnode","proof")
             packet=RNS.Packet(target,b"RNode -> Waveshare -> RNS")
             packet.pack()
             for frame in encoded(oracle,packet.raw): model.frames.put((2,frame))
-            assert event.get(timeout=5)==b"RNode -> Waveshare -> RNS"
+            assert event.get(timeout=5) == (b"RNode -> Waveshare -> RNS", -103, -7.25)
             subprocess.run([sys.executable,"-c","import rnode_link,sys;from pathlib import Path;"
                             "rnode_link.manage('detach',Path(sys.argv[1]))",directory],check=True,timeout=15)
             assert not any(i.name==NAME for i in RNS.Transport.interfaces)

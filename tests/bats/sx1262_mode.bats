@@ -54,3 +54,12 @@ setup() {
     module_sx1262_mode select
     [ "$(cat "$calls")" = $'profile\ncheck-reticulum' ]
 }
+@test 'diagnostics refresh only issues read requests' {
+    dialog_menu() { echo diagnostics; }
+    dialog_yesno() {
+        [[ -f "$BATS_TEST_TMPDIR/refreshed" ]] && return 1
+        touch "$BATS_TEST_TMPDIR/refreshed"; return 0
+    }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\ndiagnostics\ndiagnostics' ]
+}

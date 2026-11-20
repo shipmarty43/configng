@@ -67,7 +67,7 @@ int gpiod_line_request_reconfigure_lines(struct gpiod_line_request *line, struct
 }
 enum gpiod_line_value gpiod_line_request_get_value(struct gpiod_line_request *line, unsigned int n) {
     if (n >= 288 || line != (struct gpiod_line_request *)&levels[n]) reject("GPIO read");
-    if (n == 76 && access("mock-irq", F_OK) == 0) {
+    if (n == 76 && (access("mock-irq", F_OK) == 0 || access("mock-good", F_OK) == 0)) {
         if (!atomic_exchange(&irq_observed, 1)) fprintf(stderr, "MOCK DIO1 HIGH\n");
         return GPIOD_LINE_VALUE_ACTIVE;
     }
@@ -145,10 +145,18 @@ int ioctl(int fd, unsigned long request, ...) {
     } else if (op == 0x12 && size == 4 && access("mock-irq", F_OK) == 0) {
         rx[3] = 0x42; /* RX_DONE and CRC_ERR; the synthetic frame must be discarded. */
         fprintf(stderr, "MOCK IRQ STATUS\n");
+    } else if (op == 0x12 && size == 4 && access("mock-good", F_OK) == 0) {
+        rx[3] = 0x02;
+    } else if (op == 0x14 && size == 5 && access("mock-good", F_OK) == 0) {
+        rx[2] = 207; rx[3] = 0xe3; rx[4] = 80;
+    } else if (op == 0x1e && size == 6 && access("mock-good", F_OK) == 0) {
+        rx[3] = 0x10; rx[4] = 'A'; rx[5] = 'B';
     } else if (op == 0x13 && size == 4) {
-        rx[2] = 20; /* Synthetic received length. */
+        rx[2] = access("mock-good", F_OK) == 0 ? 3 : 20; /* Synthetic received length. */
     } else if (op == 0x02 && size == 3 && (tx[2] & 2) && unlink("mock-irq") == 0) {
         fprintf(stderr, "MOCK IRQ CLEAR\n");
+    } else if (op == 0x02 && size == 3 && (tx[2] & 2) && unlink("mock-good") == 0) {
+        fprintf(stderr, "MOCK GOOD IRQ CLEAR\n");
     } else if (op == 0x9d && size == 2 && tx[1] == 1) {
         fprintf(stderr, "MOCK DIO2 SWITCH\n");
     } else if (op == 0x86 && size == 5) {

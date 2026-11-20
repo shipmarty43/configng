@@ -1,0 +1,23 @@
+--- a/RNS/Interfaces/RNodeInterface.py
++++ b/RNS/Interfaces/RNodeInterface.py
+@@ -763,11 +763,20 @@
+                         data_buffer = b""
+                         command_buffer = b""
+                     elif (byte == KISS.FEND):
++                        if command in (KISS.CMD_STAT_RSSI, KISS.CMD_STAT_SNR):
++                            escape = False
+                         in_frame = True
+                         command = KISS.CMD_UNKNOWN
+                         data_buffer = b""
+                         command_buffer = b""
+                     elif (in_frame and len(data_buffer) < self.HW_MTU):
++                        if command in (KISS.CMD_STAT_RSSI, KISS.CMD_STAT_SNR):
++                            if byte == KISS.FESC:
++                                escape = True
++                                continue
++                            if escape:
++                                byte = {KISS.TFEND: KISS.FEND, KISS.TFESC: KISS.FESC}.get(byte, byte)
++                                escape = False
+                         if (len(data_buffer) == 0 and command == KISS.CMD_UNKNOWN):
+                             command = byte
+                         elif (command == KISS.CMD_DATA):

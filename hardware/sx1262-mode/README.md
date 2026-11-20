@@ -1,6 +1,6 @@
 # SX1262 mode selector
 
-Open **System → Hardware → SX1262 mode** (`sudo armbian-config-zero2w --cmd SXMD01` on the test board). Choose **Off**, **Meshtastic**, **Reticulum** or **LoRaWAN**. **Status** shows the profile, saved selection, live owner and any unfinished transaction. The menu is independent of the Meshtastic simulator, Reticulum TCP, messaging and GNSS services.
+Open **System → Hardware → SX1262 mode** (`sudo armbian-config-zero2w --cmd SXMD01` on the test board). Choose **Off**, **Meshtastic**, **Reticulum** or **LoRaWAN**. **Status** shows the profile, saved selection, live owner and any unfinished transaction. The [Diagnostics screen](../reticulum-sx1262/README.md#sx1262-diagnostics-and-rnode-signal-quality) also shows the owner PID, SPI routing, failure reason, RX counters and last-packet RSSI/SNR. The menu is independent of the Meshtastic simulator, Reticulum TCP, messaging and GNSS services.
 
 ```sh
 sudo armbian-config-zero2w --api module_sx1262_mode status

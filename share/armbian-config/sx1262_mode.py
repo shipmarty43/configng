@@ -25,7 +25,7 @@ GUARDS = ("meshtasticd.service", "opi-radio-diagnostics.service")
 LOCKS = {"no-radio": "/run/lock/opi-sx1262-test.lock", "hardware": "/run/lock/opi-radio.lock"}
 
 
-class ModeError(Exception):
+class ModeError(RuntimeError):
     pass
 
 
@@ -58,6 +58,19 @@ def meshtastic_profile(action):
     return run("/opt/opi-mesh/venv/bin/python", "/opt/opi-mesh/sx1262_profile.py", action)
 
 
+def service_states(names):
+    proc = subprocess.run(["systemctl", "show", "--all", "-p", "Id,LoadState,ActiveState,SubState,MainPID,Job,InvocationID", *names],
+                          text=True, capture_output=True, timeout=10)
+    table = {}
+    for block in proc.stdout.strip().split("\n\n"):
+        fields = dict(line.split("=", 1) for line in block.splitlines() if "=" in line)
+        if all(k in fields for k in ("Id", "LoadState", "ActiveState", "SubState", "MainPID", "Job")):
+            table[fields["Id"]] = fields
+    if set(table) != set(names) or proc.returncode not in (0, 4):
+        raise ModeError("Cannot determine the state of all radio services.")
+    return table
+
+
 class Backends:
     def __init__(self, name):
         self.units = TEST if name == "no-radio" else HARDWARE
@@ -66,17 +79,7 @@ class Backends:
         self.name = name
 
     def units_status(self):
-        names = (*self.units.values(), *self.guards)
-        proc = subprocess.run(["systemctl", "show", "--all", "-p", "Id,LoadState,ActiveState,SubState,MainPID,Job", *names],
-                              text=True, capture_output=True, timeout=10)
-        table = {}
-        for block in proc.stdout.strip().split("\n\n"):
-            fields = dict(line.split("=", 1) for line in block.splitlines() if "=" in line)
-            if all(k in fields for k in ("Id", "LoadState", "ActiveState", "SubState", "MainPID", "Job")):
-                table[fields["Id"]] = fields
-        if set(table) != set(names) or proc.returncode not in (0, 4):
-            raise ModeError("Cannot determine the state of all radio services.")
-        return table
+        return service_states((*self.units.values(), *self.guards))
 
     def lock_owner(self):
         # Verify exclusivity against the same inode used by the radio workers.
@@ -90,19 +93,33 @@ class Backends:
                 return None
             except BlockingIOError:
                 pass
-            key = (os.major(info.st_dev), os.minor(info.st_dev), info.st_ino)
-            for line in Path("/proc/locks").read_text().splitlines():
-                fields = line.split()
-                if fields[1:4] == ["FLOCK", "ADVISORY", "WRITE"]:
-                    major, minor, inode = fields[5].split(":")
-                    if (int(major, 16), int(minor, 16), int(inode)) == key:
-                        return int(fields[4])
+            owner = self.proc_owner(info)
+            if owner is not None:
+                return owner
             raise ModeError("Owner lock is busy; its exclusive holder could not be identified.")
         finally:
             os.close(fd)
 
+    @staticmethod
+    def proc_owner(info):
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            raise ModeError("Invalid owner lock inode.")
+        key = (os.major(info.st_dev), os.minor(info.st_dev), info.st_ino)
+        for line in Path("/proc/locks").read_text().splitlines():
+            fields = line.split()
+            if fields[1:3] != ["FLOCK", "ADVISORY"]:
+                continue
+            major, minor, inode = fields[5].split(":")
+            if (int(major,16), int(minor,16), int(inode)) == key:
+                if fields[3] != "WRITE":
+                    raise ModeError("Unexpected shared radio lock.")
+                return int(fields[4])
+        return None
+
     def current(self):
-        table = self.units_status()
+        return self.resolve_owner(self.units_status(), self.lock_owner())
+
+    def resolve_owner(self, table, owner):
         active = []
         for unit, fields in table.items():
             state = fields["ActiveState"]
@@ -115,7 +132,6 @@ class Backends:
             if state != "active" or fields["SubState"] != "running":
                 raise ModeError(f"{unit} is {state}/{fields['SubState']}")
             active.append(unit)
-        owner = self.lock_owner()
         if not active and owner is None:
             return "off"
         if len(active) == 1 and owner and owner == int(table[active[0]]["MainPID"]):
@@ -191,14 +207,14 @@ class Selector:
             raise ModeError("Invalid saved SX1262 transition.")
         return state["mode"], pending
 
-    def save(self, mode, pending=None):
+    def write_record(self, path, data):
         with tempfile.NamedTemporaryFile("w", dir=self.directory, delete=False) as tmp:
             try:
-                json.dump(dict(mode=mode, pending=pending), tmp)
+                json.dump(data, tmp)
                 tmp.write("\n")
                 tmp.flush()
                 os.fsync(tmp.fileno())
-                os.replace(tmp.name, self.path)
+                os.replace(tmp.name, path)
                 fd = os.open(self.directory, os.O_DIRECTORY)
                 try:
                     os.fsync(fd)
@@ -206,6 +222,21 @@ class Selector:
                     os.close(fd)
             finally:
                 Path(tmp.name).unlink(missing_ok=True)
+
+    def save(self, mode, pending=None):
+        self.write_record(self.path, dict(mode=mode, pending=pending))
+
+    @contextmanager
+    def record_failures(self, action):
+        try:
+            yield
+        except (ModeError, ValueError, OSError, subprocess.SubprocessError) as error:
+            try:
+                self.write_record(self.directory / f"{self.backend.name}-last-error.json",
+                                  dict(action=action, time=int(time.time()), error=str(error)[:1024]))
+            except OSError:
+                pass  # Preserve the original error even if the state volume failed.
+            raise
 
     def stop_participant(self, mode):
         if mode != "off":
@@ -225,7 +256,7 @@ class Selector:
         self.backend.await_mode(old)
 
     def change(self, target=None):
-        with self.exclusive():
+        with self.record_failures(target or "apply"), self.exclusive():
             saved, pending = self.read()
             target = saved if target is None else target
             if target not in MODES:
@@ -277,7 +308,7 @@ class Selector:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for action in ("profile", "status", "apply", "check-meshtastic", "check-reticulum"):
+    for action in ("profile", "status", "diagnostics", "apply", "check-meshtastic", "check-reticulum"):
         sub.add_parser(action)
     sub.add_parser("spi").add_argument("hz", nargs="?")
     sub.add_parser("set").add_argument("mode", choices=MODES)
@@ -298,6 +329,9 @@ def main():
         print(reticulum_profile("check"), end="")
     elif args.action == "check-meshtastic":
         print(meshtastic_profile("check"), end="")
+    elif args.action == "diagnostics":
+        from sx1262_diagnostics import report
+        print(report(owner))
     elif args.action == "status":
         owner.status()
     else:

@@ -24,7 +24,51 @@ The adapter reuses the Zero 2W [route and device binding checks](../meshtastic-s
 
 On selecting the qualified hardware backend, the worker binds **127.0.0.1:7633** and signals systemd readiness. Its companion attaches only the named, normally disabled RNode entry to the existing `rnsd` and verifies it is online. Stopping detaches that interface and releases the radio lock. The board's LAN/TCP interface has an independent lifecycle.
 
-The KISS subset implements device detection, a **1.52 host compatibility level**, fixed PHY configuration and readback, radio on/off, escaping, packet delivery, leave and flow control. The platform/MCU fields are unspecified. The interface advertises `outgoing=no` in RNS. A host DATA request to the hardware backend returns `ERROR_TXFAILED` without touching SPI. The required host field `txpower=0` is a handshake value. EEPROM programming, firmware update, display, RSSI/SNR and battery/airtime telemetry and a physical TX scheduler are outside this adapter. [Official RNS interface documentation](https://reticulum.network/manual/interfaces.html)
+The KISS subset implements device detection, a **1.52 host compatibility level**, fixed PHY configuration and readback, radio on/off, escaping, packet delivery, leave and flow control. The platform/MCU fields are unspecified. The interface advertises `outgoing=no` in RNS. A host DATA request to the hardware backend returns `ERROR_TXFAILED` without touching SPI. The required host field `txpower=0` is a handshake value. EEPROM programming, firmware update, display, battery/airtime telemetry and a physical TX scheduler are outside this adapter. [Official RNS interface documentation](https://reticulum.network/manual/interfaces.html)
+
+## SX1262 diagnostics and RNode signal quality
+
+Open **System → Hardware → SX1262 mode → Diagnostics**. **Refresh** takes another read-only snapshot. For plain text use:
+
+```sh
+sudo armbian-config-zero2w --api module_sx1262_mode diagnostics
+```
+
+The screen shows the saved mode, pending transition, observed owner and kernel flock PID, verified SPI route and CS, next-start clock and ceiling, RNode device-access policy, radio and RNS attachment service states. Failed mode changes record their action, UTC time and reason separately from the committed selection. Error history starts when this version is installed.
+
+The adapter publishes per-process counters once per second in its private runtime directory. This uses tmpfs and contains no packet bodies or addresses. The reader checks the active unit, PID, systemd invocation ID and snapshot age. It displays unavailable measurements if the worker is stopped, its ownership is uncertain, or its heartbeat is older than eight seconds. In the no-radio profile only the explicitly labelled software-double runtime can provide a sample. The screen never requests another SPI transfer or connects to the host's data port.
+
+| Field | Meaning |
+|---|---|
+| Applied SPI / host | Clock used by the running worker and whether its host is disconnected, connected in standby or receiving |
+| Valid frames / complete packets | Non-empty LoRa frames with good IRQ status, and fully reassembled RNode datagrams |
+| CRC / header errors | Separate IRQ flag counters. One IRQ can carry both flags. |
+| Split counters | Abandoned partial datagrams, orphan short fragments, and presence of a pending first fragment. Timeout, replacement, error or disconnect can abandon a partial. |
+| Last RSSI / SNR / age | Quality of the last frame of the last complete datagram, and seconds since its reception. CRC errors and incomplete datagrams preserve the previous sample. A new worker starts with empty signal fields. |
+
+The RX driver reads the three-byte LoRa `GetPacketStatus` result before rearming RX. The screen retains RSSI in half dBm and signed SNR in quarter dB. Before a KISS DATA frame the adapter emits `CMD_STAT_RSSI` (whole dBm truncated toward zero, offset 157) and `CMD_STAT_SNR` (signed quarter dB). The project RNS application therefore receives −103 dBm for a screen reading of −103.5 dBm, and the same −7.25 dB SNR. [Semtech's LoRa packet-status implementation](https://github.com/Lora-net/sx126x_driver/blob/master/src/sx126x.c) · [Reference RNode KISS indications](https://github.com/markqvist/RNode_Firmware/blob/56775c51b60a6190242e324c210997dcc7637e53/Utilities.h)
+
+**Pinned host decoder.** Stock RNS 1.6.1 reads the escaped SNR bytes for −16 and −9.25 dB as −9 and −8.75 dB. The screen uses the SX1262 values directly. The included [host patch](rns-1.6.1-signal-escape.patch) also fixes the two KISS metric commands in the project's Linux RNodeInterface. The apply script checks the installed version and exact source digest, accepts an already applied fix and supports `revert`. It only edits the private mesh venv. New Python processes load the correction; after reinstalling stock RNS 1.6.1, reapply it if needed.
+
+### Board test without RF, 2026-11-20
+
+On Zero 2W the ARM64 SPI/libgpiod fixture supplied packet-status bytes `cf e3 50`; the native adapter decoded −103.5 dBm / −7.25 dB before rearming. A registered RNS application received the completed payload and its corresponding RSSI/SNR. The client tests covered SNR values 0, +4.25, −7.25, −16 and −9.25 dB before and after the decoder fix. Unit tests round-trip all 256 signed SNR byte values with standard KISS escaping.
+
+The installed 80×24 terminal displayed 9 valid frames, 6 complete packets, one CRC error, one header error, one abandoned split and one orphan. After pausing the test worker for ten seconds, Refresh showed stale telemetry and blank signal fields. Refresh showed the sample again after resuming. Switching to Off removed the test owner and its measurements. The production radio unit stayed inactive, with no bound devices.
+
+To repeat the signal comparison with the [no-radio userspace model](tests/check_diagnostics.py), use a private loopback and device namespace. From the fork checkout on the board:
+
+```sh
+tests=$PWD/hardware/reticulum-sx1262/tests
+sudo systemd-run --quiet --wait --collect --pipe -p PrivateNetwork=yes -p PrivateDevices=yes \
+    -p DevicePolicy=closed -p PrivateTmp=yes -p CapabilityBoundingSet= -p ProtectSystem=strict \
+    -p NoNewPrivileges=yes -p MemoryMax=160M -p TasksMax=64 -p RuntimeMaxSec=80 \
+    -p RuntimeDirectory=opi-rnode-diag-acceptance -p "BindReadOnlyPaths=$tests:/run/opi-rnode-checks" \
+    --setenv=PYTHONPATH=/opt/opi-mesh --setenv=PYTHONDONTWRITEBYTECODE=1 \
+    /opt/opi-mesh/venv/bin/python /run/opi-rnode-checks/check_diagnostics.py --patched-host
+```
+
+Omit `--patched-host` when testing the original RNS 1.6.1 reader.
 
 ## Install in sealed mode
 
@@ -34,8 +78,9 @@ Use the built configurator and the existing Zero 2W mesh environment. The board 
 sudo apt-get install --no-install-recommends python3-libgpiod
 sudo install -m644 share/armbian-config/sx1262_spi.py /opt/opi-mesh/
 sudo install -m644 hardware/meshtastic-sx1262/{sx1262_profile.py,zero2w-waveshare.yaml.in} /opt/opi-mesh/
-sudo install -m644 hardware/reticulum-sx1262/{rnode_adapter.py,rnode_link.py,rnode_wire.py,sx1262_rx.py,rnode-interface.conf} /opt/opi-mesh/
+sudo install -m644 hardware/reticulum-sx1262/{rnode_adapter.py,rnode_link.py,rnode_wire.py,rnode_metrics.py,sx1262_rx.py,rnode-interface.conf} /opt/opi-mesh/
 sudo install -m644 hardware/reticulum-sx1262/*.service /usr/local/lib/systemd/system/
+sudo bash hardware/reticulum-sx1262/apply-rns-signal-fix.sh
 sudo systemctl daemon-reload
 ```
 
