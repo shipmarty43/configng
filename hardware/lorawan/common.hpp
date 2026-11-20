@@ -111,10 +111,12 @@ struct Config {
         c.enabled = flag(f.at("enabled")); c.verified = flag(f.at("wiring_verified"));
         c.confirmed = flag(f.at("confirmed"));
         c.spi = f.at("spidev");
-        require(c.spi.starts_with("/dev/spidev"), "Expected explicit /dev/spidevBUS.CS");
-        auto suffix = c.spi.substr(11); auto dot = suffix.find('.');
-        require(dot != std::string::npos, "Invalid spidev path");
-        number(suffix.substr(0,dot),0,255); number(suffix.substr(dot+1),0,255);
+        if (c.spi != "auto") {
+            require(c.spi.starts_with("/dev/spidev"), "Expected explicit /dev/spidevBUS.CS");
+            auto suffix = c.spi.substr(11); auto dot = suffix.find('.');
+            require(dot != std::string::npos, "Invalid spidev path");
+            number(suffix.substr(0,dot),0,255); number(suffix.substr(dot+1),0,0);
+        }
         c.interval = number(f.at("interval_seconds"),300,86400);
         c.port = number(f.at("fport"),1,223);
         c.payload = unhex(f.at("payload_hex"));

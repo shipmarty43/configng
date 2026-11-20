@@ -5,7 +5,7 @@ module_options+=(
 ["module_devicetree_overlays,ref_link"]=""
 ["module_devicetree_overlays,feature"]="module_devicetree_overlays"
 ["module_devicetree_overlays,desc"]="Enable/disable device tree overlays"
-["module_devicetree_overlays,example"]="install remove edit show help ups"
+["module_devicetree_overlays,example"]="install remove edit show help ups sx1262"
 ["module_devicetree_overlays,status"]="Active"
 ["module_devicetree_overlays,group"]="Kernel"
 ["module_devicetree_overlays,port"]=""
@@ -15,6 +15,7 @@ module_options+=(
 ["module_devicetree_overlays,help_edit"]="Interactive TUI for toggling overlays (default action)"
 ["module_devicetree_overlays,help_show"]="List currently-enabled overlays"
 ["module_devicetree_overlays,help_ups"]="DFR0528 UPS: ups select|status|enable|disable"
+["module_devicetree_overlays,help_sx1262"]="SX1262 HAT: sx1262 select|status|enable|disable|rollback change.ID"
 ["module_devicetree_overlays,help_help"]="Print this help"
 )
 #
@@ -59,12 +60,15 @@ function module_devicetree_overlays() {
 		"${commands[4]}")
 			# help
 			show_module_help "module_devicetree_overlays" "Device Tree Overlays" \
-				"Examples:\n  module_devicetree_overlays show\n  module_devicetree_overlays install overlays=uart3,spi-spidev\n  module_devicetree_overlays remove overlays=uart3\n  module_devicetree_overlays edit\n  module_devicetree_overlays ups status\n  module_devicetree_overlays ups enable\n\nNotes:\n- install validates every name against the available .dtbo set;\n  if any name is unknown the whole batch is rejected.\n- remove silently skips names that are not currently enabled.\n- The boot config (/boot/armbianEnv.txt or /boot/firmware/config.txt)\n  is rewritten atomically and the previous version kept as <name>.bak." \
+				"Examples:\n  module_devicetree_overlays show\n  module_devicetree_overlays install overlays=uart3,spi-spidev\n  module_devicetree_overlays remove overlays=uart3\n  module_devicetree_overlays edit\n  module_devicetree_overlays ups status\n  module_devicetree_overlays ups enable\n  module_devicetree_overlays sx1262 status\n\nNotes:\n- install validates every name against the available .dtbo set;\n  if any name is unknown the whole batch is rejected.\n- remove silently skips names that are not currently enabled.\n- The boot config (/boot/armbianEnv.txt or /boot/firmware/config.txt)\n  is rewritten atomically and the previous version kept as <name>.bak." \
 				"native"
 			return 0
 		;;
 		"${commands[5]}")
 			module_ups_dfr0528 "${@:-select}"
+		;;
+		"${commands[6]}")
+			module_sx1262_overlay "${@:-select}"
 		;;
 		*)
 			echo "Error: unknown subcommand '${cmd}'" >&2
@@ -349,7 +353,10 @@ function _dt_overlays_write_config() (
 			return 1
 		fi
 	fi
-	_dt_overlays_write_config_unlocked "$@"
+    if [[ "$2" != true ]] && awk '/^user_overlays=/ {sub(/^user_overlays=/,""); for(i=1;i<=NF;i++) if($i=="opi-zero2w-sx1262") found=1} END {exit !found}' "$conf"; then
+        _zero2w_overlay_prepare stock "$conf" /dev/null sx1262 opi-zero2w-sx1262 "$3" || return 1
+    fi
+    _dt_overlays_write_config_unlocked "$@"
 )
 
 function _dt_overlays_write_config_unlocked() (
@@ -512,9 +519,120 @@ function _dt_overlays_select() {
 	local choice
 	choice=$(dialog_menu 'Device Tree Overlays' 'Select overlays to configure for the next boot.' 13 76 4 \
 		stock 'Stock Armbian overlays' \
-		ups 'DFR0528 UPS battery (I2C + installed driver)') || return 0
+		ups 'DFR0528 UPS battery (I2C + installed driver)' \
+		sx1262 'Waveshare SX1262 433 MHz HAT (SPI1)') || return 0
 	case "$choice" in
 		stock) _dt_overlays_edit ;;
 		ups) module_ups_dfr0528 select ;;
+		sx1262) module_sx1262_overlay select ;;
 	esac
 }
+
+function _zero2w_overlay_prepare() (
+	local profile="$4" overlay="$5"
+	local action="$1" input="$2" output="$3" root line key value name fdt='' prefix='' overlays='' users=''
+	local -A seen=()
+	local -a stock=() custom=() blobs=()
+	root=$(_ups_dfr_boot)
+	_ups_dfr_board || { echo 'Expected Orange Pi Zero 2W.' >&2; return 1; }
+	[[ -f "$root/boot.scr" && ! -e "$root/extlinux/extlinux.conf" ]] || { echo 'Expected Armbian boot.scr route.' >&2; return 1; }
+	grep -aq 'armbianEnv.txt' "$root/boot.scr" && grep -aFq 'overlay-user/${overlay_file}.dtbo' "$root/boot.scr" || {
+		echo 'Boot script does not expose the supported user-overlay route.' >&2; return 1;
+	}
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		[[ "$line" =~ ^[[:space:]]*(#.*)?$ ]] && continue
+		[[ "$line" =~ ^([a-zA-Z0-9_]+)=(.*)$ ]] || { echo 'Unsupported boot environment syntax.' >&2; return 1; }
+		key=${BASH_REMATCH[1]} value=${BASH_REMATCH[2]}
+		case "$key" in
+			overlays|user_overlays|overlay_prefix|fdtfile)
+				[[ ! -v "seen[$key]" ]] || { echo "Duplicate DT key: $key" >&2; return 1; }
+				seen[$key]=1
+				case "$key" in overlays) overlays=$value ;; user_overlays) users=$value ;; overlay_prefix) prefix=$value ;; fdtfile) fdt=$value ;; esac ;;
+			param_*|overlaydir|overlay_path|fdt_overlays|fdtfile_*)
+				echo 'Custom DT paths or fixup parameters require manual configuration.' >&2; return 1 ;;
+		esac
+	done < "$input"
+	[[ "$prefix" == sun50i-h616 && ( -z "$fdt" || "$fdt" == allwinner/sun50i-h618-orangepi-zero2w.dtb ) ]] || {
+		echo 'Unexpected overlay prefix or base DT.' >&2; return 1;
+	}
+	read -r -a stock <<< "$overlays"
+	read -r -a custom <<< "$users"
+	for name in "${stock[@]}" "${custom[@]}"; do
+		[[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || { echo 'Invalid overlay name.' >&2; return 1; }
+	done
+	case "$action" in
+		enable|stock)
+			if [[ "$action" == stock ]]; then
+				read -r -a stock <<< "$6"
+				for name in "${stock[@]}"; do [[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || return 1; done
+			else
+				if [[ "$profile" == ups ]]; then
+					_ups_dfr_driver || { echo 'Install dfr0528-battery DKMS for the running kernel first.' >&2; return 1; }
+					[[ " ${stock[*]} " == *' i2c1-pi '* ]] || stock+=(i2c1-pi)
+				fi
+				[[ " ${custom[*]} " == *" $overlay "* ]] || custom+=("$overlay")
+			fi
+			[[ ! -e "$root/overlay-user/user-fixup.scr" && ! -e "$root/fixup.scr" ]] || { echo 'Custom boot fixup requires manual validation.' >&2; return 1; }
+			for name in fdtget fdtoverlay; do command -v "$name" >/dev/null || { echo 'Install device-tree-compiler first.' >&2; return 1; }; done
+			for name in "${stock[@]}"; do blobs+=("$root/dtb/allwinner/overlay/$prefix-$name.dtbo"); done
+			for name in "${custom[@]}"; do blobs+=("$root/overlay-user/$name.dtbo"); done
+			for name in "${blobs[@]}"; do [[ -f "$name" && ! -L "$name" ]] || { echo "Missing or symlinked overlay: $name" >&2; return 1; }; done
+			local composed
+			composed=$(mktemp) || return 1
+			trap 'rm -f "$composed"' EXIT
+			fdtoverlay -i "$root/dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb" -o "$composed" "${blobs[@]}" || return 1
+			if [[ " ${custom[*]} " == *' zero2w-dfr0528 '* ]]; then
+				_ups_dfr_validate "$composed" || return 1
+			fi
+			if [[ " ${custom[*]} " == *' opi-zero2w-sx1262 '* ]]; then
+				_sx1262_validate "$composed" || return 1
+			fi
+			;;
+		disable)
+			local -a kept=()
+			for name in "${custom[@]}"; do [[ "$name" == "$overlay" ]] || kept+=("$name"); done
+			custom=("${kept[@]}") # Keep shared I2C1 and the installed driver.
+			;;
+		*) return 1 ;;
+	esac
+	awk -v stock="${stock[*]}" -v users="${custom[*]}" '
+		/^overlays=/ {print "overlays=" stock; s=1; next}
+		/^user_overlays=/ {print "user_overlays=" users; u=1; next}
+		{print}
+		END {if (!s) print "overlays=" stock; if (!u && users != "") print "user_overlays=" users}
+	' "$input" > "$output"
+)
+
+function _zero2w_overlay_change() (
+	local profile="$2" prepare="$3"
+	local action="$1" root conf lock work backup
+	root=$(_ups_dfr_boot); conf="$root/armbianEnv.txt"; lock="$conf.overlay.lock"
+	[[ -f "$conf" && ! -L "$conf" && ! -L "$lock" ]] || { echo 'Unsafe boot configuration path.' >&2; return 1; }
+	exec {lockfd}>"$lock" || return 1
+	flock -x "$lockfd" || return 1
+	work=$(mktemp -d "$root/.overlay-change.XXXXXX") || return 1
+	trap 'rm -rf "$work"' EXIT
+	cp -p "$conf" "$work/before" || return 1
+	if [[ "$action" == rollback ]]; then
+		local id="$4" saved="$conf.$profile-backups/$4"
+		[[ "$id" =~ ^change\.[[:alnum:]]+$ && ! -L "$conf.$profile-backups" && ! -L "$saved" &&
+			-f "$saved/before" && ! -L "$saved/before" && -f "$saved/after" && ! -L "$saved/after" ]] || {
+			echo 'Supply the change.ID from the saved backup.' >&2; return 1;
+		}
+		cmp -s "$work/before" "$saved/after" || { echo 'Boot configuration has changed since this backup.' >&2; return 1; }
+		cp "$saved/before" "$work/after" || return 1
+	else
+		"$prepare" "$action" "$work/before" "$work/after" || return 1
+	fi
+	if cmp -s "$work/before" "$work/after"; then echo 'Boot configuration already matches; no change.'; return 0; fi
+	cmp -s "$conf" "$work/before" || { echo 'Boot config changed concurrently.' >&2; return 1; }
+	[[ ! -L "$conf.$profile-backups" ]] || return 1
+	mkdir -p -m 700 "$conf.$profile-backups" || return 1
+	backup=$(mktemp -d "$conf.$profile-backups/change.XXXXXX") || return 1
+	cp -p "$work/before" "$backup/before" && cp "$work/after" "$backup/after" || return 1
+	chmod --reference="$conf" "$work/after" && chown --reference="$conf" "$work/after" || return 1
+	sync -f "$backup/before" && sync -f "$backup/after" && sync -f "$work/after" || return 1
+	mv "$work/after" "$conf" && sync -f "$root" || return 1
+	echo "Boot configuration saved. Backup: $backup"
+	echo 'Reboot to apply the saved overlay selection.'
+)

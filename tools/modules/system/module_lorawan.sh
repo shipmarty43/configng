@@ -3,7 +3,7 @@ module_options+=(
 	["module_lorawan,maintainer"]="@shipmarty43"
 	["module_lorawan,feature"]="module_lorawan"
 	["module_lorawan,desc"]="Experimental SX1262 EU433 LoRaWAN Class A service"
-	["module_lorawan,example"]="select status check start stop help"
+	["module_lorawan,example"]="select status owner check start stop help"
 	["module_lorawan,status"]="Preview"
 	["module_lorawan,group"]="Hardware"
 )
@@ -16,7 +16,15 @@ function _lorawan_call() {
 	[[ -x "$(_lorawan_binary)" ]] || { echo 'Install the optional LoRaWAN component; see hardware/lorawan/README.md.' >&2; return 1; }
 	"$(_lorawan_binary)" "$1" "$(_lorawan_config)" "$(_lorawan_credentials)" "$(_lorawan_state)"
 }
+function _lorawan_owner() {
+    local lock=/run/lock/opi-radio.lock
+    if [[ ! -f "$lock" ]]; then echo 'Shared radio lock has not been installed.'; return; fi
+    if flock -n -E 75 "$lock" true; then echo 'SX1262: available'; return; fi
+    echo 'SX1262: busy. Visible kernel lock owner (PID and command):'
+    lslocks --noheadings --notruncate --output PID,COMMAND,PATH | awk -v lock="$lock" '$NF==lock {print $1, $2}'
+}
 function _lorawan_status() {
+	_lorawan_owner || return 1
 	_lorawan_systemctl show opi-lorawan.service -p LoadState -p ActiveState -p SubState -p Result || return 1
 	# The running service owns the state lock. Do not bypass it or report a
 	# harmless busy lock as corrupted state.
@@ -56,6 +64,7 @@ function module_lorawan() (
 	case "${1:-help}" in
 		check) _lorawan_call check ;;
 		status) _lorawan_status ;;
+		owner) _lorawan_owner ;;
 		start) _lorawan_start ;;
 		stop) _lorawan_systemctl stop opi-lorawan.service ;;
 		select) _lorawan_select ;;

@@ -31,7 +31,7 @@ not copied into the configurator. Its MIT license and WiringPi's LGPL license
 remain applicable when distributing binaries/libraries.
 
 Use [RadioLib revision 3b1d917](https://github.com/jgromes/RadioLib/tree/3b1d917bbacba0062dd7064c1157893ef9c6384e)
-and [WiringPi H618 revision f627770](https://github.com/shipmarty43/WiringPi/tree/f627770e5a0ae10331e39ef5694ee3928b136897).
+and [WiringPi H618 revision 3994de5](https://github.com/shipmarty43/WiringPi/tree/3994de57b25201da906372abb51d063afc9dc9ea).
 The build rejects a different or dirty RadioLib tree because nonce
 reservation depends on its protected state layout. There are no build-time
 downloads. Use a C++20 compiler, CMake, Git, OpenSSL development headers, and
@@ -47,6 +47,7 @@ cmake -S hardware/lorawan -B /tmp/opi-lorawan-build \
 cmake --build /tmp/opi-lorawan-build -j2
 ctest --test-dir /tmp/opi-lorawan-build --output-on-failure
 sudo cmake --install /tmp/opi-lorawan-build
+sudo systemd-tmpfiles --create /usr/local/lib/tmpfiles.d/opi-radio.conf
 sudo systemctl daemon-reload
 ```
 
@@ -98,20 +99,23 @@ The user confirmed direct 40-pin shield mounting. Kernel routing and resource
 ownership still require verification before enabling it. The HAL requires both
 Zero 2W and H618 DT compatibles and checks WiringPi's physical-to-SoC map.
 
-The `spidev` path in the example is a placeholder. Verify its controller, mux,
-and other users on the actual image. The kernel must allow `SPI_NO_CS`; PI3
-(physical 40) is driven by userspace and must not also be a kernel chip select.
-This is not suitable for arbitrary concurrent spidev clients. The profile uses
-2 MHz mode 0, crystal operation (DIO3 TCXO voltage zero), DIO2 RF switch and the
-additional pin-31 transmit switch. No device-tree overlay is installed yet.
+The example uses `spidev=auto` to discover the live SPI1 radio. An explicit
+`/dev/spidevBUS.0` also works. Before any transfer the HAL verifies the opened
+character device, its live DT controller and peripheral, active-low CS on PI3,
+PH6/PH7/PH8 pinmux and exclusive CS0 assignment. The kernel controls NSS for
+each complete RadioLib frame, including its wake-up NOP. The GPIO ABI v1
+claims BUSY, DIO1, reset and the RF switch before reset. Physical 31 is LOW
+in TX and idle, HIGH in RX. The radio uses 2 MHz, SPI mode 0, an 8-bit word,
+a crystal and DIO2 switch control.
 
-A later [standalone SX1262 driver test](https://github.com/shipmarty43/armbian-gui/blob/cfe82a273301374e464aeaf0941305fb0611c199/docs/hardware/SX1262.md) established two porting issues
-for this native HAL. Linux 6.18.57 sun6i SPI does not advertise `SPI_NO_CS`;
-the Python driver's overlay uses kernel-managed CS on physical 40. This HAL
-still requests software CS. Also, RadioLib's current `setRfSwitchPins(NC,31)`
-drives physical 31 HIGH in TX, while the Waveshare example uses LOW in TX
-and HIGH in RX. Align CS ownership and switch polarity before radio trials.
-The Python driver's test results apply only to its own implementation.
+Build and install the canonical [HAT overlay](https://github.com/shipmarty43/armbian-gui/blob/cfe82a273301374e464aeaf0941305fb0611c199/hardware/overlays/opi-zero2w-sx1262.dts)
+as `/boot/overlay-user/opi-zero2w-sx1262.dtbo` using `dtc -@ -I dts -O dtb`.
+In System → Hardware → Device Tree Overlays choose Waveshare SX1262, or use
+`armbian-config --api module_devicetree_overlays sx1262 enable`. Status shows
+the next-boot selection, bound endpoint and backup IDs. Disable removes the HAT
+token. To revert one change, pass `sx1262 rollback change.ID`. The manager
+checks the current environment against that change before restoring its saved
+copy. Apply the boot selection on the next reboot.
 
 Only after checking these assumptions and arranging a matching gateway should
 both activation flags become true. Then use **System → Hardware → LoRaWAN node**
@@ -129,6 +133,8 @@ Use `armbian-config-zero2w` instead when using the isolated fork wrapper on the
 test board. The menu appears only when `/usr/local/bin/opi-lorawan` is installed.
 Start refuses an active known radio service rather than stopping it implicitly.
 The unit also declares conflicts and the process holds `/run/lock/opi-radio.lock`.
+The armbian-gui Python driver acquires the same lock before opening hardware.
+Inspect the current holder using `armbian-config --api module_lorawan owner`.
 Future Meshtastic/Reticulum launchers must participate in the same lock. Unmanaged
 programs are not controlled by a cooperative lock; GPIO ownership still applies.
 Reticulum on LAN can remain active while LoRaWAN owns the HAT.
@@ -177,3 +183,5 @@ diagnosed or fixed by this code. No LoRaWAN certification is claimed.
 
 The [2026-10-27 host validation record](../../tests/hardware/zero2w-lorawan-software-2026-10-27.md)
 records exact dependencies and checks for this software checkpoint.
+
+See the [radio and GNSS offline acceptance record](../../tests/hardware/zero2w-sx1262-gnss-offline.md) for the updated HAL, overlay and process-ownership checks.

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hal.hpp"
+#include "radio_lock.hpp"
+#include <optional>
 #include "node.hpp"
 #include <iostream>
 #include <ctime>
@@ -34,7 +36,8 @@ int main(int argc,char** argv) {
         }
         lw::Store store(argv[4]);
         // Constructing the HAL/module/node does not open any hardware.
-        lw::Hal hal(c.spi); Module module(&hal,40,36,12,38); SX1262 radio(&module); lw::Node node(&radio);
+        std::optional<lw::RadioLock> owner; // Release after HAL cleanup.
+        lw::Hal hal(c.spi); Module module(&hal,RADIOLIB_NC,36,12,38); SX1262 radio(&module); lw::Node node(&radio);
         node.credentials(c);
         if(action=="status") {
             auto s=store.load(c.identity);
@@ -47,11 +50,9 @@ int main(int argc,char** argv) {
             store.save({c.identity,node.nonces(),{},0});
             std::cout<<"Fresh identity state provisioned; no hardware accessed\n"; return 0;
         }
-        lw::require(c.enabled && c.verified,"Enable only after verifying HAT revision, SPI route, software CS and RF switch");
+        lw::require(c.enabled && c.verified,"Enable only after verifying HAT revision, SPI route, kernel CS and RF switch");
         auto state=store.load(c.identity); node.restore(state);
-        lw::Fd owner(open("/run/lock/opi-radio.lock",O_CREAT|O_RDWR|O_CLOEXEC|O_NOFOLLOW,0600));
-        lw::privateFile(owner.n);
-        lw::require(flock(owner.n,LOCK_EX|LOCK_NB)==0,"Radio is owned by another service");
+        owner.emplace();
         signal(SIGINT,[](int){lw::stopping=1;}); signal(SIGTERM,[](int){lw::stopping=1;});
         waitUntil(state.readyAt); if(lw::stopping) return 0;
         // Waveshare crystal profile: never apply another module's TCXO voltage.
@@ -60,7 +61,7 @@ int main(int argc,char** argv) {
         lw::require(radio.begin(rf)==RADIOLIB_ERR_NONE,"SX1262 initialization failed");
         Standby cleanup{radio};
         lw::require(radio.setDio2AsRfSwitch(true)==RADIOLIB_ERR_NONE,"DIO2 RF switch failed");
-        radio.setRfSwitchPins(RADIOLIB_NC,31);
+        lw::configureSwitch(module);
         node.setDutyCycle(true); node.setADR(true);
         if(node.pending()) {
             lw::require(node.activateOTAA()==RADIOLIB_LORAWAN_SESSION_RESTORED,"Session resume failed");
