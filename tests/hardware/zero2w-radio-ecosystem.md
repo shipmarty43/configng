@@ -149,6 +149,11 @@ the appropriate confirmed wiring. Existing C tests do not prove Python behavior.
 
 ## Meshtastic and Reticulum
 
+The [software nodes and board checks](../../hardware/mesh/README.md) cover
+native Meshtastic simulation, the official Python phone API, Reticulum TCP
+delivery proofs and the configurator controls. The board used loopback for
+both protocols. Physical radio integration below remains pending.
+
 Use official **meshtasticd** for SPI radio ownership and the official Python
 client for application messages. Generate a Zero 2W-specific profile using
 verified gpiochip/line discovery. Pin the daemon/config schema versions together.

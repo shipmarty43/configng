@@ -1,0 +1,23 @@
+[Unit]
+Description=Reticulum TCP node
+After=network.target
+
+[Service]
+ExecStartPre=/usr/bin/install -m 0600 /etc/opi-mesh/reticulum.conf /var/lib/opi-reticulum/config
+ExecStart=/opt/opi-mesh/venv/bin/rnsd --config /var/lib/opi-reticulum
+DynamicUser=yes
+StateDirectory=opi-reticulum
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/opi-reticulum
+UMask=0077
+PrivateDevices=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -123,6 +123,17 @@
                             "help": "EU433, OTAA, Class A. Check configuration and service state; starting transmits. Hardware qualification is pending."
                         },
                         {
+                            "id": "MESH01",
+                            "description": "Control the Meshtastic simulator and Reticulum TCP node",
+                            "short": "Mesh services",
+                            "module": "module_generic",
+                            "command": ["module_mesh_local select"],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "[ -x /opt/opi-mesh/meshtasticd ] && [ -x /opt/opi-mesh/venv/bin/rnsd ]",
+                            "help": "Start, inspect and stop software nodes. The Meshtastic simulator has a private network. Reticulum uses the configured TCP interface."
+                        },
+                        {
                             "id": "DTO001",
                             "description": "Manage device tree overlays",
                             "short": "Device Tree Overlays",

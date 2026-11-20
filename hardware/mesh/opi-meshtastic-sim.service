@@ -1,0 +1,22 @@
+[Unit]
+Description=Meshtastic local simulator
+
+[Service]
+ExecStart=/opt/opi-mesh/meshtasticd --sim --hwid=16843009 --port=4403 --fsdir=/var/lib/opi-meshtastic-sim
+DynamicUser=yes
+StateDirectory=opi-meshtastic-sim
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/opi-meshtastic-sim
+UMask=0077
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
