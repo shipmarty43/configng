@@ -8,19 +8,23 @@ module_options+=(
     ["module_sx1262_overlay,maintainer"]="@shipmarty43"
 )
 function _sx1262_validate() {
-    local dt="$1" bus=/soc/spi@5011000 pio=/soc/pinctrl@300b000 node pins cs mux child state
+    local dt="$1" bus=/soc/spi@5011000 pio=/soc/pinctrl@300b000 node pins cs mux child state hz
     node="$bus/radio@0"; pins="$pio/spi1-pins"
     cs=$(fdtget -t x "$dt" "$pio" phandle) && mux=$(fdtget -t x "$dt" "$pins" phandle) || return 1
     local board
     board=" $(fdtget "$dt" / compatible) " || return 1
     [[ "$board" == *' xunlong,orangepi-zero2w '* && "$board" == *' allwinner,sun50i-h618 '* ]] || return 1
+    hz=$(fdtget -t u "$dt" "$node" spi-max-frequency) || return 1
+    [[ $hz =~ ^[0-9]{1,8}$ ]] && (( 10#$hz >= 3000 && 10#$hz <= 16000000 )) || {
+        echo 'Expected a Waveshare SX1262 DT clock ceiling within 3000..16000000 Hz.' >&2; return 1;
+    }
     state=$(fdtget -d okay "$dt" "$node" status) || return 1
     [[ "$state" =~ ^(ok|okay)$ && "$(fdtget "$dt" "$bus" status)" == okay &&
        "$(fdtget -t x "$dt" "$bus" cs-gpios)" == "$cs 8 3 1" &&
        "$(fdtget "$dt" "$bus" num-cs)" == 1 && "$(fdtget -t x "$dt" "$bus" pinctrl-0)" == "$mux" &&
        "$(fdtget "$dt" "$pins" pins)" == 'PH6 PH7 PH8' && "$(fdtget "$dt" "$pins" function)" == spi1 &&
        "$(fdtget "$dt" "$node" compatible)" == 'semtech,sx1262 armbian,spi-dev' &&
-       "$(fdtget "$dt" "$node" spi-max-frequency)" == 2000000 && "$(fdtget "$dt" "$node" reg)" == 0 ]] && ! fdtget "$dt" "$node" spi-cs-high >/dev/null 2>&1 || {
+       "$(fdtget "$dt" "$node" reg)" == 0 ]] && ! fdtget "$dt" "$node" spi-cs-high >/dev/null 2>&1 || {
         echo 'Expected SX1262 on SPI1 PH6/PH7/PH8 with kernel CS0 on PI3.' >&2; return 1;
     }
     for child in $(fdtget -l "$dt" "$bus"); do

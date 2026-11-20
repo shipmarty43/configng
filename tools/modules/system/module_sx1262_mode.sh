@@ -1,7 +1,7 @@
 module_options+=(
     ["module_sx1262_mode,feature"]="module_sx1262_mode"
     ["module_sx1262_mode,desc"]="Select and verify the exclusive SX1262 owner"
-    ["module_sx1262_mode,example"]="select status diagnostics profile check-meshtastic check-reticulum spi set apply"
+    ["module_sx1262_mode,example"]="select status diagnostics profile check-meshtastic check-reticulum spi spi-grid set apply"
     ["module_sx1262_mode,group"]="Hardware"
     ["module_sx1262_mode,status"]="Preview"
 )
@@ -13,7 +13,7 @@ _sx1262_mode_cli() {
 function module_sx1262_mode() {
     local profile prompt choice output result=0
     case "${1:-select}" in
-        profile|status|diagnostics|set|apply|check-meshtastic|check-reticulum|spi) _sx1262_mode_cli "$@"; return ;;
+        profile|status|diagnostics|set|apply|check-meshtastic|check-reticulum|spi|spi-grid) _sx1262_mode_cli "$@"; return ;;
         select) ;;
         *) return 2 ;;
     esac
@@ -33,11 +33,7 @@ function module_sx1262_mode() {
                 output=$(_sx1262_mode_cli diagnostics 2>&1) || { dialog_msgbox 'SX1262 diagnostics' "$output" 12 76; return 1; }
                 dialog_yesno 'SX1262 diagnostics' "$output" 'Refresh' 'Back' 21 78 || return 0
             done ;;
-        spi)
-            output=$(_sx1262_mode_cli spi 2>&1) || { dialog_msgbox 'SPI bus clock' "$output" 10 76; return 1; }
-            local hz
-            hz=$(dialog_inputbox 'SX1262 SPI bus clock' "$output Enter Hz, or default to use the ceiling." '' 12 76) || return 0
-            output=$(_sx1262_mode_cli spi "$hz" 2>&1) || result=$? ;;
+        spi) _sx1262_clock_menu; return ;;
         status|check-meshtastic|check-reticulum) output=$(_sx1262_mode_cli "$choice" 2>&1) || result=$? ;;
         off|meshtastic|reticulum|lorawan)
             output=$(_sx1262_mode_cli set "$choice" 2>&1) || result=$? ;;
@@ -45,4 +41,35 @@ function module_sx1262_mode() {
     esac
     dialog_msgbox 'SX1262 mode' "$output" 16 76
     return "$result"
+}
+
+_sx1262_clock_menu() {
+    local status action grid source request description hz output rc=0
+    local -a options=()
+    status=$(_sx1262_mode_cli spi 2>&1) || status="Current setting unavailable: $status"
+    action=$(dialog_menu 'SPI bus clock' "$status" 21 78 6 -- \
+        hat 'Choose from the SX1262 frequency grid' custom 'Enter a request in Hz' \
+        default 'Restore the profile default' spi0 'Inspect SPI0 controller grid' \
+        spi1 'Inspect SPI1 controller grid') || return 0
+    case "$action" in
+        custom) hz=$(dialog_inputbox 'SX1262 SPI request' 'Clock in Hz for the next backend start' '' 10 72) || return 0 ;;
+        default) hz=default ;;
+        hat|spi0|spi1)
+            grid=$(_sx1262_mode_cli spi-grid "$action" --menu 2>&1) || { dialog_msgbox 'SPI clock grid' "$grid" 12 76; return 1; }
+            source=${grid%%$'\n'*}
+            while IFS=$'\t' read -r request description; do
+                [[ $request =~ ^[0-9]+$ ]] && options+=("$request" "$description")
+            done <<< "$grid"
+            if (( ${#options[@]} == 0 )); then dialog_msgbox 'SPI clock grid' "$source. No in-range clock in this snapshot." 12 76; return 0; fi
+            if [[ $action == hat ]]; then
+                hz=$(dialog_menu 'SX1262 SPI request (Hz)' "$source. Choose a request for the next start." 21 78 10 -- "${options[@]}") || return 0
+            else
+                dialog_menu 'Controller SCLK estimates (Hz)' "$source. Read-only controller grid, up to 100 MHz." 21 78 10 -- "${options[@]}" >/dev/null || :
+                return 0
+            fi ;;
+        *) return 0 ;;
+    esac
+    output=$(_sx1262_mode_cli spi "$hz" 2>&1) || rc=$?
+    dialog_msgbox 'SX1262 SPI request' "$output" 15 78
+    return "$rc"
 }

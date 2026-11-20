@@ -98,7 +98,7 @@ cat > "$work/metadata.dts" <<'DT'
    compatible = "linux,dummy-virt", "xunlong,orangepi-zero2w", "allwinner,sun50i-h618";
    soc { #address-cells=<2>; #size-cells=<2>; status="disabled";
      spi@5011000 { reg=<0 0x5011000 0 0x1000>; #address-cells=<1>; #size-cells=<0>; status="disabled";
-       radio@0 { reg=<0>; compatible="semtech,sx1262"; spi-max-frequency=<2000000>; status="disabled"; };
+       radio@0 { reg=<0>; compatible="semtech,sx1262"; spi-max-frequency=<16000000>; status="disabled"; };
      };
    };
  }; };

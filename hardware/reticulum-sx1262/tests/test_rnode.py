@@ -7,7 +7,7 @@ from unittest.mock import Mock
 sys.path[:0]=[str(Path(__file__).resolve().parents[1]),str(Path(__file__).resolve().parents[2]/"meshtastic-sx1262"),
               str(Path(__file__).resolve().parents[3]/"share/armbian-config")]
 import sx1262_spi
-from sx1262_rx import Spi
+from sx1262_rx import RD, WR, TRANSFER, Spi
 from rnode_wire import Decoder, Reassembly, kiss, split_frames
 from rnode_adapter import Session, PARAMS
 
@@ -50,6 +50,22 @@ class Wire(unittest.TestCase):
             with self.assertRaises(ValueError): radio.command(op)
         with self.assertRaises(PermissionError): radio.send(b"tx")
         spi.transfer.assert_not_called()
+
+    def test_high_speed_reaches_rnode_ioctl(self):
+        settings = {}
+        transfers = []
+        def ioctl(fd, request, data):
+            if request == WR | (TRANSFER.size << 16):
+                transfers.append(TRANSFER.unpack(data)[3])
+                return TRANSFER.unpack(data)[2]
+            if request & RD == RD:
+                data[:] = settings[request & 0xff]
+            else:
+                settings[request & 0xff] = bytes(data)
+            return 0
+        spi = Spi(-1, 16_000_000, ioctl=ioctl)
+        spi.transfer(bytes([0xc0, 0]))
+        self.assertEqual(transfers, [16_000_000])
 
     def test_spi_setting_and_bad_readback(self):
         with tempfile.TemporaryDirectory() as tmp:

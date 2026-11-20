@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import time
 
+import h616_spi_clock as clock
 import sx1262_spi as spi
 from sx1262_mode import HARDWARE, service_states
 
@@ -52,7 +53,7 @@ def rx_lines(data, now):
         if not (-127.5 <= rssi <= 0 and -32 <= snr <= 31.75 and 0 <= at <= now):
             raise ValueError("invalid signal sample")
         sample = f"RSSI: {rssi:g} dBm    SNR: {snr:g} dB    ({int(now-at)} s ago)"
-    return [f"RNode host: {clean(data['host'])}   Applied SPI: {data['spi_hz']} Hz",
+    return [f"RNode host: {clean(data['host'])}   Worker SPI request: {data['spi_hz']} Hz",
             f"Valid frames: {data['frames']}   Complete packets: {data['packets']}",
             f"CRC errors: {data['crc']}   Header errors: {data['header_errors']}",
             f"Split: {data['incomplete']} abandoned, {data['orphans']} orphan, {int(data['pending'])} pending",
@@ -88,7 +89,10 @@ def report(selector):
         lines.append(f"SPI route: {clean(e)}")
     try:
         cap = spi.ceiling()
-        lines.append(f"Mode 0 / 8-bit / MSB first   Next: {spi.selected(cap)} Hz   Max: {cap} Hz")
+        hz = spi.selected(cap)
+        lines.append(f"Mode 0 / 8-bit / MSB first   Next: {hz} Hz   Max: {cap} Hz")
+        tree = clock.clock_tree("spi1")
+        lines.append(f"Estimated SCLK ({tree.source}): {clock.estimate(tree, hz)}")
     except ERRORS as e:
         lines.append(f"SPI clock: {clean(e)}")
     try:

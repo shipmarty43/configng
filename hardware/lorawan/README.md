@@ -105,10 +105,10 @@ character device, its live DT controller and peripheral, active-low CS on PI3,
 PH6/PH7/PH8 pinmux and exclusive CS0 assignment. The kernel controls NSS for
 each complete RadioLib frame, including its wake-up NOP. The GPIO ABI v1
 claims BUSY, DIO1, reset and the RF switch before reset. Physical 31 is LOW
-in TX and idle, HIGH in RX. The radio reads the shared SX1262 SPI clock at startup (2 MHz by default), with SPI mode 0, an 8-bit word,
+in TX and idle, HIGH in RX. The radio reads the shared SX1262 SPI clock at startup (2 MHz by default, up to the live DT ceiling or 16 MHz, whichever is lower), with SPI mode 0, an 8-bit word,
 a crystal and DIO2 switch control.
 
-Build and install the canonical [HAT overlay](https://github.com/shipmarty43/armbian-gui/blob/cfe82a273301374e464aeaf0941305fb0611c199/hardware/overlays/opi-zero2w-sx1262.dts)
+Build and install the canonical [HAT overlay](https://github.com/shipmarty43/armbian-gui/blob/7b052bb6820744614e3f1579caa6e893c01986cf/hardware/overlays/opi-zero2w-sx1262.dts)
 as `/boot/overlay-user/opi-zero2w-sx1262.dtbo` using `dtc -@ -I dts -O dtb`.
 In System → Hardware → Device Tree Overlays choose Waveshare SX1262, or use
 `armbian-config --api module_devicetree_overlays sx1262 enable`. Status shows

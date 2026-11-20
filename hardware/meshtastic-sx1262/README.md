@@ -8,7 +8,7 @@ The renderer resolves the spidev entry by its live device-tree node and resolves
 
 | HAT signal | Physical pin | H618 routing | Meshtastic setting |
 |---|---:|---|---|
-| MOSI / MISO / SCLK | 19 / 21 / 23 | PH7 / PH8 / PH6 | SPI1, mode 0, 2 MHz |
+| MOSI / MISO / SCLK | 19 / 21 / 23 | PH7 / PH8 / PH6 | SPI1, mode 0, default 2 MHz. [Clock selection](../sx1262-mode/spi-clock.md) |
 | NSS | 40 | PI3 | Kernel CS0 via the overlay; omit `Lora.CS` so firmware makes no GPIO claim |
 | Reset | 12 | PI1, offset 257 | `Reset` |
 | DIO1 | 36 | PC12, offset 76 | `IRQ` |

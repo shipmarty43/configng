@@ -38,13 +38,13 @@ setup() {
     [ "$(cat "$BATS_TEST_TMPDIR/message")" = 'restore result' ]
 }
 @test 'SPI menu saves typed Hz without switching any service' {
-    dialog_menu() { echo spi; }
+    dialog_menu() { if [[ $1 == 'SPI bus clock' ]]; then echo custom; else echo spi; fi; }
     dialog_inputbox() { echo 500000; }
     module_sx1262_mode select
     [ "$(cat "$calls")" = $'profile\nspi\nspi 500000' ]
 }
 @test 'cancelling SPI clock entry preserves settings' {
-    dialog_menu() { echo spi; }
+    dialog_menu() { if [[ $1 == 'SPI bus clock' ]]; then echo custom; else echo spi; fi; }
     dialog_inputbox() { return 1; }
     module_sx1262_mode select
     [ "$(cat "$calls")" = $'profile\nspi' ]
@@ -62,4 +62,27 @@ setup() {
     }
     module_sx1262_mode select
     [ "$(cat "$calls")" = $'profile\ndiagnostics\ndiagnostics' ]
+}
+
+@test 'grid row saves its integer request only for the HAT' {
+    _sx1262_mode_cli() {
+        echo "$*" >> "$calls"
+        case "$1" in profile) echo no-radio ;; spi-grid) printf 'model\n1714286\t1714285 Hz  CDR2=6\n' ;; esac
+    }
+    dialog_menu() {
+        case "$1" in 'SX1262 mode') echo spi ;; 'SPI bus clock') echo hat ;; *) echo 1714286 ;; esac
+    }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\nspi\nspi-grid hat --menu\nspi 1714286' ]
+}
+@test 'inspecting controller grid cannot change the saved request' {
+    _sx1262_mode_cli() {
+        echo "$*" >> "$calls"
+        case "$1" in profile) echo no-radio ;; spi) return 1 ;; spi-grid) printf 'model\n100000000\t100 MHz\n' ;; esac
+    }
+    dialog_menu() {
+        case "$1" in 'SX1262 mode') echo spi ;; 'SPI bus clock') echo spi0 ;; *) echo 100000000 ;; esac
+    }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\nspi\nspi-grid spi0 --menu' ]
 }

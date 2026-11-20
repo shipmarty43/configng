@@ -39,13 +39,15 @@ Only the fetch step needs Internet access.
 ```sh
 mkdir -p work release/previous release/current
 python3 packaging/zero2w/fetch.py work/inputs
-python3 packaging/zero2w/build.py 7a48de26 --inputs work/inputs --work work --output release/previous
-python3 packaging/zero2w/build.py 9dbb3855 --inputs work/inputs --work work --output release/current
+python3 packaging/zero2w/build.py 9dbb3855 --inputs work/inputs --work work --output release/previous
+python3 packaging/zero2w/build.py HEAD --inputs work/inputs --work work --output release/current
 cp -r work/inputs/ubuntu release/
 cp packaging/zero2w/{apply.sh,README.md} release/
 (cd release && sha256sum previous/*.deb current/*.deb ubuntu/*.deb > SHA256SUMS)
 tar -cf zero2w-resolute-offline.tar release/
 ```
+
+These commands use the last pre-grid version for downgrade testing. The original release pair and results are recorded in the [acceptance report](../../tests/packaging/acceptance-resolute.md).
 
 The revision selects the fork sources, assembled menus, units and applicable
 RNode fixes. The manifest pins the native ARM64 meshtasticd, wheels and

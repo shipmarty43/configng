@@ -8,16 +8,16 @@
 
 namespace lw {
 inline uint32_t selectedSpiHz(uint32_t dtLimit, const std::filesystem::path& path="/etc/armbian-config/sx1262-spi-hz") {
-    auto limit=std::min(dtLimit, uint32_t(2000000));
-    require(limit>0,"Invalid SX1262 device-tree SPI clock");
-    if(!std::filesystem::exists(path)) return limit;
+    const auto limit = std::min(dtLimit, uint32_t(16000000));
+    require(limit>=3000,"Invalid SX1262 device-tree SPI clock");
+    if(!std::filesystem::exists(path)) return std::min(limit, uint32_t(2000000));
     std::ifstream file(path, std::ios::binary);
     require(file.good(),"Cannot read SPI clock setting");
     std::string text((std::istreambuf_iterator<char>(file)), {});
     if(!text.empty() && text.back()=='\n') text.pop_back();
     uint32_t hz=0;
     auto [end,err]=std::from_chars(text.data(),text.data()+text.size(),hz);
-    require(text.size()<=7 && err==std::errc{} && end==text.data()+text.size() && hz>0 && hz<=limit,
+    require(text.size()<=8 && err==std::errc{} && end==text.data()+text.size() && hz>=3000 && hz<=limit,
             "SPI clock outside the board profile");
     return hz;
 }

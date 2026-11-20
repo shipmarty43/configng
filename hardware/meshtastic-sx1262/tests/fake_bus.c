@@ -32,7 +32,7 @@ static void init_model(void) {
     struct stat gpio;
     const char *speed = getenv("OPI_FIXTURE_HZ");
     expected_speed = speed ? (uint32_t)strtoul(speed,NULL,10) : 2000000;
-    if (!expected_speed || expected_speed > 2000000) reject("fixture speed");
+    if (expected_speed < 3000 || expected_speed > 16000000) reject("fixture speed");
     spi_file = getenv("OPI_FIXTURE_SPI");
     gpio_file = getenv("OPI_FIXTURE_GPIO");
     if (!spi_file || !gpio_file || lstat(spi_file, &spi) || !S_ISREG(spi.st_mode)

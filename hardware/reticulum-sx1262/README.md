@@ -6,7 +6,7 @@
 
 | Setting | Tested profile |
 |---|---|
-| Host SPI | Mode 0 (CPOL=0, CPHA=0), 8 bits, MSB first, active-low kernel CS0 on PI3. Default 2,000,000 Hz. The menu accepts an integer up to the smaller of the live DT limit and 2,000,000 Hz. |
+| Host SPI | Mode 0 (CPOL=0, CPHA=0), 8 bits, MSB first, active-low kernel CS0 on PI3. Default 2,000,000 Hz. Requests range from 3,000 Hz to the smaller of the live DT limit and 16 MHz. [H616 clock grid and examples](../sx1262-mode/spi-clock.md). |
 | LoRa modem | 433,875,000 Hz, 125 kHz bandwidth, SF9, CR 4/5, explicit header, 18 preamble symbols, CRC on, standard IQ, private sync word 0x1424. Set the peer to the same PHY profile. |
 
 The selector writes `/etc/armbian-config/sx1262-spi-hz` atomically. Updated Reticulum, Meshtastic and LoRaWAN backends read it on their next start. The kernel clock generator determines the physical SCLK rate. The LoRaWAN component must be rebuilt to use the new setting. Portduino can restore its 2 MHz idle default between transactions; the Meshtastic fixture checks the effective requested speed at each transfer.
@@ -40,7 +40,7 @@ The adapter publishes per-process counters once per second in its private runtim
 
 | Field | Meaning |
 |---|---|
-| Applied SPI / host | Clock used by the running worker and whether its host is disconnected, connected in standby or receiving |
+| Worker SPI request / host | Clock requested by the running worker and whether its host is disconnected, connected in standby or receiving |
 | Valid frames / complete packets | Non-empty LoRa frames with good IRQ status, and fully reassembled RNode datagrams |
 | CRC / header errors | Separate IRQ flag counters. One IRQ can carry both flags. |
 | Split counters | Abandoned partial datagrams, orphan short fragments, and presence of a pending first fragment. Timeout, replacement, error or disconnect can abandon a partial. |

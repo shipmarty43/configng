@@ -69,6 +69,14 @@ class Profile(unittest.TestCase):
         with self.assertRaises(ValueError):
             p.render(route)
 
+    def test_high_speed_is_opt_in(self):
+        import yaml
+        (self.ctrl/"radio@0/spi-max-frequency").write_bytes(p.cells(16_000_000))
+        route = p.discover(self.root)
+        self.assertEqual(yaml.safe_load(p.render(route))["Lora"]["spiSpeed"], 2_000_000)
+        sx1262_spi.save("16000000", route.max_hz, sx1262_spi.SETTING)
+        self.assertEqual(yaml.safe_load(p.render(route))["Lora"]["spiSpeed"], 16_000_000)
+
     def test_reject_second_cs_owner_or_fixed_rf_switch(self):
         route = p.discover(self.root)
         original = p.TEMPLATE.read_text()

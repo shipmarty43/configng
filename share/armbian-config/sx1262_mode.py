@@ -310,9 +310,21 @@ def main():
     sub = parser.add_subparsers(dest="action", required=True)
     for action in ("profile", "status", "diagnostics", "apply", "check-meshtastic", "check-reticulum"):
         sub.add_parser(action)
+    grid = sub.add_parser("spi-grid", help="Model H616/H618 SCLK without any SPI transfer")
+    grid.add_argument("scope", choices=("hat", "spi0", "spi1"), nargs="?", default="hat")
+    grid.add_argument("--mclk", type=int, help="initial module clock in Hz for offline calculations")
+    grid.add_argument("--parents", nargs=5, type=int, metavar=("OSC", "PLL0", "PLL1", "PLL0x2", "PLL1x2"))
+    fmt = grid.add_mutually_exclusive_group()
+    fmt.add_argument("--registers", action="store_true", help="full silicon frequency grid, exact Hz")
+    fmt.add_argument("--menu", action="store_true", help=argparse.SUPPRESS)
     sub.add_parser("spi").add_argument("hz", nargs="?")
     sub.add_parser("set").add_argument("mode", choices=MODES)
     args = parser.parse_args()
+    if args.action == "spi-grid":
+        import h616_spi_clock as clock
+        import sx1262_spi as spi
+        clock.print_grid(args, spi.ceiling() if args.scope == "hat" else clock.MAX_HZ)
+        return
     name = profile()
     owner = Selector(Backends(name), STATE)
     if args.action == "profile":
@@ -323,8 +335,12 @@ def main():
         if args.hz is not None:
             with owner.exclusive():
                 spi.save(args.hz, limit)
+        import h616_spi_clock as clock
+        tree = clock.clock_tree("spi1")
+        hz = spi.selected(limit)
         print(f"SPI mode 0 (CPOL=0, CPHA=0), 8 bits, MSB first, kernel CS0.\n"
-              f"Next backend start: {spi.selected(limit)} Hz. Maximum: {limit} Hz.")
+              f"Next backend start: {hz} Hz. Maximum: {limit} Hz. Default: {min(limit, spi.DEFAULT_HZ)} Hz.\n"
+              f"Estimated SCLK ({tree.source}): {clock.estimate(tree, hz)}")
     elif args.action == "check-reticulum":
         print(reticulum_profile("check"), end="")
     elif args.action == "check-meshtastic":

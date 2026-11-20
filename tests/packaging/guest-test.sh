@@ -38,7 +38,16 @@ runtime_tools() {
 }
 baseline=ca012e16ee6070464bf54dc5c03f3b49b1e65fc7ff7ec9890caba475a8a5c09d
 candidate=1024690fe61c532ce6ac25c9afec2397850355d32bb83caef72441458d0afef9
+# The original pre-diagnostics baseline used the unpatched decoder.
+previous_rev=$(dpkg-deb -f "$media"/previous/opi-zero2w-mesh-runtime_*.deb X-Source-Revision)
+if [[ $previous_rev != 7a48de26* ]]; then baseline=$candidate; fi
 py=/opt/opi-mesh/venv/bin/python
+shared=/opt/armbian-config-zero2w/share/armbian-config
+feature_files() {
+    for path in "$shared/h616_spi_clock.py" "$shared/sx1262_diagnostics.py" /opt/opi-mesh/rnode_metrics.py; do
+        if [[ -f $path ]]; then printf '%s\n' "$path"; fi
+    done
+}
 if [[ -e "$proof/reboot" ]]; then
     test "$(cat /proc/sys/kernel/random/boot_id)" != "$(cat "$proof/reboot")"
     verify_version previous
@@ -68,6 +77,15 @@ if [[ $release == current ]]; then
     armbian-config-zero2w --api module_sx1262_mode diagnostics > "$proof/diagnostics"
     grep -F 'Current owner: off' "$proof/diagnostics"
     grep -F 'Next: 2000000 Hz' "$proof/diagnostics"
+    if [[ -f $shared/h616_spi_clock.py ]]; then
+        armbian-config-zero2w --api module_sx1262_mode spi-grid spi1 > "$proof/grid"
+        grep -F $'100000000\t100000000 Hz' "$proof/grid"
+        python3 "$shared/sx1262_mode.py" spi 16000000 | grep -F 'Next backend start: 16000000 Hz'
+        if python3 "$shared/sx1262_mode.py" spi 16000001; then exit 1; fi
+        grep -Fx 16000000 /etc/armbian-config/sx1262-spi-hz
+        python3 "$shared/sx1262_mode.py" spi default | grep -F 'Next backend start: 2000000 Hz'
+        echo PASS-SPI-GRID
+    fi
     echo PASS-FRESH-CURRENT
     exit 0
 fi
@@ -93,6 +111,7 @@ armbian-config-zero2w --api module_sx1262_mode spi 500000 | grep -F '500000 Hz'
 echo '# guest acceptance conffile sentinel' >> /etc/opi-mesh/reticulum.conf
 "$py" guest_state.py seed
 "$py" guest_state.py initial
+feature_files > "$proof/baseline.files"
 bash "$media/apply.sh" current
 verify_version current
 runtime_tools "$candidate"
@@ -105,6 +124,7 @@ verify_version previous
 runtime_tools "$baseline"
 "$py" guest_state.py downgraded
 armbian-config-zero2w --api module_sx1262_mode spi | grep -F '500000 Hz'
-if [[ -e /opt/opi-mesh/rnode_metrics.py || -e /opt/armbian-config-zero2w/share/armbian-config/sx1262_diagnostics.py ]]; then exit 1; fi
+feature_files > "$proof/downgraded.files"
+cmp "$proof/baseline.files" "$proof/downgraded.files"
 cat /proc/sys/kernel/random/boot_id > "$proof/reboot"
 echo PASS-INSTALL-UPGRADE-DOWNGRADE

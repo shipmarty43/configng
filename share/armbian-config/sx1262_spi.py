@@ -8,28 +8,30 @@ import tempfile
 
 SETTING = Path("/etc/armbian-config/sx1262-spi-hz")
 DT = Path("/sys/firmware/devicetree/base/soc/spi@5011000/radio@0/spi-max-frequency")
-MAX_HZ = 2_000_000
+MIN_HZ = 3_000
+DEFAULT_HZ = 2_000_000
+MAX_HZ = 16_000_000  # Semtech DS.SX1261-2, table 8-1: tSCK >= 62.5 ns
 
 
 def ceiling(prop=DT):
     data = prop.read_bytes()
-    if len(data) != 4 or int.from_bytes(data, "big") == 0:
+    if len(data) != 4 or int.from_bytes(data, "big") < MIN_HZ:
         raise ValueError("Invalid spi-max-frequency in the SX1262 device tree")
     return min(MAX_HZ, int.from_bytes(data, "big"))
 
 
 def parse(value, limit):
-    if not re.fullmatch(r"[0-9]{1,7}", value) or not 1 <= int(value) <= limit:
-        raise ValueError(f"SPI clock must be an integer in 1..{limit} Hz")
+    if not re.fullmatch(r"[0-9]{1,8}", value) or not MIN_HZ <= int(value) <= min(limit, MAX_HZ):
+        raise ValueError(f"SPI clock must be an integer in {MIN_HZ}..{min(limit, MAX_HZ)} Hz")
     return int(value)
 
 
 def selected(limit, path=None):
     path = SETTING if path is None else path
     try:
-        return parse(path.read_text().removesuffix("\n"), limit)
+        return parse(path.read_bytes().decode("ascii").removesuffix("\n"), limit)
     except FileNotFoundError:
-        return limit
+        return min(DEFAULT_HZ, limit)
 
 
 def save(value, limit, path=SETTING):
@@ -86,7 +88,7 @@ class Route:
     chip: int
     spi_dev: str
     chip_dev: str
-    max_hz: int = MAX_HZ
+    max_hz: int = DEFAULT_HZ
 
 
 def devno(node):

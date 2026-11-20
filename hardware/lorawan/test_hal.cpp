@@ -30,12 +30,16 @@ template<class F> void rejects(F fn) {
 }
 int main(int argc, char** argv) {
     try {
+        if (argc == 4 && std::string(argv[1]) == "clock") {
+            std::cout << lw::selectedSpiHz(std::stoul(argv[2]), argv[3]) << "\n";
+            return 0;
+        }
         if(argc==3 && std::string(argv[1])=="fixture-clock") {
             // Only the private ordinary-file SPI fixture is accepted by this test.
             lw::Fd fd(open(argv[2],O_RDWR|O_CLOEXEC|O_NOFOLLOW));
             struct stat info{};
             lw::require(fstat(fd.n,&info)==0 && S_ISREG(info.st_mode),"Expected regular-file fixture");
-            const auto hz = lw::selectedSpiHz(2000000);
+            const auto hz = lw::selectedSpiHz(16000000);
             lw::configureSpi(fd.n,hz);
             uint8_t query[]={0xc0,0}, reply[2]={};
             lw::transferSpi(fd.n,query,sizeof(query),reply,hz);

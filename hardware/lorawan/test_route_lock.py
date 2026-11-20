@@ -9,6 +9,21 @@ from tempfile import TemporaryDirectory
 binary = sys.argv[1]
 with TemporaryDirectory() as directory:
     root = Path(directory)
+    setting = root/'spi-hz'
+    for limit, value, expected in (
+            (16_000_000, None, 2_000_000), (800_000, None, 800_000), (2999, None, None),
+            (16_000_000, '16000000', 16_000_000), (40_000_000, '16000001', None),
+            (2_000_000, '500000', 500_000), (2_000_000, '3000', 3000),
+            (2_000_000, '2999', None), (2_000_000, '16000000', None)):
+        if value is None:
+            setting.unlink(missing_ok=True)
+        else:
+            setting.write_text(value + '\n')
+        proc = subprocess.run([binary, 'clock', str(limit), setting], capture_output=True)
+        if expected is None:
+            assert proc.returncode != 0
+        else:
+            assert proc.returncode == 0 and int(proc.stdout) == expected
     path = root/'radio.lock'
     path.touch()
     def lock_process():
