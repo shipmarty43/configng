@@ -148,6 +148,17 @@ class Transaction(unittest.TestCase):
 
 
 class HardwareContract(unittest.TestCase):
+    def test_meshtastic_handoff_checks_hardware_gate_only_for_live_profile(self):
+        for profile in ("no-radio", "hardware"):
+            backend = Backends(profile)
+            table = {backend.units["meshtastic"]: {"LoadState": "loaded"}}
+            with patch.object(backend, "units_status", return_value=table), patch("sx1262_mode.meshtastic_profile") as check:
+                backend.preflight("meshtastic")
+                if profile == "hardware":
+                    check.assert_called_once_with("preflight")
+                else:
+                    check.assert_not_called()
+
     def test_kernel_owner_and_unmanaged_services(self):
         backend = Backends("hardware")
         idle = dict(LoadState="loaded", ActiveState="inactive", SubState="dead", MainPID="0", Job="")

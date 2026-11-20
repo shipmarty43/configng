@@ -46,6 +46,12 @@ def run(*args):
     return proc.stdout
 
 
+def meshtastic_profile(action):
+    if not Path("/opt/opi-mesh/sx1262_profile.py").is_file():
+        raise ModeError("Install the optional Waveshare profile; see hardware/meshtastic-sx1262/README.md.")
+    return run("/opt/opi-mesh/venv/bin/python", "/opt/opi-mesh/sx1262_profile.py", action)
+
+
 class Backends:
     def __init__(self, name):
         self.units = TEST if name == "no-radio" else HARDWARE
@@ -116,6 +122,8 @@ class Backends:
         unit = self.units[mode]
         if self.units_status()[unit]["LoadState"] != "loaded":
             raise ModeError(f"Backend unavailable: {unit}")
+        if self.name == "hardware" and mode == "meshtastic":
+            meshtastic_profile("preflight")
         if self.name == "hardware" and mode == "lorawan":
             for action in ("preflight", "status"):
                 run("/usr/local/bin/opi-lorawan", action, "/etc/opi-lorawan/lorawan.conf",
@@ -259,7 +267,7 @@ class Selector:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for action in ("profile", "status", "apply"):
+    for action in ("profile", "status", "apply", "check-meshtastic"):
         sub.add_parser(action)
     sub.add_parser("set").add_argument("mode", choices=MODES)
     args = parser.parse_args()
@@ -267,6 +275,8 @@ def main():
     owner = Selector(Backends(name), STATE)
     if args.action == "profile":
         print(name)
+    elif args.action == "check-meshtastic":
+        print(meshtastic_profile("check"), end="")
     elif args.action == "status":
         owner.status()
     else:

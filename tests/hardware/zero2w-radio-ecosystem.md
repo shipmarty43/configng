@@ -155,6 +155,8 @@ delivery proofs and the configurator controls. A subsequent [two-host check](../
 verified short and larger Reticulum requests over the Zero 2W Ethernet interface.
 The Meshtastic simulation used isolated loopback. Physical radio integration below remains pending.
 
+The [sealed Meshtastic hardware profile and no-RF acceptance](../../hardware/meshtastic-sx1262/README.md) cover native pin mapping, ownership and modeled RX/IRQ.
+
 Use official **meshtasticd** for SPI radio ownership and the official Python
 client for application messages. Generate a Zero 2W-specific profile using
 verified gpiochip/line discovery. Pin the daemon/config schema versions together.

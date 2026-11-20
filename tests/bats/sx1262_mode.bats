@@ -25,6 +25,11 @@ setup() {
     module_sx1262_mode select
     [ "$(cat "$calls")" = profile ]
 }
+@test 'hardware profile inspection in no-radio mode never calls set' {
+    dialog_menu() { echo check-meshtastic; }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\ncheck-meshtastic' ]
+}
 @test 'backend failure and rollback result reach the operator' {
     dialog_menu() { echo reticulum; }
     FAIL=yes

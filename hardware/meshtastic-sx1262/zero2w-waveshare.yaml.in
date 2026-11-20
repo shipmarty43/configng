@@ -1,0 +1,17 @@
+# Direct-mounted Waveshare SX1262 433/470M LoRaWAN/GNSS HAT.
+# pin is a Portduino identifier; line is an offset on the H618 main PIO.
+# CS0 on PI3 (header 40) belongs to spidev. Omit Lora.CS to leave it unbound.
+Lora:
+  Module: sx1262
+  spidev: ${spi}
+  spiSpeed: 2000000
+  IRQ:   {pin: 36, gpiochip: ${chip}, line: 76}   # PC12 / DIO1
+  Busy:  {pin: 38, gpiochip: ${chip}, line: 260}  # PI4
+  Reset: {pin: 12, gpiochip: ${chip}, line: 257}  # PI1
+  RXen:  {pin: 31, gpiochip: ${chip}, line: 271}  # PI15, HIGH in RX
+  DIO2_AS_RF_SWITCH: true
+  DIO3_TCXO_VOLTAGE: 0
+General:
+  MACAddress: "${mac}"
+  ConfigDirectory: ""
+  AvailableDirectory: ""

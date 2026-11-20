@@ -1,0 +1,32 @@
+[Unit]
+Description=Meshtastic SX1262 hardware backend for Orange Pi Zero 2W
+# The preparation-only installation has no device-access drop-in.
+ConditionPathExists=/etc/systemd/system/opi-meshtastic-radio.service.d/50-devices.conf
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=exec
+ExecStart=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/sx1262_profile.py start
+ExecStartPost=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/sx1262_profile.py ready
+TimeoutStartSec=32
+TimeoutStopSec=12
+StateDirectory=opi-meshtastic-radio
+StateDirectoryMode=0700
+RuntimeDirectory=opi-meshtastic-radio
+RuntimeDirectoryMode=0700
+WorkingDirectory=/var/lib/opi-meshtastic-radio
+UMask=0077
+PrivateDevices=yes
+DevicePolicy=closed
+PrivateNetwork=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectHome=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_NETLINK
+MemoryMax=160M
+TasksMax=48
+Restart=no
