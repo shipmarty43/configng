@@ -181,7 +181,8 @@ interoperate with an actual RNode, including its packet framing, fragmentation,
 MTU, flow control and airtime behavior. A custom PipeInterface is an alternative
 integration boundary, but two copies of our own adapter exchanging bytes would
 not prove RNode interoperability. Never report “Reticulum over LoRa ready” from
-the LAN service milestone alone. LXMF can follow as the messaging application.
+the LAN service milestone alone. [Direct LXMF messaging over the LAN](../../hardware/mesh/README.md#signed-lxmf-messages-over-lan)
+has passed in both directions with independent identities and signed inbox files.
 
 For one physical radio, offer **Off / Meshtastic / Reticulum / LoRaWAN / Diagnostics**.
 Switching must stop the old owner, wait for release, acquire a shared lock,

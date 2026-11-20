@@ -122,6 +122,65 @@ observed both requests and link closure. Systemd reported peak memory of
 After restoring the profile, the runtime and persistent config matched the
 original files and the only listener on port 4242 was `127.0.0.1`.
 
+### Signed LXMF messages over LAN
+
+Two independent LXMF clients exchanged UTF-8 messages through the board's
+Reticulum TCP service. The workstation sent a message in Cyrillic and the
+board replied after verifying it. Each receiver checked the expected contact,
+destination, title, body, encrypted direct delivery and signature. It then
+saved the incoming message in its private `inbox/` and reopened it with the
+upstream library. Each sender required the LXMF `DELIVERED` callback.
+[Upstream LXMF](https://github.com/markqvist/LXMF)
+
+Use the two-host LAN profile above. Install `lxmf==1.3.1` alongside
+`rns==1.6.1` in both Python environments. Install
+`check_lxmf_lan.py` under `/opt/opi-mesh/` on the board. These Bash helpers
+set the resource bounds used in the test. On the **workstation**, run from
+the fork checkout using the absolute path to its LXMF Python interpreter:
+
+```sh
+PC_STATE=$(mktemp -d)/contact
+pc_lxmf() {
+    systemd-run --user --quiet --wait --pipe -p MemoryHigh=160M -p MemoryMax=256M \
+        -p MemorySwapMax=0 -p CPUQuota=150% -p TasksMax=64 -p RuntimeMaxSec=1120 \
+        --setenv=PYTHON_CPU_COUNT=2 "$RNS_PYTHON" -u "$PWD/hardware/mesh/check_lxmf_lan.py" "$@"
+}
+pc_lxmf init "$PC_STATE"
+```
+
+On the **board**, prepare a separate identity in a new directory owned by
+the Reticulum service:
+
+```sh
+BOARD_STATE=/var/lib/opi-reticulum/lxmf-test
+board_lxmf() {
+    sudo systemd-run --quiet --wait --pipe -p DynamicUser=yes -p User=opi-reticulum \
+        -p StateDirectory=opi-reticulum -p StateDirectoryMode=0700 -p PrivateDevices=yes \
+        -p PrivateTmp=yes -p MemoryHigh=160M -p MemoryMax=256M -p CPUQuota=150% \
+        -p TasksMax=64 -p RuntimeMaxSec=1120 --setenv=PYTHON_CPU_COUNT=2 \
+        /opt/opi-mesh/venv/bin/python -u /opt/opi-mesh/check_lxmf_lan.py "$@"
+}
+board_lxmf init "$BOARD_STATE"
+```
+
+Exchange the printed **public destination hashes** and choose the same fresh
+`RUN_ID` on both hosts. Start the board command first, then start the workstation
+command in its own terminal:
+
+```sh
+# Orange Pi
+board_lxmf board "$BOARD_STATE" "$PC_DEST" "$RUN_ID"
+# Workstation
+pc_lxmf workstation "$PC_STATE" "$BOARD_DEST" "$RUN_ID" "$BOARD_IP"
+```
+
+**2026-11-20 result.** Both directions passed, then passed again after
+restarting both clients with the original identities and a new run label.
+All four sender message IDs matched the verified receiver IDs. Each inbox
+contained two distinct mode-0600 files. The first run peaked at 37.4 MiB on
+the workstation and 35.9 MiB on the board for the respective test clients.
+After the test the board again listened only on `127.0.0.1:4242`.
+
 ## Zero 2W board results, 2026-11-20
 
 | Check | Result |
@@ -133,6 +192,6 @@ original files and the only listener on port 4242 was `127.0.0.1`.
 | Service lifecycle | Both choices appeared in the installed text menu. Each stopped cleanly, inspection of the stopped unit returned an error, and inspection succeeded again after starting it. Boot enablement stayed off. |
 | Device and network isolation | Both service device trees excluded SPI, GPIO and the GNSS UART. The simulator had only loopback in its network namespace. On the host, only `127.0.0.1:4242` listened on the two tested ports. `gpsd` and `opi-gnss` remained active. |
 
-LXMF messaging between independent peers, a physical Meshtastic peer and Reticulum over a
-radio adapter remain separate milestones. The test profile has no GNSS or
-MQTT integration.
+Persistent user-facing LXMF inbox controls, physical Meshtastic peer tests and
+Reticulum over a radio adapter remain separate milestones. The test profile
+has no GNSS or MQTT integration.
