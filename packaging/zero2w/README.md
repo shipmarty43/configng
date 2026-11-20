@@ -41,7 +41,8 @@ mkdir -p work release/previous release/current
 python3 packaging/zero2w/fetch.py work/inputs
 python3 packaging/zero2w/build.py 9dbb3855 --inputs work/inputs --work work --output release/previous
 python3 packaging/zero2w/build.py HEAD --inputs work/inputs --work work --output release/current
-cp -r work/inputs/ubuntu release/
+mkdir -p release/ubuntu
+install -m644 work/inputs/ubuntu/*.deb release/ubuntu/
 cp packaging/zero2w/{apply.sh,README.md} release/
 (cd release && sha256sum previous/*.deb current/*.deb ubuntu/*.deb > SHA256SUMS)
 tar -cf zero2w-resolute-offline.tar release/
