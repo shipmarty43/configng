@@ -28,10 +28,11 @@ setup() {
 	! grep -q 'systemctl start' "$LW_TRACE"
 }
 @test 'active Meshtastic is not stopped or displaced' {
-	ACTIVE_UNIT=meshtasticd.service
-	run module_lorawan start
-	[ "$status" -ne 0 ]
-	[[ "$output" == *'Stop the current radio owner first'* ]]
+	for ACTIVE_UNIT in meshtasticd.service opi-meshtastic-radio.service; do
+		run module_lorawan start
+		[ "$status" -ne 0 ]
+		[[ "$output" == *'Stop the current radio owner first'* ]]
+	done
 	! grep -Eq 'systemctl (start|stop)' "$LW_TRACE"
 }
 @test 'valid configuration and state start only the LoRaWAN unit' {

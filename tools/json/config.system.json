@@ -123,6 +123,17 @@
                             "help": "EU433, OTAA, Class A. Check configuration and service state; starting transmits. Hardware qualification is pending."
                         },
                         {
+                            "id": "SXMD01",
+                            "description": "Select the exclusive SX1262 service and inspect ownership",
+                            "short": "SX1262 mode",
+                            "module": "module_generic",
+                            "command": ["module_sx1262_mode select"],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "grep -zFxq 'xunlong,orangepi-zero2w' /sys/firmware/devicetree/base/compatible",
+                            "help": "Off, Meshtastic, Reticulum or LoRaWAN. The no-radio profile exercises switching and rollback with isolated test services."
+                        },
+                        {
                             "id": "MESH01",
                             "description": "Control the Meshtastic simulator and Reticulum TCP node",
                             "short": "Mesh services",

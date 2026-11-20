@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply the saved SX1262 owner mode
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/share/armbian-config/sx1262_mode.py apply
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

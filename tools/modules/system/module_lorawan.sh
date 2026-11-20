@@ -40,7 +40,7 @@ function _lorawan_start() {
 	if _lorawan_systemctl is-active --quiet opi-lorawan.service; then return 0; fi
 	_lorawan_call status || return 1
 	local unit
-	for unit in meshtasticd.service opi-reticulum-radio.service opi-radio-diagnostics.service; do
+	for unit in meshtasticd.service opi-meshtastic-radio.service opi-reticulum-radio.service opi-radio-diagnostics.service; do
 		if _lorawan_systemctl is-active --quiet "$unit"; then
 			echo "Stop the current radio owner first: $unit" >&2; return 1
 		fi

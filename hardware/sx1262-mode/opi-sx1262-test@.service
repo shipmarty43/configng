@@ -1,0 +1,19 @@
+[Unit]
+Description=SX1262 no-radio ownership test (%i)
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/flock --no-fork --nonblock /run/lock/opi-sx1262-test.lock /usr/bin/sleep infinity
+DynamicUser=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX
+MemoryMax=16M
+TasksMax=4
+Restart=no

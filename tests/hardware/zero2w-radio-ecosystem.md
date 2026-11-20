@@ -184,6 +184,8 @@ not prove RNode interoperability. Never report “Reticulum over LoRa ready” f
 the LAN service milestone alone. [Direct LXMF messaging over the LAN](../../hardware/mesh/README.md#signed-lxmf-messages-over-lan)
 has passed in both directions with independent identities and signed inbox files.
 
+The [SX1262 selector and rollback test](../../hardware/sx1262-mode/README.md) exercised Off, Meshtastic, Reticulum and LoRaWAN with isolated lock holders on the Zero 2W. Hardware handoff remains to be qualified.
+
 For one physical radio, offer **Off / Meshtastic / Reticulum / LoRaWAN / Diagnostics**.
 Switching must stop the old owner, wait for release, acquire a shared lock,
 start the chosen backend and verify health; failed activation restores the

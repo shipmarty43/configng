@@ -2,7 +2,7 @@
 Description=Experimental Zero 2W LoRaWAN Class A node
 Wants=time-sync.target
 After=time-sync.target
-Conflicts=meshtasticd.service opi-reticulum-radio.service opi-radio-diagnostics.service
+Conflicts=meshtasticd.service opi-meshtastic-radio.service opi-reticulum-radio.service opi-radio-diagnostics.service
 
 [Service]
 Type=simple
