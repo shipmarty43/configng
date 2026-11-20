@@ -42,9 +42,8 @@ numbers from the running system; do not encode `/dev/gpiochip0`, `/dev/i2c-1` or
 authority for physical-to-SoC GPIO translation; test profile mappings against it.
 Keep profile data separate from credentials, radio identity and channel keys.
 
-Extend the existing overlay manager rather than creating another boot-file
-writer. A future HAT module must use the same lock, composed-DT validation,
-backup and rollback rules as the UPS module. Distinguish requested next-boot
+The SX1262 HAT and UPS now share the overlay manager, boot-file lock and
+composed-DT validation. The HAT menu exposes saved changes for rollback. Distinguish requested next-boot
 configuration, loaded hardware, running service and tested connectivity.
 
 ## Standard shield mapping
@@ -75,10 +74,8 @@ DFR0528 uses physical 3/5, so this map has no direct signal-pin overlap with its
 I2C connection. Stack clearance, shared supply loading and other attached HATs
 still need checking. The current PWM test resistor at 32–29 is separate.
 
-CS handling is a specific bring-up gate: choose one verified method, either a
-DT-controlled GPIO chip select on pin 40 or daemon-controlled CS with the SPI
-transfer configured accordingly. Do not let both the kernel and daemon own PI3.
-Do not select a spidev node belonging to SPI flash. UART use must not compete
+The SPI core controls CS0 on physical pin 40. The native and Python clients
+check the live DT route before using the endpoint. UART use must not compete
 with a login console or kernel console; any console removal needs rollback.
 Do not copy TCXO voltage or RF-switch settings from a different SX1262 module.
 
@@ -192,7 +189,7 @@ sharing and a Meshtastic–Reticulum message bridge are outside the first releas
 ## Two GNSS sources
 
 User-confirmed inventory, 2026-10-31. The shared provider and selection controls
-below are planned, not implemented or hardware-tested.
+are implemented in the [local GNSS provider](../../hardware/gnss/README.md). Physical acceptance remains pending.
 
 | Source | Host connection | Planned owner / adapter |
 |---|---|---|
@@ -207,7 +204,7 @@ location-signal policy when enabling GNSS. Cellular registration or a working
 data connection is not evidence of a GNSS fix. Modem trials remain deferred at
 the user's request.
 
-Planned common interface and configurator acceptance:
+Local provider contract and board acceptance:
 
 - Offer **Auto / Waveshare / Modem / Off**, with configurable priority in Auto.
   Manual selection must not silently substitute another receiver.

@@ -88,6 +88,17 @@
                             "help": "Inspect roles and UDC; validate and save USB0 boot role with a backup. Device functions require separate configuration."
                         },
                         {
+                            "id": "GNSS01",
+                            "description": "Select the local GNSS receiver and inspect fix age",
+                            "short": "GNSS receivers",
+                            "module": "module_generic",
+                            "command": ["module_gnss select"],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "[ -x /usr/local/bin/opi-gnss ]",
+                            "help": "Use the Waveshare receiver through gpsd, the SIM7600 through ModemManager, or automatic failover."
+                        },
+                        {
                             "id": "LORA01",
                             "description": "Inspect and control the optional SX1262 LoRaWAN node service",
                             "short": "LoRaWAN node",

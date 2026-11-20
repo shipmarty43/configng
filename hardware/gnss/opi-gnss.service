@@ -1,0 +1,24 @@
+[Unit]
+Description=Local GNSS source selection for Orange Pi Zero 2W
+After=dbus.service gpsd.socket
+
+[Service]
+ExecStart=/usr/local/bin/opi-gnss serve
+User=root
+Group=dialout
+RuntimeDirectory=opi-gnss
+RuntimeDirectoryMode=0750
+UMask=0027
+Restart=on-failure
+RestartSec=5
+PrivateDevices=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target
