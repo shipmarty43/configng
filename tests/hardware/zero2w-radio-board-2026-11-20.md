@@ -62,3 +62,10 @@ uses config, read and optionally timed RX commands. The measurements include
 host command overhead. No transmit opcode or over-the-air peer was used.
 RF link and LoRaWAN gateway acceptance are pending. The GNSS UART remained
 assigned to the serial console.
+
+The native LoRaWAN HAL was then cross-checked in two separate AArch64 processes
+on the board. Each acquired `lw::RadioLock`, initialized `lw::Hal("auto")`,
+waited for BUSY to clear, and used its production SPI transport to issue
+`c0 00` and `11 00 00`. Both returned status `0x22` and packet type
+`0x01`. These reads exercised the C++ GPIO and spidev path after the Python
+driver had left the chip in LoRa standby. No network credentials were used.
