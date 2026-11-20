@@ -23,7 +23,7 @@ other libraries. Existing Ubuntu packages are left to the distribution.
 Neither command changes `/boot` or starts a radio profile.
 
 Use `sudo armbian-config-zero2w --cmd MESH01` to open the mesh menu.
-`sudo armbian-config-zero2w --cmd SXMD01` opens the SX1262 menu.
+`sudo armbian-config-zero2w --cmd SXMD01` opens the SX1262 menu. `sudo armbian-config-zero2w --cmd SPI001` opens the per-device SPI0/SPI1 boot clock settings.
 LXMF and Meshtastic keep their databases in `/var/lib/opi-lxmf/` and
 `/var/lib/opi-meshtastic-mail/`. LXMF keeps its local identity in its state
 directory. The selected bus clock lives in
@@ -39,7 +39,7 @@ Only the fetch step needs Internet access.
 ```sh
 mkdir -p work release/previous release/current
 python3 packaging/zero2w/fetch.py work/inputs
-python3 packaging/zero2w/build.py 9dbb3855 --inputs work/inputs --work work --output release/previous
+python3 packaging/zero2w/build.py b0a25063 --inputs work/inputs --work work --output release/previous
 python3 packaging/zero2w/build.py HEAD --inputs work/inputs --work work --output release/current
 mkdir -p release/ubuntu
 install -m644 work/inputs/ubuntu/*.deb release/ubuntu/
@@ -48,7 +48,7 @@ cp packaging/zero2w/{apply.sh,README.md} release/
 tar -cf zero2w-resolute-offline.tar release/
 ```
 
-These commands use the last pre-grid version for downgrade testing. The original release pair and results are recorded in the [acceptance report](../../tests/packaging/acceptance-resolute.md).
+These commands use the previous SPI-grid release for downgrade testing. The original release pair and results are recorded in the [acceptance report](../../tests/packaging/acceptance-resolute.md).
 
 The revision selects the fork sources, assembled menus, units and applicable
 RNode fixes. The manifest pins the native ARM64 meshtasticd, wheels and

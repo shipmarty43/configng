@@ -38,7 +38,7 @@ excluded from the menu's suggested settings. [Linux H616 CCU](https://github.com
 ## Select or inspect a clock
 
 In **SXMD01 → SPI bus clock**, choose the HAT grid, type a request in Hz,
-restore the default, or inspect either controller. Each HAT row stores the
+restore the default, or open the [per-device SPI0/SPI1 clock menu](spi-devices.md). Each HAT row stores the
 smallest integer request that reaches its displayed rate for the snapshot.
 For instance, 24 MHz / 14 requires a request of 1,714,286 Hz. Writing the
 truncated value 1,714,285 would select the next larger divisor.

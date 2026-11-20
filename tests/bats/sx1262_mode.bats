@@ -75,14 +75,11 @@ setup() {
     module_sx1262_mode select
     [ "$(cat "$calls")" = $'profile\nspi\nspi-grid hat --menu\nspi 1714286' ]
 }
-@test 'inspecting controller grid cannot change the saved request' {
-    _sx1262_mode_cli() {
-        echo "$*" >> "$calls"
-        case "$1" in profile) echo no-radio ;; spi) return 1 ;; spi-grid) printf 'model\n100000000\t100 MHz\n' ;; esac
-    }
+@test 'controller selection opens the per-device clock menu' {
+    module_spi_clocks() { echo "$*" >> "$calls"; }
     dialog_menu() {
-        case "$1" in 'SX1262 mode') echo spi ;; 'SPI bus clock') echo spi0 ;; *) echo 100000000 ;; esac
+        case "$1" in 'SX1262 mode') echo spi ;; 'SPI bus clock') echo spi0 ;; esac
     }
     module_sx1262_mode select
-    [ "$(cat "$calls")" = $'profile\nspi\nspi-grid spi0 --menu' ]
+    [ "$(cat "$calls")" = $'profile\nspi\nselect spi0' ]
 }

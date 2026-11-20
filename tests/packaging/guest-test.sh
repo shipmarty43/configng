@@ -86,6 +86,22 @@ if [[ $release == current ]]; then
         python3 "$shared/sx1262_mode.py" spi default | grep -F 'Next backend start: 2000000 Hz'
         echo PASS-SPI-GRID
     fi
+    if [[ -f $shared/spi_devices.py ]]; then
+        cp /boot/armbianEnv.txt "$proof/before-spi.env"
+        armbian-config-zero2w --api module_spi_clocks set spi0 0 18000000
+        # Compile the actual stock board DT with the boot-selected overlay.
+        # The QEMU kernel has its own disabled SPI metadata and no radio.
+        name=$(sed -n 's/^user_overlays=//p' /boot/armbianEnv.txt)
+        [[ $name == opi-sclk-spi0-cs0-*-18000000 && $name != *" "* ]]
+        fdtoverlay -i /boot/dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb -o "$proof/spi.dtb" "/boot/overlay-user/$name.dtbo"
+        test "$(fdtget -t u "$proof/spi.dtb" /soc/spi@5010000/flash@0 spi-max-frequency)" = 18000000
+        id=(/boot/armbianEnv.txt.spi-clocks-backups/change.*)
+        test "${#id[@]}" = 1
+        armbian-config-zero2w --api module_spi_clocks rollback "${id[0]##*/}"
+        cmp "$proof/before-spi.env" /boot/armbianEnv.txt
+        python3 guest_menu.py SPI001 'Choose a physical controller'
+        echo PASS-SPI-DEVICES
+    fi
     echo PASS-FRESH-CURRENT
     exit 0
 fi

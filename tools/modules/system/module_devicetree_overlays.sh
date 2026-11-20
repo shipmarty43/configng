@@ -400,6 +400,9 @@ function _dt_overlays_write_config_unlocked() (
 		return 1
 	fi
 
+    if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-sclk-' "$conf_tmp"; then
+        _spi_clocks_validate_config "$conf_tmp" || return 1
+    fi
 	cp -p "$conf" "$conf_bak" || return 1
 	chmod --reference="$conf" "$conf_tmp" && chown --reference="$conf" "$conf_tmp" || return 1
 	sync -f "$conf_bak" && sync -f "$conf_tmp" || return 1
@@ -561,11 +564,11 @@ function _zero2w_overlay_prepare() (
 		[[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || { echo 'Invalid overlay name.' >&2; return 1; }
 	done
 	case "$action" in
-		enable|stock)
+		enable|stock|base|compose)
 			if [[ "$action" == stock ]]; then
 				read -r -a stock <<< "$6"
 				for name in "${stock[@]}"; do [[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || return 1; done
-			else
+			elif [[ "$action" == enable ]]; then
 				if [[ "$profile" == ups ]]; then
 					_ups_dfr_driver || { echo 'Install dfr0528-battery DKMS for the running kernel first.' >&2; return 1; }
 					[[ " ${stock[*]} " == *' i2c1-pi '* ]] || stock+=(i2c1-pi)
@@ -575,18 +578,27 @@ function _zero2w_overlay_prepare() (
 			[[ ! -e "$root/overlay-user/user-fixup.scr" && ! -e "$root/fixup.scr" ]] || { echo 'Custom boot fixup requires manual validation.' >&2; return 1; }
 			for name in fdtget fdtoverlay; do command -v "$name" >/dev/null || { echo 'Install device-tree-compiler first.' >&2; return 1; }; done
 			for name in "${stock[@]}"; do blobs+=("$root/dtb/allwinner/overlay/$prefix-$name.dtbo"); done
-			for name in "${custom[@]}"; do blobs+=("$root/overlay-user/$name.dtbo"); done
+			for name in "${custom[@]}"; do
+                [[ $action == base && $name == opi-sclk-* ]] && continue
+                blobs+=("$root/overlay-user/$name.dtbo")
+            done
 			for name in "${blobs[@]}"; do [[ -f "$name" && ! -L "$name" ]] || { echo "Missing or symlinked overlay: $name" >&2; return 1; }; done
 			local composed
 			composed=$(mktemp) || return 1
 			trap 'rm -f "$composed"' EXIT
-			fdtoverlay -i "$root/dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb" -o "$composed" "${blobs[@]}" || return 1
+			local base="$root/dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb"
+            if (( ${#blobs[@]} )); then
+                fdtoverlay -i "$base" -o "$composed" "${blobs[@]}" || return 1
+            else
+                cp "$base" "$composed" || return 1
+            fi
 			if [[ " ${custom[*]} " == *' zero2w-dfr0528 '* ]]; then
 				_ups_dfr_validate "$composed" || return 1
 			fi
 			if [[ " ${custom[*]} " == *' opi-zero2w-sx1262 '* ]]; then
 				_sx1262_validate "$composed" || return 1
 			fi
+            if [[ $action == base || $action == compose ]]; then cp "$composed" "$output"; return; fi
 			;;
 		disable)
 			local -a kept=()
@@ -624,6 +636,9 @@ function _zero2w_overlay_change() (
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi
+    if grep -Eq '^user_overlays=.*opi-sclk-' "$work/after"; then
+        _spi_clocks_validate_config "$work/after" || return 1
+    fi
 	if cmp -s "$work/before" "$work/after"; then echo 'Boot configuration already matches; no change.'; return 0; fi
 	cmp -s "$conf" "$work/before" || { echo 'Boot config changed concurrently.' >&2; return 1; }
 	[[ ! -L "$conf.$profile-backups" ]] || return 1

@@ -230,7 +230,10 @@ def main():
         archive_source(rev, src)
 
         core_files(src, build / CORE)
-        package(build / CORE, CORE, version, "all", "armbian-config, python3, jq, systemd, util-linux",
+        core_deps = "armbian-config, python3, jq, systemd, util-linux"
+        if (src / "share/armbian-config/spi_devices.py").exists():
+            core_deps += ", device-tree-compiler"
+        package(build / CORE, CORE, version, "all", core_deps,
                 rev, "Modular Orange Pi Zero 2W Armbian configurator", out, env)
 
         runtime_files(src, build / RUNTIME, inputs, build)
