@@ -1,0 +1,29 @@
+[Unit]
+Description=Receive-only Waveshare SX1262 RNode-compatible adapter
+ConditionPathExists=/etc/systemd/system/opi-reticulum-radio.service.d/50-devices.conf
+Requires=opi-reticulum.service
+After=opi-reticulum.service systemd-tmpfiles-setup.service
+PartOf=opi-reticulum.service
+
+[Service]
+Type=notify
+ExecStart=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/rnode_adapter.py start
+ExecStartPost=/usr/bin/systemctl start opi-reticulum-rnode-link.service
+ExecStopPost=/usr/bin/systemctl stop opi-reticulum-rnode-link.service
+TimeoutStartSec=30
+TimeoutStopSec=20
+PrivateDevices=yes
+DevicePolicy=closed
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET
+IPAddressDeny=any
+IPAddressAllow=localhost
+MemoryMax=160M
+TasksMax=48
+Restart=no

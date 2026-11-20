@@ -178,10 +178,21 @@ class HardwareContract(unittest.TestCase):
             with patch.object(backend, "lock_owner", return_value=80), self.assertRaisesRegex(ModeError, "mismatch"):
                 backend.current()
 
+    def test_reticulum_preflight_only_on_hardware(self):
+        for profile in ("no-radio", "hardware"):
+            backend = Backends(profile)
+            with patch.object(backend, "units_status", return_value={backend.units["reticulum"]: {"LoadState": "loaded"}}), \
+                    patch("sx1262_mode.reticulum_profile") as check:
+                backend.preflight("reticulum")
+                if profile == "hardware":
+                    check.assert_called_once_with("preflight")
+                else:
+                    check.assert_not_called()
+
     def test_lorawan_preflight_and_saved_state_check(self):
         backend = Backends("hardware")
         table = {HARDWARE["lorawan"]: {"LoadState": "loaded"}}
-        with patch.object(backend, "units_status", return_value=table), patch("sx1262_mode.run") as call:
+        with patch.object(backend, "units_status", return_value=table), patch("sx1262_spi.ceiling", return_value=2000000), patch("sx1262_mode.run") as call:
             backend.preflight("lorawan")
         self.assertEqual([c.args[1] for c in call.call_args_list], ["preflight", "status"])
 

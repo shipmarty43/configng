@@ -177,7 +177,7 @@ radio support. The [official interface documentation](https://reticulum.network/
 provides RNode, KISS, Pipe and custom interfaces; the standard RNode path talks
 to an RNode transport, not directly to `/dev/spidev*`.
 
-The SPI HAT therefore needs a qualified Linux radio adapter. Evaluate existing
+The [sealed Reticulum RX adapter](../../hardware/reticulum-sx1262/README.md) now presents an RNode host interface and passed reference framing tests; a physical RNode peer is still needed. Evaluate existing
 maintained adapters before writing one. Preferred radio acceptance target:
 interoperate with an actual RNode, including its packet framing, fragmentation,
 MTU, flow control and airtime behavior. A custom PipeInterface is an alternative

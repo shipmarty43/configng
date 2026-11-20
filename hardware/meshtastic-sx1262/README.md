@@ -4,7 +4,7 @@
 
 ## Wiring and firmware inputs
 
-The renderer resolves the spidev entry by its live device-tree node and resolves the main GPIO controller through `/sys/bus/gpio/devices/gpiochip*/of_node`. It verifies the H618 Zero 2W compatible, main PIO layout, SPI1 pinmux, single active-low CS0 on PI3, endpoint binding and 2 MHz clock. The on-board run resolved `spidev1.0` and `gpiochip1`. The SX1262 SPI HAL and Arduino GPIO mapping in the pinned native firmware accept separate Portduino IDs and chip-relative line offsets. [Firmware GPIO parser](https://github.com/meshtastic/firmware/blob/54e0d8d/src/platform/portduino/PortduinoGlue.cpp) · [Portduino SPI implementation](https://github.com/meshtastic/framework-portduino/blob/5f100db1b33fb0c23f149fd47c9779abcfe1e09d/cores/portduino/linux/LinuxHardwareSPI.cpp)
+The renderer resolves the spidev entry by its live device-tree node and resolves the main GPIO controller through `/sys/bus/gpio/devices/gpiochip*/of_node`. It verifies the H618 Zero 2W compatible, main PIO layout, SPI1 pinmux, single active-low CS0 on PI3, endpoint binding and device clock ceiling. The selected SPI rate comes from the [shared clock control](../reticulum-sx1262/README.md#two-separate-clocks). The on-board run resolved `spidev1.0` and `gpiochip1`. The SX1262 SPI HAL and Arduino GPIO mapping in the pinned native firmware accept separate Portduino IDs and chip-relative line offsets. [Firmware GPIO parser](https://github.com/meshtastic/firmware/blob/54e0d8d/src/platform/portduino/PortduinoGlue.cpp) · [Portduino SPI implementation](https://github.com/meshtastic/framework-portduino/blob/5f100db1b33fb0c23f149fd47c9779abcfe1e09d/cores/portduino/linux/LinuxHardwareSPI.cpp)
 
 | HAT signal | Physical pin | H618 routing | Meshtastic setting |
 |---|---:|---|---|
@@ -24,6 +24,7 @@ The separate version-24 firmware preferences select **EU_433, LONG_FAST, CLIENT_
 Use the pinned ARM64 Ubuntu build and Python environment from the [mesh installation](../mesh/README.md#install-on-an-arm64-zero-2w-running-ubuntu-2604). The executable digest is `2b37b97948ebd9a75f22d52f653ce4977b6b6be9afdb7c5c02a973bd34e15653`. Install this fork's assembled configurator as usual, then the optional files:
 
 ```sh
+sudo install -m644 share/armbian-config/sx1262_spi.py /opt/opi-mesh/
 sudo install -m644 hardware/meshtastic-sx1262/{sx1262_profile.py,qualify_sx1262_profile.py,zero2w-waveshare.yaml.in} /opt/opi-mesh/
 sudo install -m644 hardware/meshtastic-sx1262/opi-meshtastic-radio.service /usr/local/lib/systemd/system/
 sudo systemctl daemon-reload

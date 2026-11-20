@@ -1,0 +1,26 @@
+[Unit]
+Description=Attach the Waveshare RX interface to the local Reticulum instance
+ConditionPathExists=/etc/systemd/system/opi-reticulum-radio.service.d/50-devices.conf
+After=opi-reticulum.service
+Requires=opi-reticulum.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/rnode_link.py attach
+ExecStop=/opt/opi-mesh/venv/bin/python /opt/opi-mesh/rnode_link.py detach
+User=opi-reticulum
+DynamicUser=yes
+StateDirectory=opi-reticulum
+StateDirectoryMode=0700
+UMask=0077
+PrivateDevices=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+TimeoutStartSec=24
+TimeoutStopSec=12

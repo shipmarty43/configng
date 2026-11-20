@@ -4,7 +4,7 @@
 Lora:
   Module: sx1262
   spidev: ${spi}
-  spiSpeed: 2000000
+  spiSpeed: ${hz}
   IRQ:   {pin: 36, gpiochip: ${chip}, line: 76}   # PC12 / DIO1
   Busy:  {pin: 38, gpiochip: ${chip}, line: 260}  # PI4
   Reset: {pin: 12, gpiochip: ${chip}, line: 257}  # PI1

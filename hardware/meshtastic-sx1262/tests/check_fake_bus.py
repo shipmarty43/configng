@@ -16,6 +16,7 @@ from unittest.mock import patch
 from meshtastic.protobuf import config_pb2
 from sim_client import connect_simulator
 import sx1262_profile as p
+import sx1262_spi
 
 
 def fixture_nodes():
@@ -37,13 +38,13 @@ def worker(library, root):
     p.PROFILE.write_text("hardware\n")
     p.ACCESS.write_text(p.device_policy(route))
     os.environ.update(LD_PRELOAD=str(library.resolve(strict=True)),
-                      OPI_FIXTURE_SPI=str(spi), OPI_FIXTURE_GPIO=str(chip))
+                      OPI_FIXTURE_SPI=str(spi), OPI_FIXTURE_GPIO=str(chip), OPI_FIXTURE_HZ=str(sx1262_spi.selected(route.max_hz)))
     with patch.object(p, "check_bindings", side_effect=lambda _: fixture_nodes()):
         p.launch()
 
 
 def run(library):
-    fixture_nodes()
+    route, _, _ = fixture_nodes()
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
         prefs = root/"firmware/prefs"
@@ -106,7 +107,7 @@ def run(library):
                       "Missing reset or internal RF switch")
             frequencies = [int(n) for n in re.findall(r"^MOCK RF HZ (\d+)$", trace, re.M)]
             p.require(frequencies and all(433050000 <= n <= 434790000 for n in frequencies), "Frequency outside EU_433")
-            print(f"PASS: four GPIO offsets; reset pulse; SPI mode 0 at 2 MHz; DIO2 switch; RXen HIGH at SetRx; {frequencies[-1]} Hz")
+            print(f"PASS: four GPIO offsets; reset pulse; SPI mode 0 at {sx1262_spi.selected(route.max_hz)} Hz; DIO2 switch; RXen HIGH at SetRx; {frequencies[-1]} Hz")
             print("PASS: native firmware rejected the synthetic phone text before a TX opcode")
             print("PASS: synthetic DIO1/RX_DONE+CRC_ERR, IRQ read/clear and receive re-arm")
         finally:

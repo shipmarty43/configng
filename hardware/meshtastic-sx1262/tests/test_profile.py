@@ -9,6 +9,8 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[3] / "share/armbian-config"))
+import sx1262_spi
 import sx1262_profile as p
 
 
@@ -41,6 +43,9 @@ class Profile(unittest.TestCase):
         tmp = TemporaryDirectory(); self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         self.ctrl, self.pio = tree(self.root)
+        setting = patch.object(sx1262_spi, "SETTING", self.root/"spi-hz")
+        setting.start()
+        self.addCleanup(setting.stop)
 
     def test_route_and_mapping_follow_renumbered_devices(self):
         import yaml
@@ -52,6 +57,17 @@ class Profile(unittest.TestCase):
         self.assertNotIn("CS", lora)
         self.assertNotIn("SX126X_ANT_SW", lora)
         self.assertEqual(lora["spiSpeed"], 2000000)
+
+    def test_selected_clock_and_lower_device_limit(self):
+        import yaml
+        (self.ctrl/"radio@0/spi-max-frequency").write_bytes(p.cells(1000000))
+        route = p.discover(self.root)
+        self.assertEqual(yaml.safe_load(p.render(route))["Lora"]["spiSpeed"], 1000000)
+        sx1262_spi.SETTING.write_text("500000\n")
+        self.assertEqual(yaml.safe_load(p.render(route))["Lora"]["spiSpeed"], 500000)
+        sx1262_spi.SETTING.write_text("1500000\n")
+        with self.assertRaises(ValueError):
+            p.render(route)
 
     def test_reject_second_cs_owner_or_fixed_rf_switch(self):
         route = p.discover(self.root)
@@ -66,7 +82,7 @@ class Profile(unittest.TestCase):
     def test_reject_conflicting_routes(self):
         radio = self.ctrl/"radio@0"
         for path, value in [(self.ctrl/"cs-gpios",p.cells(9,7,9,1)), (radio/"spi-cpol",b""),
-                            (radio/"status",b"disabled\0"), (radio/"spi-max-frequency",p.cells(8000000)),
+                            (radio/"status",b"disabled\0"), (radio/"spi-max-frequency",p.cells(0)),
                             (self.pio/"gpio-line-names",b"custom\0"),
                             (self.pio/"spi1-pins/pins",b"PH0\0PH1\0"),
                             (self.root/"class/gpio/chip5/ngpio",b"32")]:

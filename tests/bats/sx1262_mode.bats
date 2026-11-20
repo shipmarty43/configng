@@ -37,3 +37,20 @@ setup() {
     [ "$status" -ne 0 ]
     [ "$(cat "$BATS_TEST_TMPDIR/message")" = 'restore result' ]
 }
+@test 'SPI menu saves typed Hz without switching any service' {
+    dialog_menu() { echo spi; }
+    dialog_inputbox() { echo 500000; }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\nspi\nspi 500000' ]
+}
+@test 'cancelling SPI clock entry preserves settings' {
+    dialog_menu() { echo spi; }
+    dialog_inputbox() { return 1; }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\nspi' ]
+}
+@test 'Reticulum inspection in no-radio profile does not activate a worker' {
+    dialog_menu() { echo check-reticulum; }
+    module_sx1262_mode select
+    [ "$(cat "$calls")" = $'profile\ncheck-reticulum' ]
+}

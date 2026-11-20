@@ -11,6 +11,7 @@ import struct
 from string import Template
 import sys
 import time
+import sx1262_spi
 from contextlib import closing
 
 HERE = Path(__file__).resolve().parent
@@ -57,6 +58,7 @@ class Route:
     chip: int
     spi_dev: str
     chip_dev: str
+    max_hz: int = 2000000
 
 
 def devno(node):
@@ -76,8 +78,8 @@ def discover(sysroot=Path("/sys")):
     require(all(enabled(n) for n in (ctrl, pio, radio)), "Disabled SPI, GPIO or radio node")
     require("allwinner,sun50i-h616-pinctrl" in names(pio/"compatible")
             and not (pio/"gpio-line-names").exists(), "Unqualified GPIO layout")
-    require("semtech,sx1262" in names(radio/"compatible") and (radio/"reg").read_bytes() == cells(0)
-            and (radio/"spi-max-frequency").read_bytes() == cells(2000000), "Wrong SPI endpoint or speed")
+    max_hz = sx1262_spi.ceiling(radio/"spi-max-frequency")
+    require("semtech,sx1262" in names(radio/"compatible") and (radio/"reg").read_bytes() == cells(0), "Wrong SPI endpoint or speed")
     require(not any((radio/p).exists() for p in ("spi-cs-high","spi-cpha","spi-cpol","spi-3wire","spi-lsb-first")),
             "Expected active-low four-wire SPI mode 0, MSB first")
     gpio_handle = (pio/"phandle").read_bytes()
@@ -97,7 +99,7 @@ def discover(sysroot=Path("/sys")):
     gpio_class = sysroot / f"class/gpio/chip{index}"
     require((gpio_class/"label").read_text().strip() in ("300b000.pinctrl", "0300b000.pinctrl")
             and (gpio_class/"ngpio").read_text().strip() == "288", "Unknown main PIO line layout")
-    return Route(spi.name, index, devno(spi), devno(chip))
+    return Route(spi.name, index, devno(spi), devno(chip), max_hz)
 
 
 def mac_address():
@@ -109,9 +111,10 @@ def mac_address():
 
 def render(route):
     import yaml
+    speed = sx1262_spi.selected(route.max_hz)
     mac = mac_address()
-    text = Template(TEMPLATE.read_text()).substitute(spi=route.spi, chip=route.chip, mac=mac)
-    expected = dict(Module="sx1262", spidev=route.spi, spiSpeed=2000000,
+    text = Template(TEMPLATE.read_text()).substitute(spi=route.spi, chip=route.chip, mac=mac, hz=speed)
+    expected = dict(Module="sx1262", spidev=route.spi, spiSpeed=speed,
                     DIO2_AS_RF_SWITCH=True, DIO3_TCXO_VOLTAGE=0)
     for signal, pin, offset in (("IRQ", 36, 76), ("Busy", 38, 260), ("Reset", 12, 257), ("RXen", 31, 271)):
         expected[signal] = dict(pin=pin, gpiochip=route.chip, line=offset)
@@ -232,7 +235,7 @@ def main():
     else:
         if args.command == "preflight":
             gate(route)
-        print(f"Waveshare SX1262: {route.spi}, kernel CS0/PI3, 2 MHz; gpiochip{route.chip}")
+        print(f"Waveshare SX1262: {route.spi}, kernel CS0/PI3, SPI mode 0, {sx1262_spi.selected(route.max_hz)} Hz; gpiochip{route.chip}")
         print("DIO1 PC12/76, BUSY PI4/260, RESET PI1/257, RXen PI15/271; DIO2 switch, crystal")
         print("Firmware 2.7.26: EU_433, CLIENT_MUTE, tx_enabled=false")
         print("Device binding:", "present" if ACCESS.is_file() and ACCESS.read_text()==device_policy(route) else "sealed")

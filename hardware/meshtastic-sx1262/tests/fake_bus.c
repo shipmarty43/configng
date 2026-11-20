@@ -2,6 +2,7 @@
  * or rejected. Nothing is forwarded to the kernel. The two /dev mounts must
  * be regular files in a private network and device namespace. */
 #include <errno.h>
+#include <fcntl.h>
 #include <gpiod.h>
 #include <linux/spi/spidev.h>
 #include <stdarg.h>
@@ -16,6 +17,7 @@
 
 static const char *spi_file, *gpio_file;
 static struct stat spi;
+static uint32_t expected_speed, current_speed;
 static uint8_t registers[65536], packet_type;
 static _Atomic int levels[288];
 static atomic_bool irq_observed;
@@ -28,6 +30,9 @@ static void reject(const char *why) {
 __attribute__((constructor))
 static void init_model(void) {
     struct stat gpio;
+    const char *speed = getenv("OPI_FIXTURE_HZ");
+    expected_speed = speed ? (uint32_t)strtoul(speed,NULL,10) : 2000000;
+    if (!expected_speed || expected_speed > 2000000) reject("fixture speed");
     spi_file = getenv("OPI_FIXTURE_SPI");
     gpio_file = getenv("OPI_FIXTURE_GPIO");
     if (!spi_file || !gpio_file || lstat(spi_file, &spi) || !S_ISREG(spi.st_mode)
@@ -77,7 +82,17 @@ int gpiod_line_request_set_value(struct gpiod_line_request *line, unsigned int n
 
 int ioctl(int fd, unsigned long request, ...) {
     struct stat file;
-    if (fstat(fd, &file) || !S_ISREG(file.st_mode) || file.st_dev != spi.st_dev || file.st_ino != spi.st_ino) {
+    if (fstat(fd, &file) < 0) return -1;
+    if (S_ISSOCK(file.st_mode) && request == FIONBIO) {
+        va_list socket_args;
+        va_start(socket_args, request);
+        int nonblock = *va_arg(socket_args, int *);
+        va_end(socket_args);
+        int flags = fcntl(fd,F_GETFL);
+        if (flags < 0) return -1;
+        return fcntl(fd,F_SETFL, nonblock ? flags | O_NONBLOCK : flags & ~O_NONBLOCK);
+    }
+    if (!S_ISREG(file.st_mode) || file.st_dev != spi.st_dev || file.st_ino != spi.st_ino) {
         errno = ENOTTY;
         return -1;
     }
@@ -85,12 +100,20 @@ int ioctl(int fd, unsigned long request, ...) {
     va_start(args, request);
     void *arg = va_arg(args, void *);
     va_end(args);
+    if (request == SPI_IOC_WR_MODE32 && *(uint32_t *)arg == 0) return 0;
+    if (request == SPI_IOC_RD_MODE32) { *(uint32_t *)arg = 0; return 0; }
+    if (request == SPI_IOC_RD_LSB_FIRST) { *(uint8_t *)arg = 0; return 0; }
+    if (request == SPI_IOC_WR_BITS_PER_WORD && *(uint8_t *)arg == 8) return 0;
+    if (request == SPI_IOC_RD_BITS_PER_WORD) { *(uint8_t *)arg = 8; return 0; }
+    if (request == SPI_IOC_RD_MAX_SPEED_HZ) { *(uint32_t *)arg = current_speed; return 0; }
     if (request == SPI_IOC_WR_MODE || request == SPI_IOC_WR_LSB_FIRST) {
         if (*(uint8_t *)arg != 0) reject("SPI mode/order");
         return 0;
     }
     if (request == SPI_IOC_WR_MAX_SPEED_HZ) {
-        if (*(uint32_t *)arg != 2000000) reject("SPI clock");
+        current_speed = *(uint32_t *)arg;
+        /* Portduino restores its idle default outside each transfer. */
+        if (current_speed != expected_speed && current_speed != 2000000) reject("SPI clock");
         return 0;
     }
     if (request != SPI_IOC_MESSAGE(1)) reject("unexpected SPI ioctl");
@@ -99,6 +122,8 @@ int ioctl(int fd, unsigned long request, ...) {
     uint8_t *rx = (uint8_t *)(uintptr_t)x->rx_buf;
     size_t size = x->len;
     if (!tx || !rx || tx == rx || !size || size > 512 || x->cs_change) reject("SPI framing");
+    if ((x->speed_hz ? x->speed_hz : current_speed) != expected_speed) reject("transaction clock");
+    if (x->bits_per_word && x->bits_per_word != 8) reject("word length");
     uint8_t op = tx[0];
     memset(rx, 0, size);
     if (size > 1) rx[1] = 0x22;
@@ -134,4 +159,30 @@ int ioctl(int fd, unsigned long request, ...) {
         fprintf(stderr, "MOCK RX\n");
     }
     return (int)size;
+}
+
+/* Additional v2 queries used by python3-libgpiod. Each request is one line. */
+struct gpiod_chip_info *gpiod_chip_get_info(struct gpiod_chip *chip) {
+    return (struct gpiod_chip_info *)chip;
+}
+void gpiod_chip_info_free(struct gpiod_chip_info *info) { (void)info; }
+const char *gpiod_chip_info_get_name(struct gpiod_chip_info *info) { (void)info; return "gpio-fixture"; }
+const char *gpiod_chip_info_get_label(struct gpiod_chip_info *info) { (void)info; return "main-pio-fixture"; }
+size_t gpiod_chip_info_get_num_lines(struct gpiod_chip_info *info) { (void)info; return 288; }
+const char *gpiod_line_request_get_chip_name(struct gpiod_line_request *r) { (void)r; return "gpio-fixture"; }
+size_t gpiod_line_request_get_num_requested_lines(struct gpiod_line_request *r) { (void)r; return 1; }
+size_t gpiod_line_request_get_requested_offsets(struct gpiod_line_request *r, unsigned int *out, size_t count) {
+    if (!count) return 0;
+    *out = (unsigned int)((_Atomic int *)r - levels);
+    return 1;
+}
+int gpiod_line_request_get_values_subset(struct gpiod_line_request *r, size_t count,
+                                        const unsigned int *offsets, enum gpiod_line_value *values) {
+    for (size_t i=0; i<count; ++i) values[i]=gpiod_line_request_get_value(r,offsets[i]);
+    return 0;
+}
+int gpiod_line_request_set_values_subset(struct gpiod_line_request *r, size_t count,
+                                        const unsigned int *offsets, const enum gpiod_line_value *values) {
+    for (size_t i=0; i<count; ++i) gpiod_line_request_set_value(r,offsets[i],values[i]);
+    return 0;
 }

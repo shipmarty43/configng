@@ -46,6 +46,12 @@ def run(*args):
     return proc.stdout
 
 
+def reticulum_profile(action):
+    if not Path("/opt/opi-mesh/rnode_adapter.py").is_file():
+        raise ModeError("Install the optional Reticulum SX1262 adapter.")
+    return run("/opt/opi-mesh/venv/bin/python", "/opt/opi-mesh/rnode_adapter.py", action)
+
+
 def meshtastic_profile(action):
     if not Path("/opt/opi-mesh/sx1262_profile.py").is_file():
         raise ModeError("Install the optional Waveshare profile; see hardware/meshtastic-sx1262/README.md.")
@@ -124,7 +130,11 @@ class Backends:
             raise ModeError(f"Backend unavailable: {unit}")
         if self.name == "hardware" and mode == "meshtastic":
             meshtastic_profile("preflight")
+        if self.name == "hardware" and mode == "reticulum":
+            reticulum_profile("preflight")
         if self.name == "hardware" and mode == "lorawan":
+            import sx1262_spi
+            sx1262_spi.selected(sx1262_spi.ceiling())
             for action in ("preflight", "status"):
                 run("/usr/local/bin/opi-lorawan", action, "/etc/opi-lorawan/lorawan.conf",
                     "/etc/opi-lorawan/credentials.conf", "/var/lib/opi-lorawan")
@@ -267,14 +277,25 @@ class Selector:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for action in ("profile", "status", "apply", "check-meshtastic"):
+    for action in ("profile", "status", "apply", "check-meshtastic", "check-reticulum"):
         sub.add_parser(action)
+    sub.add_parser("spi").add_argument("hz", nargs="?")
     sub.add_parser("set").add_argument("mode", choices=MODES)
     args = parser.parse_args()
     name = profile()
     owner = Selector(Backends(name), STATE)
     if args.action == "profile":
         print(name)
+    elif args.action == "spi":
+        import sx1262_spi as spi
+        limit = spi.ceiling()
+        if args.hz is not None:
+            with owner.exclusive():
+                spi.save(args.hz, limit)
+        print(f"SPI mode 0 (CPOL=0, CPHA=0), 8 bits, MSB first, kernel CS0.\n"
+              f"Next backend start: {spi.selected(limit)} Hz. Maximum: {limit} Hz.")
+    elif args.action == "check-reticulum":
+        print(reticulum_profile("check"), end="")
     elif args.action == "check-meshtastic":
         print(meshtastic_profile("check"), end="")
     elif args.action == "status":

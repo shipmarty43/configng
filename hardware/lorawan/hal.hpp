@@ -19,6 +19,7 @@ inline volatile sig_atomic_t stopping = 0;
 class Hal : public RadioLibHal {
     std::string path;
     int spi = -1;
+    uint32_t spiHz = 0;
     std::map<unsigned,int> owned;
     void (*callback)() = nullptr;
     bool previous = false;
@@ -105,12 +106,17 @@ public:
         struct stat st{}; require(fstat(spi,&st)==0 && S_ISCHR(st.st_mode),"Expected SPI character device");
         auto dev = std::to_string(major(st.st_rdev)) + ":" + std::to_string(minor(st.st_rdev));
         validateRoute("/sys/firmware/devicetree/base/soc", fs::path("/sys/dev/char")/dev/"device/of_node");
-        configureSpi(spi);
+        auto raw = property(fs::path("/sys/dev/char")/dev/"device/of_node/spi-max-frequency");
+        require(raw.size()==4,"Invalid SPI clock DT cell");
+        uint32_t limit;
+        std::memcpy(&limit,raw.data(),sizeof(limit));
+        spiHz = selectedSpiHz(ntohl(limit));
+        configureSpi(spi,spiHz);
     }
     void spiBeginTransaction() override {}
     void spiEndTransaction() override {}
     void spiTransfer(uint8_t* out,size_t count,uint8_t* in) override {
-        transferSpi(spi,out,count,in);
+        transferSpi(spi,out,count,in,spiHz);
     }
     void spiEnd() override { if(spi>=0) close(spi); spi=-1; }
 };
