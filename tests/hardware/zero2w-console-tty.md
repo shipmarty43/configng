@@ -42,3 +42,21 @@ U-Boot input and output use the bootloader's own settings.
 The NMEA check opened the UART read-only and restored the previous serial
 settings after sampling. No coordinates were recorded. Waveshare documents the
 standby switch, wake button and default baud rate in the [HAT hardware description](https://www.waveshare.com/sx1262-lorawan-hat.htm).
+
+## gpsd and opi-gnss on the board
+
+On 2026-11-20, gpsd `3.27.5-0.1` opened `/dev/ttyS0`. It identified the
+stream as NMEA0183 at 9600 baud. The device list contained that UART alone.
+TCP port 2947 listened on IPv4 and IPv6 loopback. USB hotplug was disabled.
+The installed `opi-gnss` service used Waveshare-only mode.
+
+| Observation during the same 30-second interval | Result |
+|---|---|
+| Independent gpsd WATCH client, filtered to `/dev/ttyS0` | 91 TPV reports, all mode 1 (no fix), and 30 SKY reports. No ERROR replies. |
+| Established gpsd connection owned by the running `opi-gnss` process | Its TCP receive counter advanced from 9,008 to 15,084 bytes on the same socket. A queue sample showed zero unread bytes. |
+| Application status | The status snapshot advanced, Waveshare reported `acquiring`, and `source` and `fix` were null. The modem source remained disabled. |
+| Persistence | `gpsd.socket`, `gpsd.service` and `opi-gnss.service` were enabled. This test ran within one boot. |
+
+This verifies that the service receives the real UART stream via gpsd. An
+outdoor satellite fix and its publication through `opi-gnss` remain open.
+No coordinates were retained. [Tested configuration](../../hardware/gnss/README.md#l76k-as-the-only-receiver-on-zero-2w)

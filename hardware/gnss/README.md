@@ -24,6 +24,37 @@ In **GNSS receivers → Waveshare UART** enter the exact device path
 that gpsd reports. The provider reads TPV on localhost port 2947. gpsd owns the
 serial descriptor. A missing path is reported as disabled. [gpsd TPV protocol](https://gpsd.gitlab.io/gpsd/gpsd_json.html)
 
+### L76K as the only receiver on Zero 2W
+
+The board test used Ubuntu's `gpsd` package. Set these keys in
+`/etc/default/gpsd` after freeing UART0. Set `USBAUTO` before starting gpsd
+on a system with other USB serial devices attached.
+
+```sh
+DEVICES="/dev/ttyS0"
+GPSD_OPTIONS="-b -n -s 9600"
+USBAUTO="false"
+```
+
+With the provider and unit installed as above, apply the settings:
+
+```sh
+sudo opi-gnss configure --mode waveshare --device /dev/ttyS0
+sudo systemctl enable --now gpsd.socket
+sudo systemctl enable gpsd.service opi-gnss.service
+sudo systemctl restart gpsd.service opi-gnss.service
+sudo opi-gnss status
+```
+
+In Waveshare mode the provider only starts its gpsd reader. The daemon keeps
+the UART open at 9600 baud with receiver writes disabled. Its packaged TCP
+socket listens on loopback. The [board measurements](../../tests/hardware/zero2w-console-tty.md#gpsd-and-opi-gnss-on-the-board)
+show live reports during acquisition. A fresh position appears under `fix`
+when the receiver supplies coordinates and a valid timestamp.
+[gpsd options](https://gpsd.gitlab.io/gpsd/gpsd.html)
+
+## Modem source
+
 For the modem, the provider discovers the model through ModemManager on each poll.
 It checks GPS-NMEA capability and the current enabled sources before reading
 location. A disabled GPS engine is reported in status. To use it, explicitly
