@@ -27,5 +27,9 @@ python3 "$shared/h616_pwm.py" default
 test ! -e /etc/armbian-config/pwm1.json
 PYTHONPATH="$shared" python3 /mnt/opi-release/guest-uart.py
 python3 guest_menu.py I2C001 'Select a physical bus'
-python3 guest_menu.py PWM001 'Save frequency'
+if [[ -f $shared/pwm_routes.py ]]; then
+    python3 guest_menu.py PWM001 'Choose a channel'
+else
+    python3 guest_menu.py PWM001 'Save frequency'
+fi
 echo PASS-H616-PACKAGES

@@ -210,6 +210,10 @@ def change(boot, action, argument):
                 raise ValueError("Console settings changed since that backup.")
             previous = values((src / "before").read_bytes().decode())
             after = replace_keys(before, {k: previous[k] for k in KEYS if k in previous})
+        if "opi-pwm-release-uart0" in after:
+            from pwm_routes import RELEASE, check_console, tokens
+            if RELEASE in tokens(after):
+                check_console(after, boot)
         if before == after:
             print("Console settings already match.")
             return

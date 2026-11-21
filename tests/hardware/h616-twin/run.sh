@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if (( $# != 3 )); then echo "Usage: $0 GPIO_SIM_KERNEL_OBJECTS ARM64_PYTHON_INITRAMFS.gz NEW_WORK_DIR" >&2; exit 2; fi
+if (( $# < 3 || $# > 4 )); then echo "Usage: $0 GPIO_SIM_KERNEL_OBJECTS ARM64_PYTHON_INITRAMFS.gz NEW_WORK_DIR [STOCK_PWM_OVERLAY_DIR]" >&2; exit 2; fi
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../../.." && pwd)
 mkdir -m 700 "$3"
@@ -8,7 +8,7 @@ w=$(realpath "$3")
 python3 "$here/build-kernel.py" "$1" "$w"
 mkdir -p "$w/extra/lab"
 cp "$here"/{init,check.py} "$w/extra/lab/"
-cp "$repo"/share/armbian-config/{h616_pwm,h616_uart,h616_settings,console_tty}.py "$w/extra/lab/"
+cp "$repo"/share/armbian-config/{h616_pwm,h616_uart,h616_settings,console_tty,pwm_routes,uart_routes,dt_clock_overlay}.py "$w/extra/lab/"
 chmod +x "$w/extra/lab/init"
 (cd "$w/extra" && find . -print0 | cpio --quiet --null -o -H newc | gzip -1 > "$w/extra.gz")
 cat "$2" "$w/extra.gz" > "$w/initrd.gz"
@@ -25,8 +25,14 @@ from dt_clock_overlay import install_overlay
 from i2c_clocks import BUSES
 install_overlay(Path(sys.argv[1]), sys.argv[2], BUSES["twi1"], {"clock-frequency": int(sys.argv[2])})
 PY
-    fdtoverlay -i "$w/virt.dtb" -o "$w/guest.dtb" "$w/buses.dtbo" "$w/ups.dtbo" "$w/$hz.dtbo"
-    timeout 100 "$qemu" "${vm[@]}" -kernel "$w/Image" -initrd "$w/initrd.gz" -dtb "$w/guest.dtb" \
+    pin_overlays=()
+    if [[ -n ${4:-} ]]; then
+        pins=(pi11 pi12 pi13 pi14)
+        if [[ $hz == 400000 ]]; then pins=(ph3 ph2 ph0 ph1); fi
+        for i in 0 1 2 3; do pin_overlays+=("$4/sun50i-h616-pwm$((i+1))-${pins[i]}.dtbo"); done
+    fi
+    fdtoverlay -i "$w/virt.dtb" -o "$w/guest.dtb" "$w/buses.dtbo" "$w/ups.dtbo" "$w/$hz.dtbo" "${pin_overlays[@]}"
+    timeout 180 "$qemu" "${vm[@]}" -kernel "$w/Image" -initrd "$w/initrd.gz" -dtb "$w/guest.dtb" \
         -serial stdio -append 'console=ttyAMA0 rdinit=/lab/init panic=2' > "$w/$hz.log" 2>&1
     grep -a '^PASS' "$w/$hz.log"
     grep -aq '^PASS-H616-IO-TWIN' "$w/$hz.log"

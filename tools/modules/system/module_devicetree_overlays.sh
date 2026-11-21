@@ -400,6 +400,7 @@ function _dt_overlays_write_config_unlocked() (
 		return 1
 	fi
 
+    if [[ $is_pi != true ]]; then _zero2w_check_pwm "$conf_tmp" || return 1; fi
     if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$conf_tmp"; then
         _uart_overlay_validate "$conf_tmp" || return 1
     fi
@@ -636,8 +637,8 @@ function _zero2w_overlay_change() (
 		}
 		if cmp -s "$work/before" "$saved/after"; then
 			cp "$saved/before" "$work/after" || return 1
-		elif [[ $profile == uart ]]; then
-			_uart_route_cli rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
+		elif [[ $profile == uart || $profile == pwm ]]; then
+			python3 "${script_dir:-/usr/bin}/../share/armbian-config/uart_routes.py" rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
 		else
 			echo 'Boot configuration has changed since this backup.' >&2
 			return 1
@@ -645,6 +646,7 @@ function _zero2w_overlay_change() (
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi
+    _zero2w_check_pwm "$work/after" || return 1
     if grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$work/after"; then
         _uart_overlay_validate "$work/after" || return 1
     fi
@@ -702,3 +704,14 @@ _bus_clocks_prepare() {
     _zero2w_overlay_prepare base "$before" "$base" clocks '' || return 1
     python3 "$tool" "$base" "$before" "$action" "$@" "$after" "$(_ups_dfr_boot)/overlay-user"
 }
+
+_zero2w_check_pwm() (
+    local conf=$1 dt
+    declare -F _ups_dfr_board >/dev/null && _ups_dfr_board || return 0
+    awk '/^(overlays|user_overlays)=/ {sub(/^[^=]*=/,""); for (i=1;i<=NF;i++) if ($i ~ /^(pwm[1-4]-(pi|ph)[0-9]+|opi-pwm-release-uart0)$/) found=1} END {exit !found}' "$conf" ||
+        grep -Eq '^user_overlays=.*opi-pwm-release-uart0' "$(_ups_dfr_boot)/armbianEnv.txt" || return 0
+    dt=$(mktemp) || return 1
+    trap 'rm -f "$dt"' EXIT
+    _zero2w_overlay_prepare compose "$conf" "$dt" pwm '' &&
+        python3 "${script_dir:-/usr/bin}/../share/armbian-config/pwm_routes.py" verify "$dt" "$conf" "$(_ups_dfr_boot)"
+)

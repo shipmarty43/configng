@@ -37,16 +37,24 @@ for polarity, duty in (("normal", "25"), ("inversed", "37.5")):
         assert (chip/"pwm1/enable").read_text().strip() == "1"
     pwm.run(chip, profile, lease, active, lambda: None)
     assert not (chip/"pwm1").exists() and not lease.exists()
+def wait_active(worker, ch):
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        if worker.poll() is not None:
+            raise AssertionError(f"PWM worker exited with status {worker.returncode}")
+        if (ch/"enable").exists() and (ch/"enable").read_text().strip() == "1":
+            return
+        time.sleep(.05)
+    raise AssertionError(f"Timed out waiting for {ch}")
+
+
 # Check the installed worker lifecycle as well as the synchronous lease.
 helper = str(Path(pwm.__file__).resolve())
 subprocess.run([sys.executable, helper, "set", "20000", "37.5", "inversed"], check=True)
 for hard_stop in (False, True):
     worker = subprocess.Popen([sys.executable, helper, "serve"])
     try:
-        for _ in range(250):
-            if (chip/"pwm1/enable").exists() and (chip/"pwm1/enable").read_text().strip() == "1":
-                break
-            time.sleep(.02)
+        wait_active(worker, chip/"pwm1")
         assert (chip/"pwm1/duty_cycle").read_text().strip() == "31250"
     finally:
         if hard_stop:
@@ -70,3 +78,42 @@ finally:
     os.close(master)
     os.close(slave)
 print("PASS ARM64 PTY baud/framing and restoration", flush=True)
+
+# Exercise every physical channel at once. The two boots may select different
+# header routes; the saved waveform is always keyed by the channel number.
+jobs = []
+def command(n, *args):
+    return [sys.executable, helper, "--channel", str(n), *args]
+profiles = {1:(1000, "25", "normal"), 2:(2000, "37.5", "inversed"),
+            3:(10000, "60", "normal"), 4:(20000, "50", "normal")}
+try:
+    for n, (freq, duty, polarity) in profiles.items():
+        subprocess.run(command(n, "set", str(freq), duty, polarity), check=True)
+        worker = subprocess.Popen(command(n, "serve"))
+        jobs.append(worker)
+        ch = chip/f"pwm{n}"
+        wait_active(worker, ch)
+    for n, (freq, duty, polarity) in profiles.items():
+        path = chip/f"pwm{n}"
+        period, high = pwm.waveform(pwm.settings(freq, duty, polarity))
+        assert int((path/"period").read_text()) == period
+        assert int((path/"duty_cycle").read_text()) == high
+        print(f"PASS PWM{n} {pwm.live_pin(Path('/sys'), n)} {freq} Hz: {high}/{period} ns", flush=True)
+    for n in (2, 4):
+        try:
+            pwm.check_pair(chip, n, 1_000_000_000)
+        except ValueError as exc:
+            assert f"PWM{n ^ 1}" in str(exc)
+        else:
+            raise AssertionError("shared divider conflict accepted")
+    jobs[1].terminate()
+    jobs[1].wait(timeout=5)
+    assert not (chip/"pwm2").exists()
+    assert all((chip/f"pwm{n}/enable").read_text().strip() == "1" for n in (1,3,4))
+finally:
+    for worker in jobs:
+        worker.terminate()
+    for worker in jobs:
+        worker.wait(timeout=5)
+assert all(not (chip/f"pwm{n}").exists() for n in range(6))
+print("PASS four independent workers, shared-clock guards and channel-local stop", flush=True)

@@ -8,14 +8,28 @@
             compatible = "test,dfr0528-adapter"; reg = <0 0x5002400 0 0x400>;
             #address-cells = <1>; #size-cells = <0>; status = "okay";
         };
-        pwm@300a000 {
+        pwm: pwm@300a000 {
             compatible = "test,h616-pwm", "allwinner,sun50i-h616-pwm";
             reg = <0 0x300a000 0 0x400>; #pwm-cells = <3>; status = "okay";
+            sunxi-pwms = <&pwm0 &pwm1 &pwm2 &pwm3 &pwm4 &pwm5>;
         };
         pinctrl@300b000 {
             reg = <0 0x300b000 0 0x400>;
-            pwm_pins: pwm1-pi-pin { pins = "PI11"; function = "pwm1"; };
+            pwm1_pi_pin: pwm1-pi-pin { pins = "PI11"; function = "pwm1"; };
+            pwm1_ph_pin: pwm1-ph-pin { pins = "PH3"; function = "pwm1"; };
+            pwm2_pi_pin: pwm2-pi-pin { pins = "PI12"; function = "pwm2"; };
+            pwm2_ph_pin: pwm2-ph-pin { pins = "PH2"; function = "pwm2"; };
+            pwm3_pi_pin: pwm3-pi-pin { pins = "PI13"; function = "pwm3"; };
+            pwm3_ph_pin: pwm3-ph-pin { pins = "PH0"; function = "pwm3"; };
+            pwm4_pi_pin: pwm4-pi-pin { pins = "PI14"; function = "pwm4"; };
+            pwm4_ph_pin: pwm4-ph-pin { pins = "PH1"; function = "pwm4"; };
         };
-        pwm1@0300a000 { status = "okay"; pinctrl-0 = <&pwm_pins>; };
+        pwm0: pwm0@0300a000 { compatible = "allwinner,sunxi-pwm0"; };
+        pwm1: pwm1@0300a000 { compatible = "allwinner,sunxi-pwm1"; status = "okay"; pinctrl-names = "default"; pinctrl-0 = <&pwm1_pi_pin>; };
+        pwm2: pwm2@0300a000 { compatible = "allwinner,sunxi-pwm2"; status = "okay"; pinctrl-names = "default"; pinctrl-0 = <&pwm2_pi_pin>; };
+        pwm3: pwm3@0300a000 { compatible = "allwinner,sunxi-pwm3"; status = "okay"; pinctrl-names = "default"; pinctrl-0 = <&pwm3_pi_pin>; };
+        pwm4: pwm4@0300a000 { compatible = "allwinner,sunxi-pwm4"; status = "okay"; pinctrl-names = "default"; pinctrl-0 = <&pwm4_pi_pin>; };
+        pwm5: pwm5@0300a000 { compatible = "allwinner,sunxi-pwm5"; status = "okay"; clk_bypass_output = <1>; };
     };
+    ac300-clk { compatible = "pwm-clock"; #clock-cells = <0>; pwms = <&pwm 5 500 0>; clock-frequency = <2000000>; };
 };

@@ -39,7 +39,7 @@ Only the fetch step needs Internet access.
 ```sh
 mkdir -p work release/previous release/current
 python3 packaging/zero2w/fetch.py work/inputs
-python3 packaging/zero2w/build.py 0b331ed3 --inputs work/inputs --work work --output release/previous
+python3 packaging/zero2w/build.py 2fe98dfc --inputs work/inputs --work work --output release/previous
 python3 packaging/zero2w/build.py HEAD --inputs work/inputs --work work --output release/current
 mkdir -p release/ubuntu
 install -m644 work/inputs/ubuntu/*.deb release/ubuntu/
@@ -48,7 +48,7 @@ cp packaging/zero2w/{apply.sh,README.md} release/
 tar -cf zero2w-resolute-offline.tar release/
 ```
 
-These commands use the previous I²C/UART/PWM release for downgrade testing. The original release pair and results are recorded in the [acceptance report](../../tests/packaging/acceptance-resolute.md).
+These commands use the previous UART boot-profile release for downgrade testing. The original release pair and results are recorded in the [acceptance report](../../tests/packaging/acceptance-resolute.md).
 
 The revision selects the fork sources, assembled menus, units and applicable
 RNode fixes. The manifest pins the native ARM64 meshtasticd, wheels and

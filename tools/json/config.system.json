@@ -150,8 +150,8 @@
                         },
                         {
                             "id": "PWM001",
-                            "description": "Save a waveform and explicitly start or stop PWM1 on physical pin 32.",
-                            "short": "Header PWM1",
+                            "description": "Select PWM1–PWM4 header routes and save or run each channel’s waveform.",
+                            "short": "Header PWM channels",
                             "module": "module_generic",
                             "command": [
                                 "module_h616_pwm select"
@@ -159,7 +159,7 @@
                             "status": "Preview",
                             "author": "@shipmarty43",
                             "condition": "grep -zFxq 'xunlong,orangepi-zero2w' /sys/firmware/devicetree/base/compatible",
-                            "help": "Save a waveform and explicitly start or stop PWM1 on physical pin 32."
+                            "help": "Select PWM1–PWM4 header routes and save or run each channel’s waveform."
                         },
                         {
                             "id": "SPI001",

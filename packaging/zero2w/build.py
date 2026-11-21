@@ -124,12 +124,15 @@ def core_files(src, root):
     if pwm.exists():
         write(root / UNITS / pwm.name, pwm.read_text().replace(
             "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
-        write(root / "DEBIAN/prerm", """#!/bin/sh
-set -eu
-if [ -d /run/systemd/system ] && systemctl is-active --quiet opi-zero2w-pwm.service; then
-    systemctl stop opi-zero2w-pwm.service
-fi
-""", 0o755)
+        extra = pwm.with_name("opi-zero2w-pwm@.service")
+        stop = 'if [ -d /run/systemd/system ] && systemctl is-active --quiet opi-zero2w-pwm.service; then\n    systemctl stop opi-zero2w-pwm.service\nfi\n'
+        if extra.exists():
+            write(root / UNITS / extra.name, extra.read_text().replace(
+                "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
+            stop = ("if [ -d /run/systemd/system ]; then\n"
+                    "    systemctl stop opi-zero2w-pwm.service opi-zero2w-pwm@2.service "
+                    "opi-zero2w-pwm@3.service opi-zero2w-pwm@4.service\nfi\n")
+        write(root / "DEBIAN/prerm", "#!/bin/sh\nset -eu\n" + stop, 0o755)
     uart = src / "hardware/h616-io/opi-zero2w-uart@.service"
     if uart.exists():
         write(root / UNITS / uart.name, uart.read_text().replace(

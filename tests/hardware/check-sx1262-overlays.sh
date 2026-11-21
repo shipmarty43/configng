@@ -6,6 +6,7 @@ if [[ $# -ne 5 ]]; then
     exit 2
 fi
 repo=$(cd "$(dirname "$0")/../.." && pwd)
+script_dir="$repo/bin"
 declare -A module_options
 source "$repo/tools/modules/system/module_devicetree_overlays.sh"
 source "$repo/tools/modules/system/module_ups_dfr0528.sh"

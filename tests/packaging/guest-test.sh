@@ -48,6 +48,11 @@ feature_files() {
         if [[ -f $path ]]; then printf '%s\n' "$path"; fi
     done
 }
+if [[ -f $media/pwm-boot && -s $proof/pwm-boot-id ]]; then
+    verify_version current
+    bash "$media/guest-pwm-boot.sh" verify
+    exit 0
+fi
 if [[ -f $media/uart-boot && -s $proof/uart-boot-id ]]; then
     verify_version current
     bash "$media/guest-uart-boot.sh" verify
@@ -78,6 +83,10 @@ for unit in opi-reticulum opi-lxmf opi-meshtastic-sim opi-meshtastic-mail; do
     if systemctl is-active --quiet "$unit"; then echo "Unexpected autostart $unit"; exit 1; fi
 done
 systemd-analyze verify opi-lxmf.service opi-reticulum-radio.service opi-meshtastic-mail.service opi-sx1262-restore.service
+if [[ -e $media/pwm-boot ]]; then
+    bash "$media/guest-pwm-boot.sh" prepare
+    exit 0
+fi
 if [[ -e $media/uart-boot ]]; then
     bash "$media/guest-uart-boot.sh" prepare
     exit 0

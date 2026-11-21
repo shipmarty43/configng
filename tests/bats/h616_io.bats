@@ -27,7 +27,8 @@ setup() {
 }
 @test 'saving PWM does not start a unit' {
     _h616_pwm_cli() { [[ $1 == status ]] || echo "$*" >> "$calls"; }
-    dialog_menu() { case "$1" in 'Header PWM1') echo set ;; *) echo inversed ;; esac; }
+    _pwm_list() { printf 'pwm1\tNext boot: PI11\n'; }
+    dialog_menu() { case "$1" in 'Header PWM') echo pwm1 ;; PWM1) echo set ;; *) echo inversed ;; esac; }
     dialog_inputbox() { case "$1" in 'PWM frequency') echo 1000 ;; *) echo 37.5 ;; esac; }
     systemctl() { echo unexpected >> "$calls"; return 1; }
     module_h616_pwm select
@@ -45,4 +46,24 @@ setup() {
     }
     module_h616_uart select
     [ "$(cat "$calls")" = 'save uart3 57600 7 even 2' ]
+}
+
+@test 'profile uses selected PWM4 and does not start a service' {
+    _pwm_list() { printf 'pwm4\tNext boot: PI14\n'; }
+    _h616_pwm_cli() {
+        if [[ $3 != status ]]; then echo "$*" >> "$calls"; fi
+    }
+    dialog_menu() { case "$1" in 'Header PWM') echo pwm4 ;; PWM4) echo set ;; *) echo normal ;; esac; }
+    dialog_inputbox() { case "$1" in 'PWM frequency') echo 20000 ;; *) echo 25 ;; esac; }
+    systemctl() { echo unexpected >> "$calls"; return 1; }
+    module_h616_pwm select
+    [ "$(cat "$calls")" = '--channel 4 set 20000 25 normal' ]
+}
+@test 'PWM overlay cancellation leaves boot file alone' {
+    _h616_pwm_cli() { echo 'PWM2'; }
+    _pwm_route_cli() { printf 'PI12\tPhysical 33\n'; }
+    dialog_menu() { case "$1" in PWM2) echo route ;; *) return 1 ;; esac; }
+    _zero2w_overlay_change() { echo unexpected > "$calls"; }
+    module_h616_pwm pwm2
+    [ ! -e "$calls" ]
 }

@@ -4,7 +4,7 @@
 |---|---|---|
 | I²C bus clocks | `I2C001` | Next Linux boot, on one physical controller |
 | UART baud and framing | `UART01` | Live framing or a saved physical-port boot profile |
-| Header PWM1 | `PWM001` | Saving the profile leaves the pin alone. Start or restart explicitly to drive pin 32. |
+| Header PWM1–4 | `PWM001` | Saving the profile leaves the pin alone. Start or restart the chosen channel explicitly. |
 
 ## TWI bus clocks
 
@@ -79,9 +79,8 @@ in its separate console menu.
 
 The H616 PWM block has OSC24M/APB1 input clocks, a first-stage divider,
 a prescaler, period and active-cycle counts and polarity control.
-The supported Zero 2W header route is PWM1 on PI11, physical 32, with the
-stock `pwm1-pi11` overlay. The menu uses the kernel PWM ABI. It checks the
-route and the six-channel `300a000.pwm` controller before exporting PWM1.
+All four header channels have a PI and a PH route; see the [pin table, per-channel profiles and UART conflicts](pwm-header.md). Existing PWM1 commands default to channel 1. The menu uses the kernel PWM ABI. It checks the
+route and the six-channel `300a000.pwm` controller before exporting the selected channel.
 [H616 PWM clock and waveform, §9.9](https://linux-sunxi.org/images/1/1d/H616_User_Manual_V1.0.pdf#page=779)
 
 ```sh

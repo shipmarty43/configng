@@ -3,7 +3,7 @@
 # block device, network, directory export or physical peripheral is passed in.
 set -euo pipefail
 if (( $# < 4 || $# > 5 )); then
-    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current|io-current|uart-boot]" >&2
+    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current|io-current|uart-boot|pwm-boot]" >&2
     exit 2
 fi
 base=$(realpath "$1")
@@ -13,6 +13,7 @@ scenario=${5:-lifecycle}
 case "$scenario" in
     lifecycle) boots=(first reboot) ;;
     uart-boot) boots=(uart-save uart-restore) ;;
+    pwm-boot) boots=(pwm-save pwm-restore) ;;
     fresh-current|io-current) boots=(fresh) ;;
     *) echo "Unknown test scenario: $scenario" >&2; exit 2 ;;
 esac
@@ -38,6 +39,10 @@ cp "$release"/{SHA256SUMS,apply.sh} "$work/payload/"
 (cd "$work/payload" && sha256sum --quiet --strict -c SHA256SUMS)
 serial_fixture=()
 if [[ $scenario != lifecycle ]]; then touch "$work/payload/fresh-current"; fi
+if [[ $scenario == pwm-boot ]]; then
+    touch "$work/payload/pwm-boot"
+    cp "$tests/guest-pwm-boot.sh" "$work/payload/"
+fi
 if [[ $scenario == uart-boot ]]; then
     touch "$work/payload/uart-boot"
     cp "$tests"/{guest-uart-boot.sh,guest-uart-boot.py} "$work/payload/"
@@ -134,6 +139,9 @@ if [[ $scenario == lifecycle ]]; then
 elif [[ $scenario == uart-boot ]]; then
     grep -aq '^PASS-UART-PREPARED' "$work/uart-save.log"
     grep -aq '^PASS-UART-BOOT-RESTORE' "$work/uart-restore.log"
+elif [[ $scenario == pwm-boot ]]; then
+    grep -aq '^PASS-PWM-PREPARED' "$work/pwm-save.log"
+    grep -aq '^PASS-PWM-BOOT-PROFILES' "$work/pwm-restore.log"
 else
     grep -aq '^PASS-FRESH-CURRENT' "$work/fresh.log"
 fi
