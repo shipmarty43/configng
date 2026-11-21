@@ -18,6 +18,11 @@ PAGE = 16
 def initialize(state):
     with database(state) as db:
         db.executescript("""
+            CREATE TABLE IF NOT EXISTS propagation (
+                id INTEGER PRIMARY KEY CHECK(id=1), serve INTEGER NOT NULL DEFAULT 0,
+                peer TEXT, sync INTEGER NOT NULL DEFAULT 0);
+            INSERT OR IGNORE INTO propagation(id) VALUES (1);
+            CREATE TABLE IF NOT EXISTS last_announce (address TEXT PRIMARY KEY, heard INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS contacts (
                 id INTEGER PRIMARY KEY, address TEXT UNIQUE NOT NULL, name TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS messages (
@@ -46,15 +51,17 @@ def save_contact(db, name, dest):
     return dest
 
 
-def queue_message(db, contact, title, body):
+def queue_message(db, contact, title, body, propagated=False):
     row = db.execute("SELECT address FROM contacts WHERE id=?", (contact,)).fetchone()
     if row is None:
         raise ValueError("The selected contact is unavailable.")
     user_text(title, 256, required=False)
     user_text(body, 4096)
+    if propagated and not db.execute("SELECT peer FROM propagation WHERE id=1").fetchone()[0]:
+        raise ValueError("Select a remote propagation node first.")
     return db.execute("""INSERT INTO messages(direction,address,title,body,created,status)
-                         VALUES ('out',?,?,?,?, 'queued')""",
-                      (row["address"], title, body, int(time.time()))).lastrowid
+                         VALUES ('out',?,?,?,?,?)""",
+                      (row["address"], title, body, int(time.time()), "queued-propagation" if propagated else "queued")).lastrowid
 
 
 def incoming(state, local, message):
@@ -83,36 +90,96 @@ def dispatch(state, router, source, requested):
     now = time.monotonic()
     with database(state) as db:
         db.execute("""UPDATE messages SET status='expired'
-                      WHERE status='queued' AND created < ?""", (int(time.time()) - 600,))
+                      WHERE status IN ('queued','queued-propagation') AND created < ?""", (int(time.time()) - 600,))
         # One head per destination keeps an unknown address from blocking other contacts.
         pending = db.execute("""SELECT * FROM messages WHERE id IN
-                    (SELECT MIN(id) FROM messages WHERE status='queued' GROUP BY address)
+                    (SELECT MIN(id) FROM messages WHERE status IN ('queued','queued-propagation') GROUP BY address,status)
                     ORDER BY id""").fetchall()
     for row in pending:
         dest = bytes.fromhex(row["address"])
         identity = RNS.Identity.recall(dest)
-        if identity is None or not RNS.Transport.has_path(dest):
-            if now - requested.get(dest, -float("inf")) >= 60:
-                RNS.Transport.request_path(dest)
-                requested[dest] = now
+        propagated = row["status"] == "queued-propagation"
+        route = router.get_outbound_propagation_node() if propagated else dest
+        if not route:
+            continue
+        needed = dest if identity is None else route
+        if identity is None or not RNS.Transport.has_path(route):
+            if now - requested.get(needed, -float("inf")) >= 60:
+                RNS.Transport.request_path(needed)
+                requested[needed] = now
             continue
         target = RNS.Destination(identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "lxmf", "delivery")
         if target.hash != dest:
             raise ValueError("Discovered LXMF destination differs from saved contact.")
         number = row["id"]
-        message = LXMF.LXMessage(target, source, row["body"], row["title"], desired_method=LXMF.LXMessage.DIRECT)
+        message = LXMF.LXMessage(target, source, row["body"], row["title"], desired_method=LXMF.LXMessage.PROPAGATED if propagated else LXMF.LXMessage.DIRECT)
         with database(state) as db:
-            if not db.execute("UPDATE messages SET status='sending' WHERE id=? AND status='queued'",
-                              (number,)).rowcount:
+            if not db.execute("UPDATE messages SET status='sending' WHERE id=? AND status=?",
+                              (number,row["status"])).rowcount:
                 continue
-        message.register_delivery_callback(lambda m, n=number: finish(
-            state, n, "delivered" if m.state == LXMF.LXMessage.DELIVERED else "unconfirmed", m))
-        message.register_failed_callback(lambda m, n=number: finish(state, n, "failed", m))
+        def completed(m, n=number):
+            status = "unconfirmed"
+            if m.method == LXMF.LXMessage.DIRECT and m.state == LXMF.LXMessage.DELIVERED:
+                status = "delivered"
+            elif m.method == LXMF.LXMessage.PROPAGATED and m.state == LXMF.LXMessage.SENT:
+                status = "accepted-by-node"
+            finish(state, n, status, m)
+        message.register_delivery_callback(completed)
+        message.register_failed_callback(lambda m, n=number: finish(state, n, "unconfirmed", m))
         try:
             router.handle_outbound(message)
         except Exception as error:
             finish(state, number, "unconfirmed", message)
             print(f"Could not submit message {number}: {type(error).__name__}", file=sys.stderr, flush=True)
+
+
+def configure_propagation(state, router):
+    with database(state) as db:
+        config = db.execute("SELECT * FROM propagation WHERE id=1").fetchone()
+    if config["peer"]:
+        router.set_outbound_propagation_node(bytes.fromhex(config["peer"]))
+    if config["serve"]:
+        router.set_message_storage_limit(megabytes=16)
+        router.enable_propagation()
+        router.announce_propagation_node()
+
+
+def sync_pending(state, router, key):
+    with database(state) as db:
+        if not db.execute("SELECT sync FROM propagation WHERE id=1").fetchone()[0]:
+            return
+        if not router.get_outbound_propagation_node():
+            return
+        router.request_messages_from_propagation_node(key)
+        db.execute("UPDATE propagation SET sync=0 WHERE id=1")
+
+
+def track_announces(state):
+    class DeliveryAnnounces:
+        aspect_filter = "lxmf.delivery"
+
+        def received_announce(self, destination_hash, announced_identity, app_data):
+            with database(state) as db:
+                db.execute("""INSERT OR REPLACE INTO last_announce(address,heard)
+                           SELECT address,? FROM contacts WHERE address=?""",
+                           (int(time.time()),destination_hash.hex()))
+    return DeliveryAnnounces()
+
+
+def contact_route(db, contact, rns):
+    row = db.execute("""SELECT c.address,a.heard FROM contacts c LEFT JOIN last_announce a
+                     ON a.address=c.address WHERE c.id=?""", (contact,)).fetchone()
+    if row is None:
+        raise ValueError("Unknown contact")
+    dest = bytes.fromhex(row["address"])
+    entry = next((p for p in rns.get_path_table() if p["hash"] == dest), None)
+    heard = datetime.fromtimestamp(row["heard"]).isoformat(timespec="seconds") if row["heard"] else "not observed"
+    if entry:
+        print(f"Known path: {entry['hops']} hop(s) via {entry['via'].hex()}")
+        print("Interface:", display(entry["interface"]))
+    else:
+        print("No known path")
+    print("Last delivery announce observed:", heard)
 
 
 def serve(state):
@@ -146,9 +213,12 @@ def serve(state):
         address_file.write_text(source.hexhash + "\n")
         os.replace(address_file, state / "address")
         router.register_delivery_callback(lambda m: incoming(state, source.hash, m))
+        RNS.Transport.register_announce_handler(track_announces(state))
+        configure_propagation(state, router)
         router.announce(source.hash)
         requested = {}
         while True:
+            sync_pending(state, router, key)
             dispatch(state, router, source, requested)
             time.sleep(1)
 
@@ -197,7 +267,11 @@ def main():
     show = subs.add_parser("show")
     show.add_argument("folder", choices=("in", "out"))
     show.add_argument("number", type=int)
-    subs.add_parser("send").add_argument("contact", type=int)
+    for action in ("send","send-propagated","route"):
+        subs.add_parser(action).add_argument("contact", type=int)
+    for action in ("prop-status","prop-on","prop-off","sync"):
+        subs.add_parser(action)
+    subs.add_parser("prop-peer").add_argument("node")
     args = cli.parse_args()
     if args.action == "serve":
         serve(STATE)
@@ -207,7 +281,26 @@ def main():
         if not (STATE / "mailbox.sqlite").exists():
             raise ValueError("Start the LXMF mailbox first.")
         with database(STATE) as db:
-            if args.action == "list":
+            if args.action == "route":
+                import RNS
+                contact_route(db,args.contact,RNS.Reticulum(configdir="/var/lib/opi-reticulum",require_shared_instance=True))
+            elif args.action == "prop-status":
+                cfg = db.execute("SELECT * FROM propagation WHERE id=1").fetchone()
+                print("Local propagation node:", "on" if cfg["serve"] else "off")
+                if cfg["serve"]:
+                    import RNS
+                    key = RNS.Identity.from_file(str(STATE/"identity"))
+                    print("Local node address:",RNS.Destination.hash_from_name_and_identity("lxmf.propagation",key).hex())
+                print("Remote propagation node:", cfg["peer"] or "unset")
+            elif args.action in ("prop-on","prop-off"):
+                db.execute("UPDATE propagation SET serve=? WHERE id=1", (args.action=="prop-on",))
+            elif args.action == "prop-peer":
+                db.execute("UPDATE propagation SET peer=?,sync=0 WHERE id=1", (address(args.node) if args.node!="off" else None,))
+            elif args.action == "sync":
+                if not db.execute("UPDATE propagation SET sync=1 WHERE id=1 AND peer IS NOT NULL").rowcount:
+                    raise ValueError("Set the remote propagation node first")
+                print("Collection requested")
+            elif args.action == "list":
                 listing(db, args.folder, args.before)
             elif args.action == "show":
                 details(db, args.folder, args.number)
@@ -216,7 +309,7 @@ def main():
                 if args.action == "add-contact":
                     print("Saved contact", save_contact(db, data["name"], data["address"]))
                 else:
-                    print("Queued message", queue_message(db, args.contact, data["title"], data["body"]))
+                    print("Queued message", queue_message(db, args.contact, data["title"], data["body"], args.action=="send-propagated"))
 
 
 if __name__ == "__main__":

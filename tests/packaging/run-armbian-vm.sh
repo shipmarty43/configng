@@ -3,7 +3,7 @@
 # block device, network, directory export or physical peripheral is passed in.
 set -euo pipefail
 if (( $# < 4 || $# > 5 )); then
-    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current|io-current|uart-boot|pwm-boot]" >&2
+    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|mesh-recovery|fresh-current|io-current|uart-boot|pwm-boot]" >&2
     exit 2
 fi
 base=$(realpath "$1")
@@ -11,7 +11,7 @@ release=$(realpath "$2")
 busy=$(realpath "$3")
 scenario=${5:-lifecycle}
 case "$scenario" in
-    lifecycle) boots=(first reboot) ;;
+    lifecycle|mesh-recovery) boots=(first reboot) ;;
     uart-boot) boots=(uart-save uart-restore) ;;
     pwm-boot) boots=(pwm-save pwm-restore) ;;
     fresh-current|io-current) boots=(fresh) ;;
@@ -38,7 +38,12 @@ cp "$tests"/{guest-test.sh,guest_menu.py,guest_state.py} "$work/payload/"
 cp "$release"/{SHA256SUMS,apply.sh} "$work/payload/"
 (cd "$work/payload" && sha256sum --quiet --strict -c SHA256SUMS)
 serial_fixture=()
-if [[ $scenario != lifecycle ]]; then touch "$work/payload/fresh-current"; fi
+if [[ $scenario == mesh-recovery ]]; then
+    mkdir "$work/payload/mesh-recovery"
+    cp "$tests/../../hardware/reticulum-sx1262/tests/"{check_lxmf_twin.py,check_lxmf_recovery.py,sx1262_model.py} "$work/payload/mesh-recovery/"
+    cp "$tests/../../hardware/mesh/check_lxmf_lan.py" "$work/payload/mesh-recovery/"
+fi
+if [[ $scenario != lifecycle && $scenario != mesh-recovery ]]; then touch "$work/payload/fresh-current"; fi
 if [[ $scenario == pwm-boot ]]; then
     touch "$work/payload/pwm-boot"
     cp "$tests/guest-pwm-boot.sh" "$work/payload/"
@@ -133,7 +138,7 @@ for boot in "${boots[@]}"; do
  if ! grep -aq '^OPI-VM-PHASE-PASS' "$log"; then grep -aE 'GUEST-ERROR|PHASE-FAILED|Traceback|Error:|^E:|Failed to start|error while loading' "$log" | tail -20 || :; exit 1; fi
  grep -aE '^(GUEST |CLEAN-|DPKG-PASS|STATE-PASS|IMPORT-PASS|TUI-PASS|SOFTWARE-SERVICES-PASS|PASS-|OPI-VM-PHASE-PASS)' "$log"
 done
-if [[ $scenario == lifecycle ]]; then
+if [[ $scenario == lifecycle || $scenario == mesh-recovery ]]; then
     grep -aq '^PASS-INSTALL-UPGRADE-DOWNGRADE' "$work/first.log"
     grep -aq '^PASS-REBOOT' "$work/reboot.log"
 elif [[ $scenario == uart-boot ]]; then

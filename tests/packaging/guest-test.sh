@@ -158,6 +158,13 @@ runtime_tools "$candidate"
 armbian-config-zero2w --api module_sx1262_mode diagnostics | grep -F '500000 Hz'
 python3 guest_menu.py MESH01 'Choose a software node'
 python3 guest_menu.py SXMD01 'Diagnostics'
+if [[ -d $media/mesh-recovery ]]; then
+    export PYTHONPATH=/opt/opi-mesh:$shared
+    "$py" -c 'import lxmf_mailbox as m, sx1262_tx as tx; assert m.__file__.startswith("/opt/opi-mesh/") and tx.__file__.startswith("/opt/opi-mesh/")'
+    "$py" -Bu "$media/mesh-recovery/check_lxmf_recovery.py"
+    verify_version current
+    echo PASS-PACKAGED-LXMF-RECOVERY
+fi
 bash "$media/apply.sh" previous
 verify_version previous
 runtime_tools "$baseline"

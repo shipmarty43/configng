@@ -25,13 +25,13 @@ _lxmf_save() {
         name=${selected#*$'\t'}
         title=$(dialog_inputbox 'Compose LXMF' "To $name — subject (optional)" '' 11 76) || return 0
         body=$(dialog_inputbox 'Compose LXMF' "To $name — message. Press OK to send." '' 12 76) || return 0
-        result=$(printf '%s\0%s' "$title" "$body" | jq -Rsc 'split("\u0000") | {title:.[0],body:.[1]}' | _lxmf_cli send "$id" 2>&1)
+        result=$(printf '%s\0%s' "$title" "$body" | jq -Rsc 'split("\u0000") | {title:.[0],body:.[1]}' | _lxmf_cli "$1" "$id" 2>&1)
     fi
     dialog_msgbox 'LXMF mailbox' "${result:-Mailbox command failed.}" 10 72
 }
 
 module_lxmf() {
-    local choice result
+    local choice result selected peer
     case "${1:-select}" in
         address) _lxmf_cli address; return ;;
         select) ;;
@@ -43,13 +43,31 @@ module_lxmf() {
             [[ "$choice" == start ]] || return 0
             systemctl start opi-lxmf.service || return 1
         fi
-        choice=$(dialog_menu 'LXMF mailbox' 'Choose a mailbox action' 17 72 6 -- \
+        choice=$(dialog_menu 'LXMF mailbox' 'Choose a mailbox action' 21 78 10 -- \
             inbox 'Read incoming messages' send 'Send to a saved contact' outbox 'Sent messages and delivery status' \
-            add 'Add or rename a contact' address 'My LXMF delivery address') || return 0
+            send-propagated 'Send via propagation node' sync 'Collect stored messages' route 'Inspect contact route' \
+            propagation 'Propagation node settings' add 'Add or rename a contact' address 'My LXMF delivery address') || return 0
         case "$choice" in
             inbox) _mesh_mail_read in 'LXMF inbox' _lxmf_cli ;;
             outbox) _mesh_mail_read out 'LXMF outbox' _lxmf_cli ;;
-            add|send) _lxmf_save "$choice" ;;
+            route)
+                selected=$(_mesh_mail_pick 'Contact route' contacts _lxmf_cli 'No saved contacts.') || continue
+                result=$(_lxmf_cli route "${selected%%$'\t'*}" 2>&1)
+                dialog_msgbox 'Known Reticulum route' "$result" 13 76 ;;
+            sync)
+                result=$(_lxmf_cli sync 2>&1)
+                dialog_msgbox 'LXMF collection' "$result" 10 70 ;;
+            propagation)
+                result=$(_lxmf_cli prop-status 2>&1) || { dialog_msgbox 'Propagation node' "$result" 10 75; continue; }
+                selected=$(dialog_menu 'Propagation node' "$result" 16 76 3 -- prop-on 'Enable local store (16 MB)' prop-off 'Disable local store' prop-peer 'Select remote node for sending and collection') || continue
+                if [[ $selected == prop-peer ]]; then
+                    peer=$(dialog_inputbox 'Remote LXMF propagation address' '32 hex digits, or off to clear' '' 10 70) || continue
+                    result=$(_lxmf_cli prop-peer "$peer" 2>&1) || { dialog_msgbox 'Propagation node' "$result" 10 70; continue; }
+                else
+                    _lxmf_cli "$selected" || return 1
+                fi
+                systemctl restart opi-lxmf.service || return 1 ;;
+            add|send|send-propagated) _lxmf_save "$choice" ;;
             address) result=$(_lxmf_cli address 2>&1); dialog_msgbox 'My LXMF address' "$result" 9 62 ;;
             *) return 0 ;;
         esac

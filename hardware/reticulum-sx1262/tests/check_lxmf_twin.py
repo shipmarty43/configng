@@ -187,7 +187,7 @@ def start_node(stack, state, model, target, *args):
     thread.start()
     stack.callback(thread.join)
     stack.callback(stop.set)
-    state.mkdir()
+    state.mkdir(exist_ok=True)
     parent, child = ctx.Pipe()
     stack.callback(parent.close)
     proc = ctx.Process(target=target, args=(state, os.ttyname(slave), child, *args))
