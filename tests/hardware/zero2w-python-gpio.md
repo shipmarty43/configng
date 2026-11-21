@@ -1,6 +1,6 @@
 # Zero 2W Python GPIO verification, 2026-11-20
 
-The **Hardware → GPIO header** action (`GPIO01`) inspects each of the 28 GPIO
+The **Hardware → GPIO header → WiringPi header report** action in `GPIO01` inspects each of the 28 GPIO
 contacts. It shows the physical position, SoC number and name, kernel
 direction and consumer. It does not claim lines. An unclaimed GPIO can still
 have a peripheral mux or an external driver connected to it.

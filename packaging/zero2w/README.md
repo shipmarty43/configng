@@ -96,3 +96,7 @@ To repeat a fault test after the VM has shut down with the current packages inst
 ### Header chip selects and RTS/CTS
 
 The `zero2w-zero3w-cs-rtscts-arm64.tar` kit has `13f6cad0` in `previous` and `6e3fffa6` in `current`. Open A733IO for native SPI2 CS1–CS3 or UART2/UART6 flow control on Zero 3W. UART01 offers the four-wire header routes on Zero 2W. [Offline DTB and termios acceptance](../../tests/hardware/header-cs-rtscts.md).
+
+### GPIO electrical defaults
+
+The GPIO kit provides GPIO01 on both boards. The previous release is `6e3fffa6` and the current package build is `f0e6bea1`. The `drivers/` directory contains two ARM64 packages, one per tested kernel ABI. `apply.sh current` selects the module for the running kernel when available. On other compatible kernels use the supplied DKMS source. Installing the packages does not create a GPIO boot selection. [Settings and rollback](../../hardware/header-gpio/README.md)
