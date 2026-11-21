@@ -130,6 +130,12 @@ if [ -d /run/systemd/system ] && systemctl is-active --quiet opi-zero2w-pwm.serv
     systemctl stop opi-zero2w-pwm.service
 fi
 """, 0o755)
+    uart = src / "hardware/h616-io/opi-zero2w-uart@.service"
+    if uart.exists():
+        write(root / UNITS / uart.name, uart.read_text().replace(
+            "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
+        rule = uart.parent / "80-opi-zero2w-uart.rules"
+        copy(rule, root / "usr/lib/udev/rules.d" / rule.name)
     reload_units(root, init_test_lock=True)
 
 

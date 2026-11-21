@@ -400,6 +400,9 @@ function _dt_overlays_write_config_unlocked() (
 		return 1
 	fi
 
+    if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$conf_tmp"; then
+        _uart_overlay_validate "$conf_tmp" || return 1
+    fi
     if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-(sclk|twi-clock)-' "$conf_tmp"; then
         _bus_clocks_validate_config "$conf_tmp" || return 1
     fi
@@ -636,6 +639,9 @@ function _zero2w_overlay_change() (
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi
+    if grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$work/after"; then
+        _uart_overlay_validate "$work/after" || return 1
+    fi
     if grep -Eq '^user_overlays=.*opi-(sclk|twi-clock)-' "$work/after"; then
         _bus_clocks_validate_config "$work/after" || return 1
     fi

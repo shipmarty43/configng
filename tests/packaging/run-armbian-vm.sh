@@ -3,7 +3,7 @@
 # block device, network, directory export or physical peripheral is passed in.
 set -euo pipefail
 if (( $# < 4 || $# > 5 )); then
-    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current|io-current]" >&2
+    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current|io-current|uart-boot]" >&2
     exit 2
 fi
 base=$(realpath "$1")
@@ -12,6 +12,7 @@ busy=$(realpath "$3")
 scenario=${5:-lifecycle}
 case "$scenario" in
     lifecycle) boots=(first reboot) ;;
+    uart-boot) boots=(uart-save uart-restore) ;;
     fresh-current|io-current) boots=(fresh) ;;
     *) echo "Unknown test scenario: $scenario" >&2; exit 2 ;;
 esac
@@ -37,6 +38,11 @@ cp "$release"/{SHA256SUMS,apply.sh} "$work/payload/"
 (cd "$work/payload" && sha256sum --quiet --strict -c SHA256SUMS)
 serial_fixture=()
 if [[ $scenario != lifecycle ]]; then touch "$work/payload/fresh-current"; fi
+if [[ $scenario == uart-boot ]]; then
+    touch "$work/payload/uart-boot"
+    cp "$tests"/{guest-uart-boot.sh,guest-uart-boot.py} "$work/payload/"
+    serial_fixture=(-chardev null,id=uarttest -device pci-serial,chardev=uarttest)
+fi
 if [[ $scenario == io-current ]]; then
     touch "$work/payload/io-current"
     cp "$tests"/{guest-io.sh,guest-uart.py} "$tests/../../hardware/dfrobot-ups/zero2w-dfr0528.dts" "$work/payload/"
@@ -125,6 +131,9 @@ done
 if [[ $scenario == lifecycle ]]; then
     grep -aq '^PASS-INSTALL-UPGRADE-DOWNGRADE' "$work/first.log"
     grep -aq '^PASS-REBOOT' "$work/reboot.log"
+elif [[ $scenario == uart-boot ]]; then
+    grep -aq '^PASS-UART-PREPARED' "$work/uart-save.log"
+    grep -aq '^PASS-UART-BOOT-RESTORE' "$work/uart-restore.log"
 else
     grep -aq '^PASS-FRESH-CURRENT' "$work/fresh.log"
 fi

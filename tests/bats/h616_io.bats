@@ -33,3 +33,16 @@ setup() {
     module_h616_pwm select
     [ "$(cat "$calls")" = 'set 1000 37.5 inversed' ]
 }
+@test 'a currently disabled header port can be selected and saved for next boot' {
+    _uart_routes_list() { printf 'uart3\tTX/RX 28/27; disabled\n'; }
+    _h616_uart_cli() {
+        case $1 in list) : ;; saved) echo 'No saved boot profile' ;; rates) echo 57600 ;; save) echo "$*" > "$calls" ;; esac
+    }
+    dialog_menu() {
+        case "$1" in 'UART ports') echo boot ;; 'UART boot configuration') echo uart3 ;;
+            'uart3 boot settings') echo save ;; 'uart3 baud') echo 57600 ;; 'Data bits') echo 7 ;;
+            'Parity') echo even ;; 'Stop bits') echo 2 ;; esac
+    }
+    module_h616_uart select
+    [ "$(cat "$calls")" = 'save uart3 57600 7 even 2' ]
+}

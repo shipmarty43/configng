@@ -3,7 +3,7 @@
 | Menu | Command ID | When a change takes effect |
 |---|---|---|
 | I²C bus clocks | `I2C001` | Next Linux boot, on one physical controller |
-| UART baud and framing | `UART01` | Immediately on an idle physical UART; one runtime undo |
+| UART baud and framing | `UART01` | Live framing or a saved physical-port boot profile |
 | Header PWM1 | `PWM001` | Saving the profile leaves the pin alone. Start or restart explicitly to drive pin 32. |
 
 ## TWI bus clocks
@@ -47,6 +47,8 @@ that the saved successor still matches before restoring the earlier file.
 [DFRobot MCU protocol](https://wiki.dfrobot.com/dfr0528/docs/19883)
 
 ## UART
+
+The [UART overlay and boot-profile guide](uart-boot.md) lists physical pins, persistent settings and boot rollback.
 
 The six H616 UARTs use a nominal baud of SCLK / (16 × divisor), with a
 16-bit divisor. The manual's examples use several input clocks for the high

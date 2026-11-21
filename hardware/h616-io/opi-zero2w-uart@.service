@@ -1,0 +1,13 @@
+[Unit]
+Description=Restore saved Zero 2W UART framing on %I
+BindsTo=dev-%i.device
+After=dev-%i.device
+ConditionPathExistsGlob=/etc/armbian-config/uart/uart*.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/share/armbian-config/h616_uart.py restore-profile %I
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077

@@ -30,9 +30,6 @@ def write_selection(before, after, names):
 
 
 def install_overlay(folder, name, target, properties):
-    if folder.is_symlink():
-        raise ValueError("Unexpected symlink at overlay-user")
-    folder.mkdir(exist_ok=True)
     cells = "\n".join(f"            {key} = <{value}>;" for key, value in properties.items())
     source = f'''/dts-v1/;
 /plugin/;
@@ -46,6 +43,13 @@ def install_overlay(folder, name, target, properties):
 }};
 '''
     data = subprocess.check_output(["dtc", "-I", "dts", "-O", "dtb"], input=source.encode())
+    install_blob(folder, name, data)
+
+
+def install_blob(folder, name, data):
+    if folder.is_symlink():
+        raise ValueError("Unexpected symlink at overlay-user")
+    folder.mkdir(exist_ok=True)
     path = folder / (name + ".dtbo")
     if path.is_symlink():
         raise ValueError(f"Unexpected symlink at {path.name}")

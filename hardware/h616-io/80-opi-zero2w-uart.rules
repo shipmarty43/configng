@@ -1,0 +1,2 @@
+# Match the Linux tty event; the helper identifies the physical UART by its DT node.
+ACTION=="add", SUBSYSTEM=="tty", KERNEL=="ttyS[0-9]*", TEST=="/etc/armbian-config/uart", TAG+="systemd", ENV{SYSTEMD_WANTS}+="opi-zero2w-uart@%k.service"
