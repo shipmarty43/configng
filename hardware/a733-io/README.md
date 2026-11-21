@@ -4,7 +4,7 @@ Open **System → Hardware → A733 header buses** (`A733IO`) in this configng f
 
 | Route | Physical header | Settings |
 |---|---|---|
-| SPI2 | CS0 11, SCLK 13, MOSI 5, MISO 3 | Install the header mux and controller route. The base tree has no SPI2 client. An attached chip needs its own DT binding and frequency ceiling. This route conflicts with UART2 and I²C0. |
+| SPI2 | CS0 11, SCLK 13, MOSI 5, MISO 3 | Install the header mux and controller route. The base tree has no SPI2 client. Once a CS0 child has its real DT binding, select `spi2-cs0` to lower its maximum frequency and choose mode 0–3. The request is bounded by the declared peripheral limit. This route conflicts with UART2 and I²C0. |
 | SPI3 | SCLK 23, MOSI 19, MISO 21, CS0 24, CS1 26 | Each CS has its own frequency ceiling and SPI mode 0–3. Stock spidev endpoints request 500 kHz. The vendor driver minimum is 187,500 Hz and the silicon limit is 100 MHz. Select a ceiling supported by the attached peripheral. |
 | I²C0 / 1 / 2 / 3 | SCL/SDA 5/3, 40/38, 23/19, 21/26 | Select 100 or 400 kHz for the entire bus. |
 | UART2 / 6 / 7 | TX/RX 11/13, 24/23, 16/18 | Enable the header route and save baud, data bits, parity and stop bits. UART7 is the vendor name for S_UART0. |

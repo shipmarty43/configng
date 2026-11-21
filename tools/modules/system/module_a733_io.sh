@@ -33,15 +33,27 @@ _a733_menu() {
             local file
             file=$(mktemp) || return 1
             printf '%s\n' "$data" > "$file"
-            dialog --title 'Calculated divider grid (Hz)' --textbox "$file" 21 78 || :
+            case ${DIALOG:-dialog} in
+                dialog) dialog --title 'Calculated divider grid (Hz)' --textbox "$file" 21 78 || : ;;
+                whiptail) whiptail --title 'Calculated divider grid (Hz)' --scrolltext --textbox "$file" 21 78 || : ;;
+                *) cat "$file" ;;
+            esac
             rm -f -- "$file"
             return ;;
         camera)
             action=$(dialog_menu 'Camera and PE0' 'Camera MCLK and header SPI3/UART6 share PE0.' 15 78 3 -- release 'Disable camera capture at next boot' default 'Restore base camera setting') || return 0
             if [[ $action == release ]]; then params=(set camera release); else params=(default camera); fi ;;
         spi2)
-            action=$(dialog_menu SPI2 'CS0/CLK/MOSI/MISO on 11/13/5/3. Add the binding for your actual peripheral separately.' 13 76 2 -- enable 'Enable controller on header' default 'Restore base route') || return 0
-            if [[ $action == enable ]]; then params=(set spi2 on); else params=(default spi2); fi ;;
+            action=$(dialog_menu SPI2 'CS0/CLK/MOSI/MISO on 11/13/5/3. Add the binding for your actual peripheral separately.' 15 76 4 -- enable 'Enable controller on header' default 'Restore base route' clock 'Set frequency and mode for a declared CS0 client' reset-clock 'Restore CS0 device default') || return 0
+            case "$action" in
+                enable) params=(set spi2 on) ;;
+                default) params=(default spi2) ;;
+                reset-clock) params=(default spi2-cs0) ;;
+                clock)
+                    hz=$(dialog_inputbox SPI2 'Maximum Hz for the declared CS0 client.' 500000 10 72) || return 0
+                    mode=$(dialog_menu SPI2 'SPI mode (CPOL / CPHA)' 14 66 4 -- 0 '0 / 0' 1 '0 / 1' 2 '1 / 0' 3 '1 / 1') || return 0
+                    params=(set spi2-cs0 "$hz" "$mode") ;;
+            esac ;;
         spi3)
             cs=$(dialog_menu SPI3 'Choose the physical chip select.' 12 65 2 -- 0 'CS0 on pin 24' 1 'CS1 on pin 26') || return 0
             action=$(dialog_menu SPI3 'Next-boot settings for this endpoint.' 12 72 2 -- set 'Enable and configure' default 'Restore base configuration') || return 0

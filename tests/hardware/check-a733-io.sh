@@ -28,6 +28,13 @@ reject() {
 }
 api list
 api set spi2 on
+reject set spi2-cs0 400000 0
+printf '/dts-v1/; /plugin/; &spi2 { sensor@0 {reg=<0>; compatible="test,bench-sensor"; spi-max-frequency=<8000000>; }; };' | dtc -q -@ -I dts -O dtb -o "$root/overlay-user/bench-sensor.dtbo"
+sed -i '/^user_overlays=/s/$/ bench-sensor/' "$envfile"
+api set spi2-cs0 2000000 2
+api list | grep -F 'sensor@0 2000000 Hz mode 2'
+reject set spi2-cs0 8000001 1
+api default spi2-cs0
 reject set uart2 on
 reject set i2c0 100000
 api default spi2

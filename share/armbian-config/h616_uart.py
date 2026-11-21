@@ -113,7 +113,7 @@ class PortBusy(ValueError):
 
 def configure(name, node, action, target=None, *, label=None):
     label = label or f"UART{NODES[node.name]}"
-    reason = busy(name) or (reserved(name) if action != "status" else "")
+    reason = busy(name) or reserved(name)
     if reason:
         if action == "status":
             print(f"{name}: {reason}; {label}")
@@ -129,7 +129,7 @@ def configure(name, node, action, target=None, *, label=None):
             raise PortBusy("UART is held exclusively")
         fcntl.ioctl(fd, termios.TIOCEXCL)
         exclusive = True
-        if reason := busy(name, fd) or (reserved(name) if action != "status" else ""):
+        if reason := busy(name, fd) or reserved(name):
             raise PortBusy(f"UART became busy: {reason}")
         current = fields(termios.tcgetattr(fd))
         backup = BACKUPS / (name + ".json")

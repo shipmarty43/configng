@@ -36,18 +36,46 @@ def board(nodes):
         raise ValueError("Expected the Armbian Orange Pi Zero 3W A733 DTB")
 
 
+def spi_parameters(values):
+    if (len(values) != 2 or not re.fullmatch(r"[1-9][0-9]{0,8}", values[0])
+            or not 187_500 <= int(values[0]) <= 100_000_000 or values[1] not in ("0","1","2","3")):
+        raise ValueError("Use device maximum Hz (187500..100000000) and SPI mode (0..3)")
+    return tuple(map(int,values))
+
+
+def spi2_client(nodes):
+    path = SOC + ROUTES["spi2"][0]
+    candidates = [(node, props) for node, props in nodes.items()
+                  if node.rpartition("/")[0] == path and cells(props.get("reg", b"")) == [0]
+                  and props.get("status", b"okay\0") in (b"ok\0", b"okay\0")]
+    if len(candidates) != 1:
+        raise ValueError("SPI2 requires exactly one declared CS0 peripheral")
+    node, props = candidates[0]
+    if not props.get("compatible") or not re.fullmatch(r"[A-Za-z0-9,._+-]+@0", node.rpartition("/")[2]):
+        raise ValueError("Unknown SPI2 peripheral binding")
+    cap, = cells(props["spi-max-frequency"])
+    return node, cap
+
+
 def selection(key, values):
     if key == "camera":
         if values != ["release"]:
             raise ValueError("camera release disables vendor camera capture at next boot")
         return CAMERA, 'status = "disabled";', {}
-    if key in ("spi3-cs0", "spi3-cs1"):
-        if len(values) != 2 or not values[0].isdecimal() or not 187_500 <= int(values[0]) <= 100_000_000 or values[1] not in ("0","1","2","3"):
-            raise ValueError("Use device maximum Hz (187500..100000000) and SPI mode (0..3)")
-        mode = int(values[1])
+    if key in ("spi2-cs0","spi3-cs0","spi3-cs1"):
+        hz, mode = spi_parameters(values[:2])
         flags = ("spi-cpha;" if mode & 1 else "") + (" spi-cpol;" if mode & 2 else "")
-        child = "spidev@" + key[-1]
-        return SOC + ROUTES["spi3"][0], 'status = "okay";', {child: f"spi-max-frequency = <{int(values[0])}>; {flags}"}
+        edit = f"spi-max-frequency = <{hz}>; {flags}"
+        if key == "spi2-cs0":
+            if len(values) != 3:
+                raise ValueError("Missing SPI2 client identity")
+            child = bytes.fromhex(values[2]).decode("ascii")
+            if not re.fullmatch(r"[A-Za-z0-9,._+-]+@0", child):
+                raise ValueError("Invalid SPI2 client name")
+            return SOC + ROUTES["spi2"][0] + "/" + child, edit, {}
+        if len(values) != 2:
+            raise ValueError("Unexpected SPI3 parameters")
+        return SOC + ROUTES["spi3"][0], 'status = "okay";', {"spidev@" + key[-1]: edit}
     if key not in ROUTES or key == "spi3":
         raise ValueError("Unknown A733 header port")
     props = 'status = "okay";'
@@ -125,6 +153,7 @@ def compose(root, text, output):
             raise ValueError(f"Missing stock overlay {name}")
         blobs.append(path)
     selected = {}
+    device_clock = None
     for name in users:
         path = folder / (name + ".dtbo")
         if name.startswith(PREFIX):
@@ -132,7 +161,19 @@ def compose(root, text, output):
             if key in selected or path.is_symlink() or path.read_bytes() != overlay(key, values):
                 raise ValueError(f"Duplicate or altered A733 overlay {name}")
             selected[key] = values
+            if key == "spi2-cs0":
+                device_clock = path
         blobs.append(path)
+    if device_clock is not None:
+        inputs = [b for b in blobs if b != device_clock]
+        ref = read_tree(dt)
+        if inputs:
+            subprocess.run(["fdtoverlay", "-i", dt, "-o", output, *inputs], check=True)
+            ref = read_tree(output)
+        node, limit = spi2_client(ref)
+        hz, _, device_name = selected["spi2-cs0"]
+        if (not enabled(ref, node) or int(hz) > limit or node.rpartition("/")[2].encode().hex() != device_name):
+            raise ValueError("Base SPI2 client or peripheral ceiling changed")
     if blobs:
         subprocess.run(["fdtoverlay", "-i", dt, "-o", output, *blobs], check=True)
         nodes = read_tree(output)
@@ -177,6 +218,15 @@ def verify(nodes, selected, *, report=False):
                 raise ValueError(f"Overridden SCL at {path}")
         elif name == "spi2":
             detail = "CS0; peripheral supplied by device overlay"
+            if "spi2-cs0" in selected:
+                child, hz = spi2_client(nodes)
+                values = selected["spi2-cs0"]
+                ep = nodes[child]
+                mode = int("spi-cpha" in ep) + 2 * int("spi-cpol" in ep)
+                if (not is_on or child.rpartition("/")[2].encode().hex() != values[2]
+                        or (hz,mode) != spi_parameters(values[:2])):
+                    raise ValueError("SPI2 client, mode or clock changed")
+                detail = f"{child.rpartition('/')[2]} {hz} Hz mode {mode}"
         elif kind == "spi":
             descriptions = []
             for cs in range(2):
@@ -212,7 +262,7 @@ def verify(nodes, selected, *, report=False):
         elif name in selected:
             raise ValueError(f"Managed route disabled: {name}")
         rows.append(f"{name}\t{'enabled' if is_on else 'disabled'}  pins {physical}  {detail}")
-    if "camera" in selected and enabled(nodes, CAMERA):
+    if "camera" in selected and (enabled(nodes, CAMERA) or "allwinner,sunxi-vin-media" not in strings(nodes[CAMERA]["compatible"])):
         raise ValueError("Camera route release was overridden")
     return rows
 
@@ -263,10 +313,19 @@ def main():
                 print(row)
             return
         key, *values, output = a.args
-        if key not in {"camera", "spi3-cs0", "spi3-cs1", *ROUTES} or key == "spi3":
+        if key not in {"camera", "spi2-cs0", "spi3-cs0", "spi3-cs1", *ROUTES} or key == "spi3":
             raise ValueError("Unknown configurable route")
         names = [n for n in tokens(before) if not n.startswith(PREFIX + key + "--")]
         if a.action == "set":
+            if key == "spi2-cs0":
+                hz, _ = spi_parameters(values)
+                clean = Path(work)/"without-device-clock"
+                write_selection(before, clean, names)
+                baseline, _ = compose(root, clean.read_text(), dt)
+                child, cap = spi2_client(baseline)
+                if not enabled(baseline, child) or hz > cap:
+                    raise ValueError(f"Enable SPI2 first; its declared CS0 limit is {cap} Hz")
+                values.append(child.rpartition("/")[2].encode().hex())
             data = overlay(key, values)
             name = PREFIX + key + "--" + "-".join(values)
             install_blob(root/"overlay-user", name, data)

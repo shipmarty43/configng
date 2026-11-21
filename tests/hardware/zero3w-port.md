@@ -21,6 +21,8 @@ table are PDF viewer pages.
 | OrangePi_Zero3W_V1_2_Schematic.pdf | 18 | Board power, SoC signals (sheet 9), header (sheet 18) | [Xunlong schematic V1.2](https://drive.google.com/file/d/1layhtSvMpQo-z_iMJjNfNVvhPhObpsvW/view) |
 | OrangePi_Zero3W_V1_5_DSN.pdf | 18 | Second board drawing. The distributor filename says V1.5, while sheet 18 retains a V1.2 title block. Relevant header nets agree in both PDFs. | [Xunlong drawing labelled V1.5](https://drive.google.com/file/d/1LWNa-VwCVXKQ4rQheLolr_EWw8pe3zkn/view) |
 
+The subsequent [A733 bus implementation and distribution-DTB acceptance](../../hardware/a733-io/README.md) covers SPI2, SPI3, four I²C buses and three UARTs. The [pin and controller audit](pin-manual-audit.md) records the mapping and remaining electrical tests for both boards.
+
 ## Board wiring and driver implications
 
 Physical pin numbers below are on the 40-pin header. Zero 3W routing comes

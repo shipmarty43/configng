@@ -1,5 +1,7 @@
 # Orange Pi Zero 2W development handoff
 
+[Pin and peripheral audit of H616/H618 and A733, including negative DT tests](pin-manual-audit.md).
+
 This directory preserves board evidence and reproducible experiments for future
 Armbian work. Start with the [2026-10-26 validation report](zero2w-validation-2026-10-26.md).
 Results describe one H618 board and image, not universal Armbian support.
