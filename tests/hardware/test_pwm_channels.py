@@ -49,6 +49,24 @@ class Channels(unittest.TestCase):
             (eth/"status").write_bytes(b"disabled\0")
             pwm.check_pair(chip, 4, 1_000_000_000)
 
+    def test_live_uart_group_blocks_a_shadowed_pwm_route(self):
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            group = base/"soc/pinctrl@300b000/uart5-pins"
+            serial = base/"soc/serial@5001400"
+            group.mkdir(parents=True)
+            serial.mkdir()
+            (group/"pins").write_bytes(b"PH2\0PH3\0")
+            ref = (22).to_bytes(4, "big")
+            (group/"phandle").write_bytes(ref)
+            (serial/"pinctrl-0").write_bytes(ref)
+            for pin in ("PH2", "PH3"):
+                with self.assertRaisesRegex(ValueError, "serial@5001400"):
+                    pwm.check_uart_pin(base, pin)
+            pwm.check_uart_pin(base, "PI12")
+            (serial/"status").write_bytes(b"disabled\0")
+            pwm.check_uart_pin(base, "PH2")
+
     def test_live_uart0_cannot_be_silently_released(self):
         import h616_uart
         for reason in ("kernel console", "open by PID 20"):

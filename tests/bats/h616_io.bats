@@ -67,3 +67,12 @@ setup() {
     module_h616_pwm pwm2
     [ ! -e "$calls" ]
 }
+
+@test 'a boot configuration error still allows stopping a live channel' {
+    _pwm_list() { echo 'unsupported boot file'; return 1; }
+    _h616_pwm_cli() { echo 'line status'; }
+    systemctl() { echo "$*" > "$calls"; }
+    dialog_menu() { case "$1" in 'Header PWM') echo pwm3 ;; *) echo stop ;; esac; }
+    module_h616_pwm select
+    [ "$(cat "$calls")" = 'stop opi-zero2w-pwm@3.service' ]
+}

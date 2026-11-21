@@ -110,6 +110,17 @@ class Console(unittest.TestCase):
                 self.apply("tty1")
         self.assertEqual(self.env.read_text(), ORIGINAL)
 
+    def test_pwm_release_blocks_reselecting_the_uart0_console(self):
+        self.apply("tty1")
+        text = self.env.read_text().replace("user_overlays=", "user_overlays=opi-pwm-release-uart0 ")
+        self.env.write_text(text)
+        with patch.object(console, "serial_users", return_value=[]):
+            with self.assertRaisesRegex(ValueError, "UART0"):
+                self.apply("ttyS0")
+        with self.assertRaisesRegex(ValueError, "UART0"):
+            console.change(self.boot, "rollback", self.backups()[0].name)
+        self.assertEqual(self.env.read_text(), text)
+
     def test_missing_console_key_restored(self):
         before = ORIGINAL.replace("console=both\n", "")
         self.env.write_text(before)

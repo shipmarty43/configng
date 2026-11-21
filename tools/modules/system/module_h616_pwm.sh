@@ -58,7 +58,7 @@ _pwm_channel_menu() {
 }
 
 module_h616_pwm() {
-    local pwm_number=1 pwm_pin unit=opi-zero2w-pwm.service action label item data id result rc=0
+    local pwm_number=1 pwm_pin unit=opi-zero2w-pwm.service action label item data id result prompt rc=0
     local -a opts=() cli=()
     if [[ ${1:-} == pwm[1-4] ]]; then
         pwm_number=${1#pwm}; shift
@@ -87,9 +87,14 @@ module_h616_pwm() {
         boot-rollback) [[ $# == 2 ]] && _ups_dfr_board || return 2
             _zero2w_overlay_change rollback pwm _pwm_prepare "$2" ;;
         select)
-            data=$(_pwm_list 2>&1) || { dialog_msgbox 'Header PWM' "$data" 12 76; return 1; }
-            while IFS=$'\t' read -r item label; do opts+=("$item" "$label"); done <<< "$data"
-            action=$(dialog_menu 'Header PWM' 'Choose a channel or manage the boot route.' 18 78 8 -- \
+            prompt='Choose a channel or manage the boot route.'
+            if data=$(_pwm_list 2>&1); then
+                while IFS=$'\t' read -r item label; do opts+=("$item" "$label"); done <<< "$data"
+            else
+                prompt="Boot routes unavailable: $data. Live controls and saved profiles are available."
+                for item in pwm1 pwm2 pwm3 pwm4; do opts+=("$item" 'Live output and saved waveform'); done
+            fi
+            action=$(dialog_menu 'Header PWM' "$prompt" 18 78 8 -- \
                 "${opts[@]}" release-uart0 'Release free UART0 pins for PWM on next boot' \
                 restore-uart0 'Restore the base UART0 route' rollback 'Undo an overlay change') || return 0
             if [[ $action == pwm[1-4] ]]; then _pwm_channel_menu "${action#pwm}"; return; fi
