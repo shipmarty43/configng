@@ -35,6 +35,10 @@ used later. A change of pin preserves the channel's profile. The files are
 commands, file and service keep their original names. PWM2–4 have distinct
 service instances, ownership records and kernel exports.
 
+If the next-boot DT cannot be composed, the channel menu still provides live
+status, stop and profile editing. Overlay writes continue to require a
+validated boot route.
+
 Saving a profile or booting its pin selection leaves output activation
 explicit. Use `restart` to replace the waveform of a running channel.
 For active-low duty the driver receives the complementary high interval,
