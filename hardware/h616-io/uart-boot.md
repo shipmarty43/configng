@@ -17,7 +17,7 @@ The overlay controls manage the four optional TX/RX pairs. UART0 is enabled
 by the board DT; its console assignment stays in CTTY01. UART1 is outside
 the documented 40-pin UART choices. The boot profiles preserve flow control
 flags. Alternative pin groups and four-wire configurations remain under
-their own overlays. [Orange Pi Zero 2W board documentation](http://www.orangepi.org/orangepiwiki/index.php/Orange_Pi_Zero_2W)
+their own overlays. [Orange Pi Zero 2W user manual v1.1, printed pp. 169–170 (mirror)](https://www.nikom.biz/pic_info/A704017/OrangePi_Zero2w_H618_User-Manual_v1.1.pdf)
 
 ```sh
 sudo armbian-config-zero2w --api module_h616_uart routes
@@ -55,6 +55,8 @@ sudo armbian-config-zero2w --api module_h616_uart boot-rollback change.ID
 
 Disabling a route retains its saved framing. Forgetting a profile leaves
 the running line settings alone. Boot rollback restores the matching boot
-environment, including any migrated stock overlay selection. The separate
+environment, including any migrated stock overlay selection. It tolerates
+reordering of otherwise identical unique assignments (Armbian moves
+`usbstoragequirks` at boot), and refuses changed values or added entries. The separate
 runtime `rollback ttySx` undoes the last applied framing if the tty still
 matches its saved state.

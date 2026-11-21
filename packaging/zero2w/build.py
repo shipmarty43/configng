@@ -249,6 +249,8 @@ def main():
         core_deps = "armbian-config, python3, jq, systemd, util-linux"
         if (src / "share/armbian-config/spi_devices.py").exists():
             core_deps += ", device-tree-compiler"
+        if (src / "hardware/h616-io/80-opi-zero2w-uart.rules").exists():
+            core_deps += ", udev"
         package(build / CORE, CORE, version, "all", core_deps,
                 rev, "Modular Orange Pi Zero 2W Armbian configurator", out, env)
 

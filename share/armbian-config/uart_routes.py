@@ -206,6 +206,44 @@ def prepare(before, after, folder, port, action):
     write_selection(text, after, names)
 
 
+def env_content(text):
+    assignments, notes = {}, []
+    for line in text.splitlines(keepends=True):
+        key, equal, _ = line.partition("=")
+        if equal and re.fullmatch(r"[A-Za-z0-9_]+", key):
+            if key in assignments:
+                raise ValueError(f"Cannot roll back reordered environment with duplicate {key}")
+            assignments[key] = line
+        elif not line.strip() or line.lstrip().startswith("#"):
+            notes.append(line)
+        else:
+            raise ValueError("Unrecognized boot environment line")
+    return assignments, notes
+
+
+def rollback_reordered(before, after, current, output):
+    """Armbian re-appends usbstoragequirks at boot. Retain today's ordering."""
+    saved, _ = env_content(before.read_text())
+    expected = env_content(after.read_text())
+    text = current.read_text()
+    if env_content(text) != expected:
+        raise ValueError("Boot configuration has changed since this backup")
+    updated = expected[0]
+    changed = {k for k in saved.keys() | updated.keys() if saved.get(k) != updated.get(k)}
+    if not changed <= {"overlays", "user_overlays"}:
+        raise ValueError("Unexpected keys in the UART backup")
+    lines = []
+    for line in text.splitlines(keepends=True):
+        key = line.partition("=")[0]
+        if key in changed:
+            if key in saved:
+                lines.append(saved[key])
+        else:
+            lines.append(line)
+    lines.extend(line for key, line in saved.items() if key in changed and key not in updated)
+    output.write_text("".join(lines))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     cmds = parser.add_subparsers(dest="op", required=True)
@@ -215,6 +253,9 @@ def main():
         sub.add_argument("env", type=Path)
         if op == "verify":
             sub.add_argument("folder", type=Path)
+    undo = cmds.add_parser("rollback-reordered")
+    for name in ("before", "after", "current", "output"):
+        undo.add_argument(name, type=Path)
     inactive = cmds.add_parser("inactive")
     inactive.add_argument("dtb", type=Path)
     inactive.add_argument("port", choices=ROUTES)
@@ -225,6 +266,9 @@ def main():
     sub.add_argument("port", choices=ROUTES)
     sub.add_argument("action", choices=("enable", "disable"))
     args = parser.parse_args()
+    if args.op == "rollback-reordered":
+        rollback_reordered(args.before, args.after, args.current, args.output)
+        return
     if args.op == "prepare":
         prepare(args.before, args.after, args.folder, args.port, args.action)
         return

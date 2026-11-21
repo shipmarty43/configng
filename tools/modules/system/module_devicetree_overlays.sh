@@ -634,8 +634,14 @@ function _zero2w_overlay_change() (
 			-f "$saved/before" && ! -L "$saved/before" && -f "$saved/after" && ! -L "$saved/after" ]] || {
 			echo 'Supply the change.ID from the saved backup.' >&2; return 1;
 		}
-		cmp -s "$work/before" "$saved/after" || { echo 'Boot configuration has changed since this backup.' >&2; return 1; }
-		cp "$saved/before" "$work/after" || return 1
+		if cmp -s "$work/before" "$saved/after"; then
+			cp "$saved/before" "$work/after" || return 1
+		elif [[ $profile == uart ]]; then
+			_uart_route_cli rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
+		else
+			echo 'Boot configuration has changed since this backup.' >&2
+			return 1
+		fi
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi

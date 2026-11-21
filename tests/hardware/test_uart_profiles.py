@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"share/armbian-config"))
 import h616_uart as uart
+from uart_routes import rollback_reordered
 
 
 class Profiles(unittest.TestCase):
@@ -57,6 +58,20 @@ class Profiles(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"header route"):
                 self.cli("restore-profile","ttyS2")
             configure.assert_not_called()
+
+    def test_rollback_after_armbian_reorders_assignments(self):
+        before, after, now, out = (self.root/n for n in ("before", "after", "now", "out"))
+        before.write_text("overlays=old\nrootdev=keep\nusbstoragequirks=same\n")
+        after.write_text(before.read_text() + "user_overlays=opi-uart3-header\n")
+        now.write_text("rootdev=keep\noverlays=old\nuser_overlays=opi-uart3-header\nusbstoragequirks=same\n")
+        rollback_reordered(before, after, now, out)
+        self.assertEqual(out.read_text(), "rootdev=keep\noverlays=old\nusbstoragequirks=same\n")
+        for bad in ("rootdev=changed\n", "# manual edit\n", "newkey=value\n"):
+            with now.open("a") as f:
+                f.write(bad)
+            with self.assertRaises(ValueError):
+                rollback_reordered(before, after, now, out)
+            now.write_text(after.read_text())
 
     def test_idle_gnss_and_socket_activated_gpsd(self):
         gpsd, gnss = self.root/"gpsd", self.root/"gnss"
