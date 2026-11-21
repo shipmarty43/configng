@@ -8,7 +8,7 @@
 static int model_apply(struct pwm_chip *chip, struct pwm_device *pwm,
                        const struct pwm_state *state)
 {
-    if (pwm->hwpwm != 1)
+    if (pwm->hwpwm != 1 || state->polarity != PWM_POLARITY_NORMAL)
         return -EPERM;
     return 0; /* Linux PWM core caches this accepted request for sysfs. */
 }

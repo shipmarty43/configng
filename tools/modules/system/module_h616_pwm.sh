@@ -19,12 +19,12 @@ module_h616_pwm() {
         *) return 2 ;;
     esac
     data=$(_h616_pwm_cli status 2>&1) || { dialog_msgbox 'PWM1' "$data" 12 74; return 1; }
-    action=$(dialog_menu 'Header PWM1' "$data" 19 76 5 -- set 'Save frequency, active duty and polarity' \
+    action=$(dialog_menu 'Header PWM1' "$data" 19 76 5 -- set 'Save frequency, active duty and level' \
         start 'Start saved output on pin 32' restart 'Restart with saved waveform' stop 'Stop output and release channel' default 'Clear saved waveform') || return 0
     if [[ $action == set ]]; then
         hz=$(dialog_inputbox 'PWM frequency' 'Hz (1..1000000)' '' 10 65) || return 0
         duty=$(dialog_inputbox 'PWM active duty' 'Active percent (0..100, up to two decimal places)' '' 10 70) || return 0
-        polarity=$(dialog_menu 'PWM polarity' 'Active level' 12 65 2 -- normal 'Active high' inversed 'Active low') || return 0
+        polarity=$(dialog_menu 'PWM active level' 'Steady-state active interval on pin 32' 12 65 2 -- normal 'Active high' inversed 'Active low') || return 0
         result=$(_h616_pwm_cli set "$hz" "$duty" "$polarity" 2>&1) || rc=$?
     else
         result=$(module_h616_pwm "$action" 2>&1) || rc=$?

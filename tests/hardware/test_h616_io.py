@@ -68,7 +68,8 @@ class Controls(unittest.TestCase):
 
     def test_pwm_bounds_and_cleanup(self):
         for duty, active in (("0", 0), ("37.5", 375000), ("100", 1000000)):
-            self.assertEqual(pwm.waveform(pwm.settings(1000, duty, "inversed")), (1000000, active))
+            self.assertEqual(pwm.waveform(pwm.settings(1000, duty, "normal")), (1000000, active))
+            self.assertEqual(pwm.waveform(pwm.settings(1000, duty, "inversed")), (1000000, 1000000-active))
         for hz, duty, polarity in ((0,"10","normal"),(1000001,"1","normal"),(10,"-1","normal"),
                                    (10,"100.1","normal"),(10,"1","invalid")):
             with self.assertRaises(ValueError):

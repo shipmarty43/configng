@@ -28,7 +28,10 @@ def settings(hz, duty, polarity):
 def waveform(profile):
     period = (1_000_000_000 + profile["hz"] // 2) // profile["hz"]
     basis_points = int(Decimal(profile["duty"]) * 100)
-    return period, (period * basis_points + 5000) // 10000
+    active = (period * basis_points + 5000) // 10000
+    # sunxi_pwm_enable() forces normal polarity. Program the high interval
+    # explicitly so the requested steady-state low/high widths hold on stock.
+    return period, active if profile["polarity"] == "normal" else period - active
 
 
 def controller(sysroot=Path("/sys")):
@@ -79,7 +82,7 @@ def cleanup(chip, lease):
 
 
 def run(chip, profile, lease, ready, wait):
-    period, active = waveform(profile)
+    period, high = waveform(profile)
     ch = chip/"pwm1"
     # Successful kernel export is the ownership boundary, including races with
     # WiringPi and other consumers. An EBUSY return must never trigger cleanup.
@@ -90,12 +93,12 @@ def run(chip, profile, lease, ready, wait):
         save(lease, owned)
         put(ch/"enable", 0)
         put(ch/"duty_cycle", 0)
-        put(ch/"polarity", profile["polarity"])
         put(ch/"period", period)
-        put(ch/"duty_cycle", active)
+        put(ch/"polarity", "normal")
+        put(ch/"duty_cycle", high)
         put(ch/"enable", 1)
-        for key, expected in (("period", period), ("duty_cycle", active),
-                              ("polarity", profile["polarity"]), ("enable", 1)):
+        for key, expected in (("period", period), ("duty_cycle", high),
+                              ("polarity", "normal"), ("enable", 1)):
             if (ch/key).read_text().strip() != str(expected):
                 raise ValueError("PWM driver request readback differs at " + key)
         ready()
@@ -145,6 +148,8 @@ def main():
         if PROFILE.exists():
             p = settings(**load(PROFILE))
             print(f"Next start: {p['hz']} Hz, {p['duty']}% active, {p['polarity']}")
+            period, high = waveform(p)
+            print(f"Requested intervals: high {high} ns, low {period-high} ns")
         else:
             print("Next start: no saved waveform")
         try:

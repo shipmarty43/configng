@@ -88,9 +88,13 @@ sudo armbian-config-zero2w --api module_h616_pwm stop
 ```
 
 The saved profile accepts 1 Hz–1 MHz (the project's 1 µs–1 s period range),
-0–100% active duty in steps of 0.01%, and normal or inversed polarity. At
-1 kHz and 37.5% the requested active interval is 375,000 ns; inversed
-makes that interval low. Kernel readback shows requested nanoseconds.
+0–100% active duty in steps of 0.01%, and normal (active-high) or inversed (active-low) **profile**. The stock vendor
+driver forces hardware polarity to normal on enable, so the helper always
+uses normal kernel polarity and computes the high interval. At 1 kHz and
+37.5% active-low it requests 625,000 ns high and 375,000 ns low. This
+preserves steady-state widths; it does not promise an inverted first edge,
+phase alignment with another channel or a fixed idle level after release.
+Kernel readback shows the requested high interval in nanoseconds.
 The unit has no automatic boot activation. Saving a new waveform leaves
 running output unchanged until restart. Stop releases only the channel
 exported by this service. The separate PWM5 Ethernet clock is untouched.
