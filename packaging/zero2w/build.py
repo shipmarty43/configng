@@ -120,6 +120,16 @@ def core_files(src, root):
         "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/")
     write(root / UNITS / "opi-sx1262-restore.service", restore)
     copy(radio / "opi-sx1262-test.conf", root / "usr/lib/tmpfiles.d/opi-sx1262-test.conf")
+    pwm = src / "hardware/h616-io/opi-zero2w-pwm.service"
+    if pwm.exists():
+        write(root / UNITS / pwm.name, pwm.read_text().replace(
+            "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
+        write(root / "DEBIAN/prerm", """#!/bin/sh
+set -eu
+if [ -d /run/systemd/system ] && systemctl is-active --quiet opi-zero2w-pwm.service; then
+    systemctl stop opi-zero2w-pwm.service
+fi
+""", 0o755)
     reload_units(root, init_test_lock=True)
 
 

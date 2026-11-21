@@ -1,0 +1,14 @@
+[Unit]
+Description=Orange Pi Zero 2W header PWM1 waveform
+[Service]
+Type=notify
+ExecStart=/usr/bin/python3 /usr/share/armbian-config/h616_pwm.py serve
+ExecStopPost=/usr/bin/python3 /usr/share/armbian-config/h616_pwm.py cleanup
+RuntimeDirectory=opi-zero2w-pwm
+RuntimeDirectoryMode=0700
+PrivateDevices=yes
+PrivateNetwork=yes
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+TimeoutStartSec=15

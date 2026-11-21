@@ -1,0 +1,35 @@
+setup() {
+    declare -gA module_options=()
+    for mod in i2c_clocks h616_uart h616_pwm; do source "$BATS_TEST_DIRNAME/../../tools/modules/system/module_$mod.sh"; done
+    calls="$BATS_TEST_TMPDIR/calls"
+    dialog_msgbox() { :; }
+    _ups_dfr_board() { return 0; }
+}
+@test 'I2C grid writes the chosen physical controller and integer request' {
+    _bus_clocks_read() {
+        case $2 in list) printf 'twi1\tenabled; dfrobot,dfr0528 @10\n' ;; status) echo 'DFR0528' ;;
+            grid) printf '24000000 Hz example\n240000\tM=9 N=0\n' ;; esac
+    }
+    _zero2w_overlay_change() { echo "$1 ${i2c_args[*]}" > "$calls"; }
+    dialog_menu() { case "$1" in 'I2C clocks') echo twi1 ;; 'twi1 SCL') echo grid ;; *) echo 240000 ;; esac; }
+    module_i2c_clocks select
+    [ "$(cat "$calls")" = 'set twi1 240000' ]
+}
+@test 'UART edit forwards complete framing' {
+    _h616_uart_cli() {
+        case $1 in list) printf 'ttyS3\tUART2 free\n' ;; status) echo '9600 baud' ;; rates) printf '9600\n115200\n' ;;
+            set) echo "$*" > "$calls" ;; esac
+    }
+    dialog_menu() { case "$1" in 'UART ports') echo ttyS3 ;; ttyS3) echo set ;; 'ttyS3 baud') echo 115200 ;;
+        'Data bits') echo 7 ;; Parity) echo even ;; 'Stop bits') echo 2 ;; esac; }
+    module_h616_uart select
+    [ "$(cat "$calls")" = 'set ttyS3 115200 7 even 2' ]
+}
+@test 'saving PWM does not start a unit' {
+    _h616_pwm_cli() { [[ $1 == status ]] || echo "$*" >> "$calls"; }
+    dialog_menu() { case "$1" in 'Header PWM1') echo set ;; *) echo inversed ;; esac; }
+    dialog_inputbox() { case "$1" in 'PWM frequency') echo 1000 ;; *) echo 37.5 ;; esac; }
+    systemctl() { echo unexpected >> "$calls"; return 1; }
+    module_h616_pwm select
+    [ "$(cat "$calls")" = 'set 1000 37.5 inversed' ]
+}

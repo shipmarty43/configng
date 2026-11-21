@@ -73,6 +73,11 @@ for unit in opi-reticulum opi-lxmf opi-meshtastic-sim opi-meshtastic-mail; do
     if systemctl is-active --quiet "$unit"; then echo "Unexpected autostart $unit"; exit 1; fi
 done
 systemd-analyze verify opi-lxmf.service opi-reticulum-radio.service opi-meshtastic-mail.service opi-sx1262-restore.service
+if [[ -e $media/io-current ]]; then
+    bash "$media/guest-io.sh"
+    echo PASS-FRESH-CURRENT
+    exit 0
+fi
 if [[ $release == current ]]; then
     armbian-config-zero2w --api module_sx1262_mode diagnostics > "$proof/diagnostics"
     grep -F 'Current owner: off' "$proof/diagnostics"

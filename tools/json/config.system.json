@@ -123,6 +123,45 @@
                             "help": "EU433, OTAA, Class A. Check configuration and service state; starting transmits. Hardware qualification is pending."
                         },
                         {
+                            "id": "I2C001",
+                            "description": "Set next-boot SCL for an enabled TWI bus and inspect its DT clients.",
+                            "short": "I2C bus clocks",
+                            "module": "module_generic",
+                            "command": [
+                                "module_i2c_clocks select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "grep -zFxq 'xunlong,orangepi-zero2w' /sys/firmware/devicetree/base/compatible",
+                            "help": "Set next-boot SCL for an enabled TWI bus and inspect its DT clients."
+                        },
+                        {
+                            "id": "UART01",
+                            "description": "Set baud, data bits, parity and stop bits on an idle H616 UART.",
+                            "short": "UART baud and framing",
+                            "module": "module_generic",
+                            "command": [
+                                "module_h616_uart select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "grep -zFxq 'xunlong,orangepi-zero2w' /sys/firmware/devicetree/base/compatible",
+                            "help": "Set baud, data bits, parity and stop bits on an idle H616 UART."
+                        },
+                        {
+                            "id": "PWM001",
+                            "description": "Save a waveform and explicitly start or stop PWM1 on physical pin 32.",
+                            "short": "Header PWM1",
+                            "module": "module_generic",
+                            "command": [
+                                "module_h616_pwm select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "grep -zFxq 'xunlong,orangepi-zero2w' /sys/firmware/devicetree/base/compatible",
+                            "help": "Save a waveform and explicitly start or stop PWM1 on physical pin 32."
+                        },
+                        {
                             "id": "SPI001",
                             "description": "Configure a Linux boot clock per SPI controller and chip select",
                             "short": "SPI device clocks",

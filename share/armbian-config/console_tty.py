@@ -135,11 +135,13 @@ def targets():
     return result
 
 
-def serial_users(name):
+def serial_users(name, ignore_fd=None):
     # A newly selected UART may already be owned by a userspace peripheral.
     ports = str(DEV / name)
     for folder in Path("/proc").glob("[0-9]*/fd"):
         for descriptor in folder.glob("*"):
+            if folder.parent.name == str(os.getpid()) and descriptor.name == str(ignore_fd):
+                continue
             try:
                 if os.readlink(descriptor) == ports:
                     yield folder.parent.name

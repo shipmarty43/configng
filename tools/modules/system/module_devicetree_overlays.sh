@@ -400,8 +400,8 @@ function _dt_overlays_write_config_unlocked() (
 		return 1
 	fi
 
-    if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-sclk-' "$conf_tmp"; then
-        _spi_clocks_validate_config "$conf_tmp" || return 1
+    if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-(sclk|twi-clock)-' "$conf_tmp"; then
+        _bus_clocks_validate_config "$conf_tmp" || return 1
     fi
 	cp -p "$conf" "$conf_bak" || return 1
 	chmod --reference="$conf" "$conf_tmp" && chown --reference="$conf" "$conf_tmp" || return 1
@@ -579,7 +579,7 @@ function _zero2w_overlay_prepare() (
 			for name in fdtget fdtoverlay; do command -v "$name" >/dev/null || { echo 'Install device-tree-compiler first.' >&2; return 1; }; done
 			for name in "${stock[@]}"; do blobs+=("$root/dtb/allwinner/overlay/$prefix-$name.dtbo"); done
 			for name in "${custom[@]}"; do
-                [[ $action == base && $name == opi-sclk-* ]] && continue
+                [[ $action == base && ( $name == opi-sclk-* || $name == opi-twi-clock-* ) ]] && continue
                 blobs+=("$root/overlay-user/$name.dtbo")
             done
 			for name in "${blobs[@]}"; do [[ -f "$name" && ! -L "$name" ]] || { echo "Missing or symlinked overlay: $name" >&2; return 1; }; done
@@ -636,8 +636,8 @@ function _zero2w_overlay_change() (
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi
-    if grep -Eq '^user_overlays=.*opi-sclk-' "$work/after"; then
-        _spi_clocks_validate_config "$work/after" || return 1
+    if grep -Eq '^user_overlays=.*opi-(sclk|twi-clock)-' "$work/after"; then
+        _bus_clocks_validate_config "$work/after" || return 1
     fi
 	if cmp -s "$work/before" "$work/after"; then echo 'Boot configuration already matches; no change.'; return 0; fi
 	cmp -s "$conf" "$work/before" || { echo 'Boot config changed concurrently.' >&2; return 1; }
@@ -651,3 +651,42 @@ function _zero2w_overlay_change() (
 	echo "Boot configuration saved. Backup: $backup"
 	echo 'Reboot to apply the saved overlay selection.'
 )
+
+# Clock overrides share boot parsing, DT composition, flock and the atomic writer.
+_bus_clocks_validate_config() (
+    local conf=$1 tmp kind
+    tmp=$(mktemp -d) || return 1
+    trap 'rm -rf "$tmp"' EXIT
+    _zero2w_overlay_prepare base "$conf" "$tmp/base" clocks '' &&
+        _zero2w_overlay_prepare compose "$conf" "$tmp/effective" clocks '' || return 1
+    for kind in spi_devices i2c_clocks; do
+        local prefix=opi-sclk-
+        [[ $kind != i2c_clocks ]] || prefix=opi-twi-clock-
+        grep -Eq "^user_overlays=.*$prefix" "$conf" || continue
+        python3 "${script_dir:-/usr/bin}/../share/armbian-config/$kind.py" "$tmp/base" "$conf" verify "$tmp/effective" "$(_ups_dfr_boot)/overlay-user" || return 1
+    done
+    return 0
+)
+
+_bus_clocks_read() (
+    local kind=$1 root conf temp
+    shift
+    root=$(_ups_dfr_boot)
+    conf="$root/armbianEnv.txt"
+    temp=$(mktemp) || return 1
+    trap 'rm -f "$temp"' EXIT
+    _zero2w_overlay_prepare base "$conf" "$temp" clocks '' &&
+        python3 "${script_dir:-/usr/bin}/../share/armbian-config/$kind.py" "$temp" "$conf" "$@"
+)
+
+_bus_clocks_prepare() {
+    local kind=$1 action=$2 before=$3 after=$4 base="${3%/*}/base.dtb"
+    shift 4
+    local tool="${script_dir:-/usr/bin}/../share/armbian-config/$kind.py"
+    if [[ $action == default-all ]]; then
+        python3 "$tool" /dev/null "$before" default-all "$after"
+        return
+    fi
+    _zero2w_overlay_prepare base "$before" "$base" clocks '' || return 1
+    python3 "$tool" "$base" "$before" "$action" "$@" "$after" "$(_ups_dfr_boot)/overlay-user"
+}

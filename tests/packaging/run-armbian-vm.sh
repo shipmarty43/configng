@@ -3,7 +3,7 @@
 # block device, network, directory export or physical peripheral is passed in.
 set -euo pipefail
 if (( $# < 4 || $# > 5 )); then
-    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current]" >&2
+    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|fresh-current|io-current]" >&2
     exit 2
 fi
 base=$(realpath "$1")
@@ -12,7 +12,7 @@ busy=$(realpath "$3")
 scenario=${5:-lifecycle}
 case "$scenario" in
     lifecycle) boots=(first reboot) ;;
-    fresh-current) boots=(fresh) ;;
+    fresh-current|io-current) boots=(fresh) ;;
     *) echo "Unknown test scenario: $scenario" >&2; exit 2 ;;
 esac
 [[ -f "$base" && -f "$busy" ]] || { echo "Regular image files required" >&2; exit 2; }
@@ -35,7 +35,13 @@ cp "$release"/ubuntu/*.deb "$work/payload/ubuntu/"
 cp "$tests"/{guest-test.sh,guest_menu.py,guest_state.py} "$work/payload/"
 cp "$release"/{SHA256SUMS,apply.sh} "$work/payload/"
 (cd "$work/payload" && sha256sum --quiet --strict -c SHA256SUMS)
-if [[ $scenario == fresh-current ]]; then touch "$work/payload/fresh-current"; fi
+serial_fixture=()
+if [[ $scenario != lifecycle ]]; then touch "$work/payload/fresh-current"; fi
+if [[ $scenario == io-current ]]; then
+    touch "$work/payload/io-current"
+    cp "$tests"/{guest-io.sh,guest-uart.py} "$tests/../../hardware/dfrobot-ups/zero2w-dfr0528.dts" "$work/payload/"
+    serial_fixture=(-chardev null,id=uarttest -device pci-serial,chardev=uarttest)
+fi
 cat > "$work/payload/drive.sh" <<'GUEST'
 #!/bin/sh
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
@@ -108,7 +114,7 @@ DT
 "$merge" -i "$work/virt.dtb" -o "$work/guest.dtb" "$work/meta.dtbo"
 for boot in "${boots[@]}"; do
  log="$work/$boot.log"
- timeout --kill-after=30s 45m "$qemu" "${vm[@]}" -chardev "file,id=c,path=$log" -device pci-serial,chardev=c \
+ timeout --kill-after=30s 45m "$qemu" "${vm[@]}" -chardev "file,id=c,path=$log" -device pci-serial,chardev=c "${serial_fixture[@]}" \
     -device qemu-xhci,id=hc -drive "if=none,id=root,file=$work/root.qcow2,format=qcow2,cache=none" \
     -device usb-storage,bus=hc.0,drive=root -drive "if=none,id=input,file=$work/input.ext4,format=raw,readonly=on,cache=none" \
     -device usb-storage,bus=hc.0,drive=input -dtb "$work/guest.dtb" -kernel "$work/Image" -initrd "$work/init.gz" \

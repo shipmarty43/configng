@@ -6,39 +6,8 @@ module_options+=(
     ["module_spi_clocks,status"]="Preview"
 )
 
-_spi_clocks_tool() {
-    python3 "${script_dir:-/usr/bin}/../share/armbian-config/spi_devices.py" "$@"
-}
-
-_spi_clocks_validate_config() (
-    local conf=$1 tmp
-    tmp=$(mktemp -d) || return 1
-    trap 'rm -rf "$tmp"' EXIT
-    _zero2w_overlay_prepare base "$conf" "$tmp/base" spi-clocks '' &&
-        _zero2w_overlay_prepare compose "$conf" "$tmp/effective" spi-clocks '' &&
-        _spi_clocks_tool "$tmp/base" "$conf" verify "$tmp/effective" "$(_ups_dfr_boot)/overlay-user"
-)
-
-_spi_clocks_read() (
-    local root conf temp
-    root=$(_ups_dfr_boot)
-    conf="$root/armbianEnv.txt"
-    temp=$(mktemp) || return 1
-    trap 'rm -f "$temp"' EXIT
-    _zero2w_overlay_prepare base "$conf" "$temp" spi-clocks '' &&
-        _spi_clocks_tool "$temp" "$conf" "$@"
-)
-
-# Called inside the shared boot-config transaction with its overlay lock held.
-_spi_clocks_prepare() {
-    local action=$1 before=$2 after=$3 base="${2%/*}/base.dtb"
-    if [[ $action == default-all ]]; then
-        _spi_clocks_tool /dev/null "$before" default-all "$after"
-        return
-    fi
-    _zero2w_overlay_prepare base "$before" "$base" spi-clocks '' || return 1
-    _spi_clocks_tool "$base" "$before" "$action" "${spi_args[@]}" "$after" "$(_ups_dfr_boot)/overlay-user"
-}
+_spi_clocks_read() { _bus_clocks_read spi_devices "$@"; }
+_spi_clocks_prepare() { _bus_clocks_prepare spi_devices "$@" "${spi_args[@]}"; }
 
 _spi_clocks_menu() {
     local bus=${1:-} cs devices desc choice status result hz data id rc=0

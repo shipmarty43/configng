@@ -2,14 +2,13 @@
 import argparse
 from dataclasses import dataclass
 import hashlib
-import os
 from pathlib import Path
 import re
 import subprocess
 import sys
-import tempfile
 
 import h616_spi_clock as clock
+from dt_clock_overlay import check_overlay, install_overlay, prop, tokens, write_selection
 
 BUSES = {"spi0": "/soc/spi@5010000", "spi1": "/soc/spi@5011000"}
 PREFIX = "opi-sclk-"
@@ -19,12 +18,6 @@ TOKEN = re.compile(r"opi-sclk-(spi[01])-cs(0|[1-9][0-9]*)-([0-9a-f]{16})-([1-9][
 CHIP_LIMIT = {"ti,cc1101": 6_500_000, "nxp,pn532": 5_000_000,
               "nordic,nrf24l01p": 8_000_000, "semtech,sx1262": 16_000_000}
 MARKER = "armbian,spi-clock-request-hz"
-
-
-def prop(blob, path, name, kind="s", default=None):
-    options = ["-d", default] if default is not None else []
-    return subprocess.check_output(["fdtget", "-t", kind, *options, blob, path, name],
-                                   text=True).strip()
 
 
 @dataclass(frozen=True)
@@ -80,13 +73,6 @@ def endpoints(blob, bus):
     return result
 
 
-def tokens(text):
-    lines = [line.split("=", 1)[1] for line in text.splitlines() if line.startswith("user_overlays=")]
-    if len(lines) > 1:
-        raise ValueError("Duplicate user_overlays entry")
-    return lines[0].split() if lines else []
-
-
 def managed(names):
     result = {}
     for name in names:
@@ -103,71 +89,6 @@ def managed(names):
     return result
 
 
-def write_selection(before, after, names):
-    value = "user_overlays=" + " ".join(names)
-    if tokens(before) == names:
-        after.write_text(before)
-    elif re.search(r"^user_overlays=", before, re.M):
-        after.write_text(re.sub(r"^user_overlays=.*$", lambda _: value, before, flags=re.M))
-    else:
-        after.write_text(before + ("" if before.endswith("\n") else "\n") + value + "\n")
-
-
-def overlay(ep, hz, folder):
-    if folder.is_symlink():
-        raise ValueError("Unexpected symlink at overlay-user")
-    folder.mkdir(exist_ok=True)
-    source = f'''/dts-v1/;
-/plugin/;
-/ {{
-    fragment@0 {{
-        target-path = "{ep.path}";
-        __overlay__ {{
-            spi-max-frequency = <{hz}>;
-            {MARKER} = <{hz}>;
-        }};
-    }};
-}};
-'''
-    data = subprocess.check_output(["dtc", "-I", "dts", "-O", "dtb"], input=source.encode())
-    path = folder / (ep.token(hz) + ".dtbo")
-    if path.is_symlink():
-        raise ValueError(f"Unexpected symlink at {path.name}")
-    if path.exists():
-        if path.read_bytes() != data:
-            raise ValueError(f"Existing SPI overlay differs: {path.name}")
-        return
-    with tempfile.NamedTemporaryFile(dir=folder, delete=False) as f:
-        try:
-            f.write(data)
-            f.flush()
-            os.fchmod(f.fileno(), 0o644)
-            os.fsync(f.fileno())
-            os.link(f.name, path)
-        finally:
-            Path(f.name).unlink(missing_ok=True)
-    fd = os.open(folder, os.O_DIRECTORY)
-    try:
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-
-
-def verify_overlay(file, ep, hz):
-    fragment = "/fragment@0"
-    edit = fragment + "/__overlay__"
-
-    def entries(flag, path):
-        return set(subprocess.check_output(["fdtget", flag, file, path], text=True).split())
-
-    allowed = {"spi-max-frequency", MARKER}
-    if (file.is_symlink() or entries("-l", "/") != {"fragment@0"} or
-            entries("-p", fragment) != {"target-path"} or prop(file, fragment, "target-path") != ep.path or
-            entries("-l", fragment) != {"__overlay__"} or entries("-l", edit) or
-            entries("-p", edit) != allowed or any(prop(file, edit, k, "u") != str(hz) for k in allowed)):
-        raise ValueError(f"Unexpected contents in managed overlay {file.name}")
-
-
 def verify(blob, effective, names, folder):
     selected = managed(names)
     buses = {bus for bus, _ in selected}
@@ -177,7 +98,7 @@ def verify(blob, effective, names, folder):
         ep = baseline[bus].get(cs)
         if not ep or name != ep.token(hz) or not clock.MIN_HZ <= hz <= ep.limit or ep.sx1262:
             raise ValueError(f"SPI route changed for {bus} CS{cs}; restore its default first")
-        verify_overlay(folder / (name + ".dtbo"), ep, hz)
+        check_overlay(folder / (name + ".dtbo"), ep.path, {"spi-max-frequency": hz, MARKER: hz})
         current = composed[bus].get(cs)
         if (not current or current.path != ep.path or current.compatible != ep.compatible or
                 current.board_hz != hz or prop(effective, ep.path, MARKER, "u", "0") != str(hz)):
@@ -255,7 +176,7 @@ def main():
         if not re.fullmatch(r"[0-9]{1,9}", args.hz) or not clock.MIN_HZ <= int(args.hz) <= ep.limit:
             raise ValueError(f"Request must be within {clock.MIN_HZ}..{ep.limit} Hz")
         rate = int(args.hz)
-        overlay(ep, rate, args.folder)
+        install_overlay(args.folder, ep.token(rate), ep.path, {"spi-max-frequency": rate, MARKER: rate})
         token = ep.token(rate)
         updated = [token if name == item else name for name in names] if item else [*names, token]
         write_selection(before, args.after, updated)

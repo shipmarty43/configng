@@ -1,0 +1,10 @@
+#!/bin/busybox sh
+export PATH=/bin:/usr/bin PYTHONDONTWRITEBYTECODE=1
+/bin/busybox --install -s /bin
+mount -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts
+python3 /lab/check.py && echo PASS-H616-IO-TWIN
+poweroff -f
