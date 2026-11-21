@@ -63,16 +63,16 @@
                         },
                         {
                             "id": "GPIO01",
-                            "description": "Inspect GPIO ownership on the Orange Pi Zero 2W header",
+                            "description": "Configure header GPIO bias, drive strength and bank IRQ debounce on Orange Pi Zero 2W and Zero 3W",
                             "short": "GPIO header",
                             "module": "module_generic",
                             "command": [
-                                "module_zero2w_gpio select"
+                                "module_header_gpio select"
                             ],
                             "status": "Preview",
                             "author": "@shipmarty43",
-                            "condition": "_zero2w_gpio_board",
-                            "help": "Show physical pin numbers, sunxi names and kernel consumers with the Zero 2W Python binding. Reading this table leaves all lines available to their owners."
+                            "condition": "_header_gpio_board >/dev/null",
+                            "help": "Inspect GPIO ownership, save a next-boot electrical profile or restore a previous selection."
                         },
                         {
                             "id": "USBR01",

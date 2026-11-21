@@ -17,6 +17,10 @@ files=()
 while read -r digest file; do
     case "$file" in
         "$1"/*.deb) files+=("$PWD/$file") ;;
+        drivers/*.deb)
+            if [[ $1 == current && $(dpkg-deb -f "$file" Package) == "opi-header-gpio-modules-$(uname -r)" ]]; then
+                files+=("$PWD/$file")
+            fi ;;
         ubuntu/*.deb)
             name=$(dpkg-deb -f "$file" Package)
             status=$(dpkg-query -W -f='${db:Status-Status}' "$name" 2>/dev/null || :)

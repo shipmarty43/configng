@@ -146,6 +146,10 @@ def core_files(src, root):
             "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
         rule = a733 / "80-opi-a733-uart.rules"
         copy(rule, root / "usr/lib/udev/rules.d" / rule.name)
+    bridge = src / "hardware/header-gpio"
+    if bridge.is_dir():
+        for name in ("Makefile", "dkms.conf", "opi_header_gpio.c"):
+            copy(bridge/name, root / "usr/src/opi-header-gpio-1.0" / name)
     reload_units(root, init_test_lock=True)
 
 

@@ -360,7 +360,7 @@ def main():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("root", type=Path)
     cli.add_argument("env", type=Path)
-    cli.add_argument("action", choices=("list","set","default","verify","grid","add-cs","remove-cs"))
+    cli.add_argument("action", choices=("list","set","default","verify","grid","add-cs","remove-cs","compose-dtb"))
     cli.add_argument("args", nargs="*")
     a = cli.parse_args()
     if a.action == "grid":
@@ -370,6 +370,13 @@ def main():
         return
     root = a.root
     before = a.env.read_text()
+    if a.action == "compose-dtb":
+        output, = a.args
+        nodes, selections = compose(root, before, Path(output))
+        verify(nodes, selections)
+        if not (environment(before).get("overlays", "").split() or tokens(before)):
+            Path(output).write_bytes((root / "dtb" / BASE).read_bytes())
+        return
     with tempfile.TemporaryDirectory() as work:
         dt = Path(work)/"composed.dtb"
         nodes, saved = compose(root, before, dt)

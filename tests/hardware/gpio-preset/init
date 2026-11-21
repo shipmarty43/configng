@@ -1,0 +1,26 @@
+#!/bin/busybox sh
+set -eu
+/bin/busybox --install -s /bin
+export PATH=/bin
+mount -t devtmpfs dev /dev
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+trap 'echo GPIO-GUEST-FAILED; sleep 1; poweroff -f' EXIT
+insmod /header_gpio_double.ko
+insmod /opi_header_gpio.ko
+test -L /sys/bus/platform/devices/preset-up/driver
+test -L /sys/bus/platform/devices/preset-down/driver
+test ! -L /sys/bus/platform/devices/preset-unsupported/driver
+test ! -L /sys/bus/platform/devices/preset-busy/driver
+test -L /sys/bus/platform/devices/preset-off/driver
+test -L /sys/bus/platform/devices/preset-drive/driver
+dmesg > /messages
+for s in 'config line=0 drive=20' 'config line=0 up=1' 'release line=0' 'release line=2' 'config line=3 down=1' 'config line=4 off=0' 'config line=5 drive=40'; do grep -q "$s" /messages; done
+if grep -Eq 'direction-input line=(0|2|3|4|5)|config line=1|config line=5 (up|down|off)=' /messages; then exit 1; fi
+/check_line /dev/gpiochip*
+dmesg | grep -q "debounce line=0 arg=244"
+echo PASS-GPIO-V2-CLAIM-AND-DEBOUNCE
+echo PASS-GPIO-PRESET-ARM64
+trap - EXIT
+sleep 1
+poweroff -f

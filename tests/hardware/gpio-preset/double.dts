@@ -1,0 +1,15 @@
+/dts-v1/; /plugin/;
+&{/} {
+    test_gpio: header-gpio-double {
+        compatible = "test,header-gpio-double";
+        gpio-controller;
+        #gpio-cells = <2>;
+        reserved-pin { gpio-hog; gpios = <1 0>; input; line-name = "existing-owner"; };
+    };
+    preset-up { compatible = "armbian,header-gpio-preset"; target-gpios = <&test_gpio 0 0>; bias-pull-up; drive-strength = <20>; };
+    preset-busy { compatible = "armbian,header-gpio-preset"; target-gpios = <&test_gpio 1 0>; bias-disable; };
+    preset-unsupported { compatible = "armbian,header-gpio-preset"; target-gpios = <&test_gpio 2 0>; drive-strength = <30>; };
+    preset-off { compatible = "armbian,header-gpio-preset"; target-gpios = <&test_gpio 4 0>; bias-disable; };
+    preset-drive { compatible = "armbian,header-gpio-preset"; target-gpios = <&test_gpio 5 0>; drive-strength = <40>; };
+    preset-down { compatible = "armbian,header-gpio-preset"; target-gpios = <&test_gpio 3 0>; bias-pull-down; };
+};

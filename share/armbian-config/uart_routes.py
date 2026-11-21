@@ -105,7 +105,7 @@ def enabled(nodes, path):
     return True
 
 
-def owners(nodes, pio=PIO, first_bank=0):
+def owners(nodes, pio=PIO, first_bank=0, *, irq_only=False):
     """Resolve pinctrl references and explicit GPIO specifiers from enabled consumers."""
     handles = {p["phandle"]: path for path, p in nodes.items() if "phandle" in p}
     claims = {}
@@ -120,7 +120,11 @@ def owners(nodes, pio=PIO, first_bank=0):
                 for handle in cells(raw):
                     group = handles.get(handle.to_bytes(4, "big"))
                     if group and group.rpartition("/")[0] == pio:
-                        for pin in strings(nodes[group].get("pins", b"")):
+                        props_group = nodes[group]
+                        function = props_group.get("function", props_group.get("allwinner,function", b""))
+                        if irq_only and not set(strings(function)) & {"irq", "eint"}:
+                            continue
+                        for pin in strings(props_group.get("pins", props_group.get("allwinner,pins", b""))):
                             claim(pin, path)
             elif key in ("interrupts", "interrupts-extended"):
                 specs = cells(raw)
@@ -147,7 +151,16 @@ def owners(nodes, pio=PIO, first_bank=0):
                         bank, line = specs[i:i+2]
                         claim(f"P{chr(65+first_bank+bank)}{line}", path)
                     i += count
-            elif key in ("gpio", "gpios") or key.endswith(("-gpios", "-gpio")):
+            elif (key in ("gpio", "gpios") or key.endswith(("-gpios", "-gpio")) or
+                  ((key.endswith(("_gpio", "_gpios", "_hostwake", "_pwdn")) or key in ("bt_rst_n", "bt_wake", "wlan_regon"))
+                   and len(raw) >= 16 and raw[:4] in handles and "#gpio-cells" in nodes[handles[raw[:4]]])):
+                if irq_only:
+                    parent = path.rpartition("/")[0] or "/"
+                    consumer = strings(props.get("compatible", b"")) + strings(nodes[parent].get("compatible", b""))
+                    if not ({"gpio-keys", "pps-gpio"} & set(consumer)
+                            or key.replace("_", "-").split(",")[-1].startswith(("irq-", "interrupt-", "int-", "cd-", "wakeup-"))
+                            or key.endswith("_hostwake")):
+                        continue
                 spec = cells(raw)
                 if "gpio-hog" in props:
                     if path.rpartition("/")[0] == pio:
