@@ -4,7 +4,7 @@ Open **System → Hardware → A733 header buses** (`A733IO`) in this configng f
 
 | Route | Physical header | Settings |
 |---|---|---|
-| SPI2 | CS0 11, SCLK 13, MOSI 5, MISO 3 | Install the header mux and controller route. The base tree has no SPI2 client. Once a CS0 child has its real DT binding, select `spi2-cs0` to lower its maximum frequency and choose mode 0–3. The request is bounded by the declared peripheral limit. This route conflicts with UART2 and I²C0. |
+| SPI2 | SCLK 13, MOSI 5, MISO 3. CS0 11, CS1 7, CS2 12, CS3 35 | Choose extra native selects independently. For each declared peripheral select `spi2-cs0` through `spi2-cs3` to set a frequency ceiling and mode 0–3. The cap comes from that peripheral's own DT binding. |
 | SPI3 | SCLK 23, MOSI 19, MISO 21, CS0 24, CS1 26 | Each CS has its own frequency ceiling and SPI mode 0–3. Stock spidev endpoints request 500 kHz. The vendor driver minimum is 187,500 Hz and the silicon limit is 100 MHz. Select a ceiling supported by the attached peripheral. |
 | I²C0 / 1 / 2 / 3 | SCL/SDA 5/3, 40/38, 23/19, 21/26 | Select 100 or 400 kHz for the entire bus. |
 | UART2 / 6 / 7 | TX/RX 11/13, 24/23, 16/18 | Enable the header route and save baud, data bits, parity and stop bits. UART7 is the vendor name for S_UART0. |
@@ -25,6 +25,25 @@ armbian-config-zero2w --api module_a733_io rollback change.ID
 ```
 
 The grid takes a parent clock in Hz. For SPI3 the A733 CCU at offset 0x0f20 has two 5-bit linear divisors. For TWI the grid includes the M=0, 40% duty special case. UART uses a 16-bit divisor with 16× oversampling. Calculated grid entries and DT limits describe requested or nominal clocks. Actual clock selection and signal integrity require a measurement on the header. [A733 manuals and board schematics](../../tests/hardware/zero3w-port.md) · [Vendor CCU](https://github.com/orangepi-xunlong/linux-orangepi/blob/2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f/bsp/drivers/clk/sunxi-ng/ccu-sun60iw2.c) · [Vendor SPI limits](https://github.com/orangepi-xunlong/linux-orangepi/blob/2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f/bsp/drivers/spi-ng/spi-sunxi.h)
+
+### Extra SPI2 selects and UART handshakes
+
+CS1 uses PB4, CS2 uses PB5 and CS3 uses PB6. The vendor SPI driver accepts up to four native selects. Sparse selections mux only the chosen pads. With CS0 and CS3 selected, the controller advertises four addressable indices and the configurator rejects active children at indices 1 and 2. GPIO chip-select remapping and duplicate client addresses also fail validation. A device overlay supplies the actual chip binding. [Vendor SPI driver](https://github.com/orangepi-xunlong/linux-orangepi/blob/2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f/bsp/drivers/spi-ng/spi-sunxi.c) · [SPI controller limits](https://github.com/orangepi-xunlong/linux-orangepi/blob/2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f/bsp/drivers/spi-ng/spi-sunxi.h)
+
+The reference DTB routes the vendor pin-test device's wake IRQ to PB6. To use CS3 select **Vendor pin-test IRQ and shared PB6 → Disable the vendor test device at next boot**, then add CS3. The two actions have separate backups. Releasing a CS requires clearing any clock override and removing or disabling its client. Restore the vendor test device after releasing CS3.
+
+```sh
+armbian-config-zero2w --api module_a733_io add-cs 1
+armbian-config-zero2w --api module_a733_io set pinctrl-test release
+armbian-config-zero2w --api module_a733_io add-cs 3
+# Alternative: set the complete selected subset in one boot change.
+armbian-config-zero2w --api module_a733_io set spi2 on 1 2 3
+# Requires an enabled CS2 client with a declared limit of at least 500 kHz.
+armbian-config-zero2w --api module_a733_io set spi2-cs2 500000 0
+armbian-config-zero2w --api module_a733_io set uart6 rtscts
+```
+
+UART2 uses physical TX/RX/RTS/CTS **11/13/5/3** and UART6 uses **24/23/19/21**. Enabling UART6 first requires freeing PE0 from the camera. The active and sleep groups include all four pads. The idle-tty restore worker enables and reads back Linux `CRTSCTS` for the managed route. With no saved framing it preserves the tty's baud and character format. Select `set uartN on` for the two-wire route or roll back the boot change. A serial application that configures its own termios must also request RTS/CTS. [Cross-board DTB and PTY checks](../../tests/hardware/header-cs-rtscts.md)
 
 ## Offline acceptance
 

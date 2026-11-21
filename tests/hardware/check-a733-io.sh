@@ -26,6 +26,15 @@ reject() {
     if api "$@" >"$fixture_dir/rejection" 2>&1; then echo "Unexpected success: $*" >&2; exit 1; fi
     cmp "$envfile" "$fixture_dir/check"
 }
+compose_current() {
+    PYTHONPATH="$repo/share/armbian-config" python3 -B - "$root" "$envfile" "$fixture_dir/composed.dtb" <<'PYDT'
+from pathlib import Path
+import sys
+from a733_io import compose
+root, env, output = map(Path, sys.argv[1:])
+compose(root, env.read_text(), output)
+PYDT
+}
 api list
 api set spi2 on
 reject set spi2-cs0 400000 0
@@ -38,6 +47,107 @@ api default spi2-cs0
 reject set uart2 on
 reject set i2c0 100000
 api default spi2
+# Native selects can be sparse. Selecting CS3 must leave CS1/PB4 available to PWM0.
+reject add-cs 3
+grep -q 'PB6.*pinctrl_test' "$fixture_dir/rejection"
+api set pinctrl-test release
+api add-cs 3
+compose_current
+sp=/soc@3000000/spi@2542000
+gp=/soc@3000000/pinctrl@2000000
+[[ $(fdtget -t u "$fixture_dir/composed.dtb" "$sp" sunxi,spi-num-cs) == 4 ]]
+[[ $(fdtget "$fixture_dir/composed.dtb" "$gp/opi-spi2-pins" pins) == 'PB0 PB1 PB2 PB3 PB6' ]]
+reject default pinctrl-test
+api list | grep 'spi2.*CS3 pin 35'
+_dt_overlays_write_config "$envfile" false 'pwm0'
+reject add-cs 1
+grep -q 'PB4 also claimed' "$fixture_dir/rejection"
+_dt_overlays_write_config "$envfile" false ''
+api add-cs 1
+# The stock PWM1 uses PD1; the documented PB5 alternate collides only with CS2.
+printf '/dts-v1/; /plugin/; &pwm0_1_pins_active {pins="PB5";}; &pwm0_1_pins_sleep {pins="PB5";}; &pwm0_1 {status="okay";};' |
+    dtc -q -@ -I dts -O dtb -o "$root/overlay-user/test-pwm1-pb5.dtbo"
+sed -i '/^user_overlays=/s/$/ test-pwm1-pb5/' "$envfile"
+reject add-cs 2
+grep -q 'PB5 also claimed' "$fixture_dir/rejection"
+sed -i 's/ test-pwm1-pb5//' "$envfile"
+api add-cs 2
+compose_current
+for group in opi-spi2-pins opi-spi2-sleep; do
+    [[ $(fdtget "$fixture_dir/composed.dtb" "$gp/$group" pins) == 'PB0 PB1 PB2 PB3 PB4 PB5 PB6' ]]
+done
+cp "$envfile" "$fixture_dir/four-cs"
+if _dt_overlays_write_config "$envfile" false pwm8; then exit 1; fi
+cmp "$envfile" "$fixture_dir/four-cs"
+reject set i2c0 400000
+reject add-cs 4
+# Declare three synthetic endpoints on the genuine controller. Each ceiling is independent.
+printf '/dts-v1/; /plugin/; &spi2 { sensor@1 {reg=<1>; compatible="test,cs1"; spi-max-frequency=<1000000>;}; sensor@2 {reg=<2>;compatible="test,cs2";spi-max-frequency=<2000000>;}; sensor@3 {reg=<3>;compatible="test,cs3";spi-max-frequency=<4000000>;};};' |
+    dtc -q -@ -I dts -O dtb -o "$root/overlay-user/test-extra-clients.dtbo"
+sed -i '/^user_overlays=/s/$/ test-extra-clients/' "$envfile"
+for cs in 1 2 3; do api set "spi2-cs$cs" "$((cs * 500000))" "$cs"; done
+status=$(api list)
+for cs in 1 2 3; do
+    grep -F "CS$cs sensor@$cs $((cs * 500000)) Hz mode $cs" <<< "$status"
+    reject remove-cs "$cs"
+done
+reject set spi2-cs1 1000001 1
+cp "$envfile" "$fixture_dir/before-cs-change"
+msg=$(api set spi2-cs2 250000 0)
+backup=${msg#*Backup: }; backup=${backup%%$'\n'*}
+api rollback "${backup##*/}"
+cmp "$fixture_dir/before-cs-change" "$envfile"
+for cs in 1 2 3; do api default "spi2-cs$cs"; done
+reject remove-cs 1  # an enabled CS1 client still needs the physical pin
+sed -i 's/ test-extra-clients//' "$envfile"
+api remove-cs 1
+api remove-cs 2
+api remove-cs 3
+api default pinctrl-test
+api default spi2
+# The shared stock overlay editor must also guard the reverse order of UART/TWI changes.
+api set uart2 rtscts
+compose_current
+python3 -B "$repo/tests/hardware/check-uart-flow.py" a733 uart2 "$fixture_dir/composed.dtb"
+api list | grep 'uart2.*RTS/CTS 5/3'
+reject set i2c0 100000
+cp "$envfile" "$fixture_dir/with-flow"
+if _dt_overlays_write_config "$envfile" false i2c0; then exit 1; fi
+cmp "$envfile" "$fixture_dir/with-flow"
+msg=$(api set uart2 on)
+backup=${msg#*Backup: }; backup=${backup%%$'\n'*}
+api list | grep 'uart2.*enabled' | grep -vq RTS/CTS
+api rollback "${backup##*/}"
+cmp "$envfile" "$fixture_dir/with-flow"
+api default uart2
+api set i2c0 100000
+reject set uart2 rtscts
+api set uart2 on  # its TX/RX alone use PB0/1
+api default uart2
+api default i2c0
+reject set uart6 rtscts  # camera MCLK owns PE0
+api set camera release
+# PE3 is also a legal alternate pad for PWM0. Start with two-wire UART6.
+api set uart6 on
+printf '/dts-v1/; /plugin/; &pwm0_0_pins_active {pins="PE3";}; &pwm0_0_pins_sleep {pins="PE3";}; &pwm0_0 {status="okay";};' |
+    dtc -q -@ -I dts -O dtb -o "$root/overlay-user/test-pwm0-pe3.dtbo"
+sed -i '/^user_overlays=/s/$/ test-pwm0-pe3/' "$envfile"
+reject set uart6 rtscts
+grep -q 'PE3 also claimed' "$fixture_dir/rejection"
+sed -i 's/ test-pwm0-pe3//' "$envfile"
+api set uart6 rtscts
+compose_current
+python3 -B "$repo/tests/hardware/check-uart-flow.py" a733 uart6 "$fixture_dir/composed.dtb"
+api list | grep 'uart6.*RTS/CTS 19/21'
+reject set i2c3 100000
+reject set spi3-cs0 500000 0
+api set uart6 on  # PE3 is free on the two-wire route
+api set i2c3 400000
+reject set uart6 rtscts
+api default i2c3
+api default uart6
+api default camera
+reject set uart7 rtscts
 reject set spi3-cs0 187499 0
 reject set spi3-cs0 500000 0
 grep -q 'PE0.*vind' "$fixture_dir/rejection"
@@ -98,4 +208,4 @@ echo overlays=uart6 >> "$envfile"
 reject set spi3-cs0 500000 0
 printf '%s\0' xunlong,orangepi-4-pro arm,sun60iw2p1 > "$fixture_dir/live/compatible"
 reject set uart2 on
-echo 'PASS A733 route, clock, mode, identity, overlap and rollback checks'
+echo 'PASS A733 four native SPI2 selects, two UART handshake routes, pin exclusions and rollback'

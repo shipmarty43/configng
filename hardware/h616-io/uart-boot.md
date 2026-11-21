@@ -15,9 +15,7 @@ configured before its first boot. Reboot when ready to activate the overlay.
 
 The overlay controls manage the four optional TX/RX pairs. UART0 is enabled
 by the board DT; its console assignment stays in CTTY01. UART1 is outside
-the documented 40-pin UART choices. The boot profiles preserve flow control
-flags. Alternative pin groups and four-wire configurations remain under
-their own overlays. [Orange Pi Zero 2W user manual v1.1, printed pp. 169–170 (mirror)](https://www.nikom.biz/pic_info/A704017/OrangePi_Zero2w_H618_User-Manual_v1.1.pdf)
+the documented 40-pin UART choices. The two-wire profiles preserve existing flow-control flags. UART2, UART3 and UART4 also offer four-wire boot routes with native RTS/CTS. [Orange Pi Zero 2W user manual v1.1, printed pp. 169–170 (mirror)](https://www.nikom.biz/pic_info/A704017/OrangePi_Zero2w_H618_User-Manual_v1.1.pdf)
 
 ```sh
 sudo armbian-config-zero2w --api module_h616_uart routes
@@ -60,3 +58,18 @@ reordering of otherwise identical unique assignments (Armbian moves
 `usbstoragequirks` at boot), and refuses changed values or added entries. The separate
 runtime `rollback ttySx` undoes the last applied framing if the tty still
 matches its saved state.
+
+## Hardware flow control
+
+In UART01 choose the port under **Header overlays and saved boot settings** and select its four-wire route. The numbers are physical 40-pin header positions in TX/RX/RTS/CTS order.
+
+| UART | SoC pads | Header |
+|---|---|---|
+| UART2 PI | PI5/PI6/PI7/PI8 | 15/22/5/3 |
+| UART2 PH | PH5/PH6/PH7/PH8 | 24/23/19/21 |
+| UART3 PI | PI9/PI10/PI11/PI12 | 28/27/32/33 |
+| UART4 PI | PI13/PI14/PI15/PI16 | 7/16/31/37 |
+
+Use `module_h616_uart enable-rtscts uart2` for PI and `enable-rtscts-ph uart2` for PH. Use `enable-rtscts uart3` or `enable-rtscts uart4` for the other pairs. Use the existing `enable uartN` to return to two wires, or `boot-rollback change.ID` for the previous selection. DFR0528's I²C bus shares the PI UART2 handshake pins. The PH option shares SPI1's pins. UART3's handshake uses PWM1/PWM2 pins; UART4 TX/RX uses PWM3/PWM4 pins.
+
+On tty discovery the worker checks the live four-pad mux and the tty owner before enabling and reading back `CRTSCTS`. With no saved baud/format it retains the tty's settings. Applications may subsequently set their own termios. [Validation details](../../tests/hardware/header-cs-rtscts.md)

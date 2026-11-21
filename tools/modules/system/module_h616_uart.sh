@@ -1,7 +1,7 @@
 module_options+=(
     ["module_h616_uart,feature"]="module_h616_uart"
     ["module_h616_uart,desc"]="Configure an idle Zero 2W UART"
-    ["module_h616_uart,example"]="select list rates status set rollback routes enable disable backups boot-rollback save saved forget restore-profile"
+    ["module_h616_uart,example"]="select list rates status set rollback routes enable enable-rtscts enable-rtscts-ph disable backups boot-rollback save saved forget restore-profile"
     ["module_h616_uart,group"]="Hardware"
     ["module_h616_uart,status"]="Preview"
 )
@@ -26,7 +26,7 @@ module_h616_uart() {
     case "${1:-select}" in
         list|rates|status|set|rollback|save|saved|forget|restore-profile) _h616_uart_cli "$@"; return ;;
         routes) _uart_routes_list; return ;;
-        enable|disable)
+        enable|enable-rtscts|enable-rtscts-ph|disable)
             [[ $# == 2 ]] && _ups_dfr_board || return 2
             _zero2w_overlay_change "$1" uart _uart_prepare; return ;;
         backups)
@@ -75,7 +75,12 @@ _uart_boot_menu() {
         data=$(_h616_uart_cli saved "$port" 2>&1) || { dialog_msgbox 'UART profile' "$data" 10 72; return 1; }
         options=()
         if [[ $port != uart0 ]]; then options+=(enable 'Enable header TX/RX on next boot' disable 'Remove header overlay on next boot'); fi
-        action=$(dialog_menu "$port boot settings" "$data" 16 76 6 -- "${options[@]}" \
+        case "$port" in
+            uart2) options+=(enable-rtscts 'TX/RX/RTS/CTS on 15/22/5/3 (PI)' enable-rtscts-ph 'TX/RX/RTS/CTS on 24/23/19/21 (PH)') ;;
+            uart3) options+=(enable-rtscts 'TX/RX/RTS/CTS on 28/27/32/33') ;;
+            uart4) options+=(enable-rtscts 'TX/RX/RTS/CTS on 7/16/31/37') ;;
+        esac
+        action=$(dialog_menu "$port boot settings" "$data" 18 78 7 -- "${options[@]}" \
             save 'Save baud and framing for future boots' forget 'Clear saved profile') || return 0
         if [[ $action == save ]]; then
             data=$(_uart_get_framing "$port") || return 0

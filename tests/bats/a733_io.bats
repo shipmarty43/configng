@@ -35,3 +35,21 @@ setup() {
     _a733_menu
     [ ! -e "$calls" ]
 }
+
+@test 'A733 menu adds only the selected extra native CS' {
+    dialog_menu() {
+        case "$1:$2" in
+            'Orange Pi Zero 3W header:'*) echo spi2 ;;
+            'SPI2:Native chip-select pin') echo 3 ;;
+            'SPI2:'*) echo add-cs ;;
+            *) return 1 ;;
+        esac
+    }
+    _a733_menu
+    [ "$(cat "$calls")" = 'add-cs 3' ]
+}
+@test 'A733 menu enables the RTS/CTS mux for the selected UART' {
+    dialog_menu() { if [[ $1 == 'Orange Pi Zero 3W header' ]]; then echo uart2; else echo rtscts; fi; }
+    _a733_menu
+    [ "$(cat "$calls")" = 'set uart2 rtscts' ]
+}

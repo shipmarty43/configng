@@ -14,7 +14,7 @@ import termios
 
 from console_tty import serial_users
 from h616_settings import load, save
-from uart_routes import ROUTES
+from uart_routes import FLOW, FLOW_CONFLICTS, FLOW_PROP, ROUTES
 
 SYS = Path("/sys")
 BACKUPS = Path("/run/armbian-config/uart")
@@ -63,8 +63,9 @@ def busy(name, ignore_fd=None):
     return "open by PID " + ", ".join(pids) if pids else ""
 
 
-def fields(attrs):
-    return [attrs[2] & MASK, attrs[4], attrs[5]]
+def fields(attrs, manage_flow=False):
+    mask = MASK | termios.CRTSCTS if manage_flow else MASK
+    return [attrs[2] & mask, attrs[4], attrs[5]]
 
 
 def framing(baud, bits, parity, stops):
@@ -83,19 +84,20 @@ def framing(baud, bits, parity, stops):
     return [flags, SPEEDS[baud], SPEEDS[baud]]
 
 
-def apply(fd, target):
+def apply(fd, target, manage_flow=False):
     before = termios.tcgetattr(fd)
     new = before.copy()
-    new[2] = (new[2] & ~MASK) | target[0]
+    mask = MASK | termios.CRTSCTS if manage_flow else MASK
+    new[2] = (new[2] & ~mask) | target[0]
     new[4:6] = target[1:]
     try:
         termios.tcsetattr(fd, termios.TCSANOW, new)
-        if fields(termios.tcgetattr(fd)) != target:
+        if fields(termios.tcgetattr(fd), manage_flow) != target:
             raise ValueError("UART driver did not accept the requested framing")
     except (termios.error, OSError, ValueError):
         termios.tcsetattr(fd, termios.TCSANOW, before)
         raise
-    return fields(before)
+    return fields(before, manage_flow)
 
 
 def describe(state):
@@ -111,7 +113,7 @@ class PortBusy(ValueError):
     pass
 
 
-def configure(name, node, action, target=None, *, label=None):
+def configure(name, node, action, target=None, *, label=None, flow=None):
     label = label or f"UART{NODES[node.name]}"
     reason = busy(name) or reserved(name)
     if reason:
@@ -131,24 +133,32 @@ def configure(name, node, action, target=None, *, label=None):
         exclusive = True
         if reason := busy(name, fd) or reserved(name):
             raise PortBusy(f"UART became busy: {reason}")
-        current = fields(termios.tcgetattr(fd))
+        attrs = termios.tcgetattr(fd)
         backup = BACKUPS / (name + ".json")
         if action == "status":
-            print(f"{label}: {describe(current)} (driver settings)")
+            flow_state = "on" if attrs[2] & termios.CRTSCTS else "off"
+            print(f"{label}: {describe(fields(attrs))}, RTS/CTS {flow_state} (driver settings)")
             return
         if action == "rollback":
             saved = load(backup)
-            if saved["node"] != node.name or saved["after"] != current:
+            manage_flow = saved.get("manage_flow", False)
+            if saved["node"] != node.name or saved["after"] != fields(attrs, manage_flow):
                 raise ValueError("UART route or settings changed since the saved change")
-            apply(fd, saved["before"])
+            apply(fd, saved["before"], manage_flow)
             backup.unlink()
-        elif current != target:
-            before = apply(fd, target)
-            try:
-                save(backup, {"node": node.name, "before": before, "after": target})
-            except OSError:
-                apply(fd, before)
-                raise
+        else:
+            manage_flow = flow is not None
+            target = list(target) if target is not None else fields(attrs)
+            if flow:
+                target[0] |= termios.CRTSCTS
+            if fields(attrs, manage_flow) != target:
+                before = apply(fd, target, manage_flow)
+                try:
+                    save(backup, {"node": node.name, "before": before, "after": target,
+                                  "manage_flow": manage_flow})
+                except OSError:
+                    apply(fd, before, manage_flow)
+                    raise
         print(describe(fields(termios.tcgetattr(fd))))
     finally:
         try:
@@ -191,6 +201,10 @@ def header_pins(node, port):
         if group is None or (group/"function").read_bytes() != port.encode() + b"\0":
             return False
         pins += (group/"pins").read_bytes().rstrip(b"\0").decode("ascii").split("\0")
+    if (node / FLOW_PROP).exists():
+        return ((node / FLOW_PROP).read_bytes() == b"h618\0" and (node/"uart-has-rtscts").is_file()
+                and not any((node/key).exists() for key in FLOW_CONFLICTS)
+                and any(tuple(pins) == pads for (name, _), (pads, _) in FLOW.items() if name == port))
     return pins == list(ROUTES[port][:2])
 
 
@@ -228,10 +242,16 @@ def restore_profile(name):
     if port not in ROUTES:
         return
     path = PROFILES / (port + ".json")
+    flow = (node / FLOW_PROP).exists()
+    if not flow and not path.exists():
+        return
     with profile_lock(port):
-        if not path.exists():
+        target = None
+        if path.exists():
+            record = read_profile(path, port)
+            target = framing(record["baud"], record["bits"], record["parity"], record["stops"])
+        elif not flow:
             return
-        record = read_profile(path, port)
         if not header_pins(node, port):
             raise ValueError(f"{port}: saved header route does not match live DT")
         reason = busy(name) or reserved(name)
@@ -239,7 +259,10 @@ def restore_profile(name):
             print(f"Skipped {port} on {name}: {reason}")
             return
         try:
-            configure(name, node, "set", framing(record["baud"], record["bits"], record["parity"], record["stops"]))
+            if flow:
+                configure(name, node, "set", target, flow=True)
+            else:
+                configure(name, node, "set", target)
         except PortBusy as exc:
             print(f"Skipped {port} on {name}: {exc}")
             return
@@ -311,7 +334,13 @@ def main():
     if not node:
         raise ValueError("Expected an enabled H616 UART; see list")
     target = framing(args.baud, args.bits, args.parity, args.stops) if args.action == "set" else None
-    configure(args.tty, node, args.action, target)
+    if args.action == "set" and (node/FLOW_PROP).exists():
+        port = f"uart{NODES[node.name]}"
+        if port not in ROUTES or not header_pins(node, port):
+            raise ValueError("RTS/CTS route does not match the live header mux")
+        configure(args.tty, node, args.action, target, flow=True)
+    else:
+        configure(args.tty, node, args.action, target)
 
 
 if __name__ == "__main__":

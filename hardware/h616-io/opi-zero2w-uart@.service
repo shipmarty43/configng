@@ -2,7 +2,8 @@
 Description=Restore saved Zero 2W UART framing on %I
 BindsTo=dev-%i.device
 After=dev-%i.device
-ConditionPathExistsGlob=/etc/armbian-config/uart/uart*.json
+ConditionPathExistsGlob=|/etc/armbian-config/uart/uart*.json
+ConditionPathExistsGlob=|/sys/firmware/devicetree/base/soc/serial@*/armbian-config,rtscts
 
 [Service]
 Type=oneshot

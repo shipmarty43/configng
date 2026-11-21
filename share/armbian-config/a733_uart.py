@@ -6,7 +6,7 @@ import re
 import sys
 import termios
 
-from a733_io import PIO, R_PIO, ROUTES, SOC
+from a733_io import FLOW_PROP, PIO, R_PIO, ROUTES, SOC, UART_FLOW
 import h616_uart as serial
 from h616_settings import save
 
@@ -32,6 +32,13 @@ def identify(name, sysroot=Path("/sys")):
             if ((node/"compatible").read_bytes().split(b"\0")[0] != b"allwinner,uart-v100" or
                     (node/"status").is_file() and (node/"status").read_bytes().rstrip(b"\0") not in (b"ok", b"okay")):
                 return None
+            if (node/FLOW_PROP).exists():
+                if (port not in UART_FLOW or (node/FLOW_PROP).read_bytes() != b"a733\0"
+                        or not (node/"uart-has-rtscts").is_file()
+                        or any((node/key).exists() for key in serial.FLOW_CONFLICTS)
+                        or (node/(port+"_type")).read_bytes() != (4).to_bytes(4, "big")):
+                    return None
+                pins += " " + UART_FLOW[port][0]
             handle = (node/"pinctrl-0").read_bytes()
             if len(handle) != 4:
                 return None
@@ -49,18 +56,26 @@ def restore(name):
     if match is None:
         return
     port, node = match
+    path = PROFILES / (port + ".json")
+    flow = (node / FLOW_PROP).exists()
+    if not flow and not path.exists():
+        return
     with serial.profile_lock("a733-" + port):
-        path = PROFILES / (port + ".json")
-        if not path.exists():
+        target = None
+        if path.exists():
+            record = serial.read_profile(path, port)
+            target = serial.framing(record["baud"], record["bits"], record["parity"], record["stops"])
+        elif not flow:
             return
-        record = serial.read_profile(path, port)
         reason = serial.busy(name) or serial.reserved(name)
         if reason:
             print(f"Skipped {port}: {reason}")
             return
-        target = serial.framing(record["baud"], record["bits"], record["parity"], record["stops"])
         try:
-            serial.configure(name, node, "set", target, label=port.upper())
+            if flow:
+                serial.configure(name, node, "set", target, label=port.upper(), flow=True)
+            else:
+                serial.configure(name, node, "set", target, label=port.upper())
         except serial.PortBusy as err:
             print(f"Skipped {port}: {err}")
         except OSError as err:

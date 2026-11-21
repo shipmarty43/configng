@@ -400,6 +400,9 @@ function _dt_overlays_write_config_unlocked() (
 		return 1
 	fi
 
+    if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-a733-' "$conf_tmp"; then
+        _a733_board && _a733_io_cli "$conf_tmp" verify >/dev/null || return 1
+    fi
     if [[ $is_pi != true ]]; then _zero2w_check_pwm "$conf_tmp" || return 1; fi
     if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$conf_tmp"; then
         _uart_overlay_validate "$conf_tmp" || return 1

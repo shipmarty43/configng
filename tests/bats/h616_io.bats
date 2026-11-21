@@ -76,3 +76,14 @@ setup() {
     module_h616_pwm select
     [ "$(cat "$calls")" = 'stop opi-zero2w-pwm@3.service' ]
 }
+
+@test 'Zero 2W UART2 PH handshake is a distinct boot route' {
+    _uart_routes_list() { printf 'uart2\tTX/RX 15/22; disabled\n'; }
+    _h616_uart_cli() { [[ $1 == saved ]] && echo 'No saved boot profile'; }
+    dialog_menu() {
+        case "$1" in 'UART boot configuration') echo uart2 ;; 'uart2 boot settings') echo enable-rtscts-ph ;; esac
+    }
+    module_h616_uart() { echo "$*" > "$calls"; }
+    _uart_boot_menu
+    [ "$(cat "$calls")" = 'enable-rtscts-ph uart2' ]
+}

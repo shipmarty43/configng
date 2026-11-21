@@ -1,1 +1,2 @@
 ACTION=="add", SUBSYSTEM=="tty", KERNEL=="ttyS[0-9]*", TEST=="/etc/armbian-config/a733-uart", TAG+="systemd", ENV{SYSTEMD_WANTS}+="opi-a733-uart@%k.service"
+ACTION=="add", SUBSYSTEM=="tty", KERNEL=="ttyS[0-9]*", ATTRS{of_node/armbian-config,rtscts}=="a733", TAG+="systemd", ENV{SYSTEMD_WANTS}+="opi-a733-uart@%k.service"
