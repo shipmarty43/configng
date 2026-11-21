@@ -1,9 +1,12 @@
 # Orange Pi Zero 2W backlog
 
 Stable numbering from the last numbered task list in the project conversation.
-Updated 2026-11-20. Earlier lists used different numbering; use these names with
+Updated 2026-11-21. Earlier lists used different numbering; use these names with
 numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 `codex/display-controls`; its remaining limitations are retained separately.
+
+Item 5 now includes [two-way signed LXMF delivery over the SX1262 twin](../../hardware/reticulum-sx1262/README.md#bidirectional-lxmf-on-the-sx1262-twin).
+Both senders received delivery proofs. The board's Reticulum profile remains receive-only.
 
 | ID | Scope | Remaining acceptance |
 |---|---|---|

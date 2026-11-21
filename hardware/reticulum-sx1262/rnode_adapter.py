@@ -15,7 +15,7 @@ import sx1262_profile as board
 import sx1262_spi
 from rnode_wire import Decoder, kiss
 from rnode_metrics import Publisher, RxMetrics
-from sx1262_rx import FREQUENCY, BANDWIDTH, SF, CR, PREAMBLE, Receiver
+from sx1262_rx import FREQUENCY, BANDWIDTH, SF, CR, PREAMBLE, Receiver, TransmitError
 
 ADDRESS = ("127.0.0.1", 7633)
 POLICY = Path("/etc/systemd/system/opi-reticulum-radio.service.d/50-devices.conf")
@@ -66,7 +66,7 @@ class Session:
                 return kiss(ERROR,b"\x02")
             try:
                 self.radio.send(data)
-            except PermissionError:
+            except (PermissionError, TransmitError):
                 return kiss(ERROR,b"\x02")
             return kiss(0x0f,b"\x01")
         return b""

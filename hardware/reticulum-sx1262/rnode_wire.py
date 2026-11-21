@@ -75,7 +75,7 @@ class Reassembly:
 
 
 def split_frames(payload, sequence):
-    """Normal-mode RNode frames for virtual peer interoperability tests."""
+    """Encode one RNode normal-mode datagram into one or two LoRa frames."""
     if not 1 <= len(payload) <= MTU or not 0 <= sequence < 16:
         raise ValueError("Invalid RNode packet size or sequence")
     header = bytes([(sequence << 4) | int(len(payload) > 254)])

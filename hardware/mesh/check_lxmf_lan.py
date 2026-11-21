@@ -49,6 +49,7 @@ def send(router, source, target, role, run):
     if result.state != LXMF.LXMessage.DELIVERED or result.method != LXMF.LXMessage.DIRECT:
         raise RuntimeError("LXMF did not confirm direct delivery")
     print(f"DELIVERED {message.hash.hex()}", flush=True)
+    return message.hash
 
 
 def receive(inbox, state, source, target, role, run, timeout):
@@ -75,6 +76,7 @@ def receive(inbox, state, source, target, role, run, timeout):
     if not stored or not stored.signature_validated or stored.hash != message.hash:
         raise RuntimeError("Stored message failed verification")
     print(f"RECEIVED {stored.hash.hex()} (signed, UTF-8 matched, inbox reopened)", flush=True)
+    return stored.hash
 
 
 def exchange(args):

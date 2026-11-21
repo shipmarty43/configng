@@ -13,7 +13,8 @@ import time
 import RNS
 from RNS.Interfaces.RNodeInterface import RNodeInterface
 from RNS.vendor.configobj import ConfigObj
-from check_interop import Model, wait_for
+from check_interop import wait_for
+from sx1262_model import Model
 import rnode_adapter
 from rnode_adapter import ADDRESS, serve
 from rnode_link import NAME
@@ -38,7 +39,7 @@ def check(hold, patched_host):
     with tempfile.TemporaryDirectory() as tmp, socket.create_server(ADDRESS) as listener:
         Path(tmp, "config").write_text("[reticulum]\n  share_instance = no\n[interfaces]\n")
         RNS.Reticulum(configdir=tmp)
-        thread = threading.Thread(target=serve, args=(model, listener, stop.is_set, publisher))
+        thread = threading.Thread(target=serve, args=(model.radio, listener, stop.is_set, publisher))
         thread.start()
         iface = None
         try:

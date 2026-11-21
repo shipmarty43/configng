@@ -65,22 +65,17 @@ class Reception:
     snr_quarters: int | None = None
 
 
-class Receiver:
+class TransmitError(OSError):
+    """A datagram failed and receive mode was successfully restored."""
+
+
+class Radio:
     # Intentionally no SetTx, CAD, write FIFO, PA selection or test-wave command.
     COMMANDS = frozenset((0x80,0xc0,0x89,0x98,0x96,0x8a,0x11,0x9d,0x86,0x8b,0x8c,
                           0x1d,0x0d,0x8f,0x08,0x02,0x82,0x12,0x13,0x14,0x1e))
 
     def __init__(self, spi, pins):
         self.spi, self.pins = spi, pins
-
-    @classmethod
-    def open(cls, route, hz, stack):
-        fd = os.open(Path("/dev")/route.spi, os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC)
-        stack.callback(os.close, fd)
-        result = cls(Spi(fd, hz), Pins(route, stack))
-        stack.callback(result.off)
-        result.initialize()
-        return result
 
     def wait_busy(self):
         end = time.monotonic()+0.5
@@ -91,7 +86,7 @@ class Receiver:
 
     def command(self, op, args=b"", read=0):
         if op not in self.COMMANDS:
-            raise ValueError("SX1262 opcode outside RX profile")
+            raise ValueError("SX1262 opcode outside radio profile")
         self.wait_busy()
         data = bytes([op]) + args + (bytes(1+read) if read else b"")
         result = self.spi.transfer(data)
@@ -117,7 +112,7 @@ class Receiver:
         self.command(0x9d, b"\x01")              # DIO2 RF switch, crystal on this HAT
         self.command(0x86, round(FREQUENCY * 2**25 / 32_000_000).to_bytes(4, "big"))
         self.command(0x8b, bytes([SF, 4, CR-4, 0]))  # BW125, 4/5, LDRO off
-        self.command(0x8c, PREAMBLE.to_bytes(2,"big") + bytes([0,255,1,0]))  # explicit, CRC, standard IQ
+        self.packet_length(255)
         iq = self.command(0x1d, b"\x07\x36", 1)[0]
         self.command(0x0d, bytes([7,0x36,iq | 4]))  # SX1262 IQ polarity erratum
         self.command(0x0d, b"\x07\x40\x14\x24")
@@ -125,7 +120,14 @@ class Receiver:
             raise OSError("RNode sync word readback failed")
         self.command(0x0d, b"\x08\xac\x96")     # boosted RX gain
         self.command(0x8f, bytes(2))
-        self.command(0x08, b"\x00\x62\x00\x62\x00\x00\x00\x00")  # DIO1: RX done, header/CRC error
+        self.irq_mask(0x62)  # RX done, header/CRC error
+
+    def packet_length(self, length):
+        self.command(0x8c, PREAMBLE.to_bytes(2, "big") + bytes([0, length, 1, 0]))
+
+    def irq_mask(self, mask):
+        # Route enabled IRQs to DIO1 only.
+        self.command(0x08, mask.to_bytes(2, "big") * 2 + bytes(4))
 
     def off(self):
         try:
@@ -161,6 +163,17 @@ class Receiver:
         """Compatibility for callers that only consume FIFO data."""
         event = self.read_event()
         return event.frame if event is not None else None
+
+
+class Receiver(Radio):
+    @classmethod
+    def open(cls, route, hz, stack):
+        fd = os.open(Path("/dev")/route.spi, os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC)
+        stack.callback(os.close, fd)
+        result = cls(Spi(fd, hz), Pins(route, stack))
+        stack.callback(result.off)
+        result.initialize()
+        return result
 
     def send(self, payload):
         raise PermissionError("Hardware TX is disabled")

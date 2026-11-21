@@ -10,6 +10,8 @@ import sx1262_spi
 from sx1262_rx import RD, WR, TRANSFER, Spi
 from rnode_wire import Decoder, Reassembly, kiss, split_frames
 from rnode_adapter import Session, PARAMS
+from sx1262_model import Model
+from sx1262_tx import Transceiver
 
 
 class Wire(unittest.TestCase):
@@ -82,6 +84,76 @@ class Wire(unittest.TestCase):
             return 0
         with self.assertRaisesRegex(OSError,"readback"):
             Spi(-1,500000,ioctl=wrong)
+
+
+class Transmission(unittest.TestCase):
+    def setUp(self):
+        self.model = Model(500_000, Transceiver)
+        self.session = Session(self.model.radio)
+        for cmd, value in PARAMS.items():
+            self.session.handle(cmd, value)
+        self.session.handle(6, b"\x01")
+
+    def test_datagram_limits_and_fragment_sequence_wrap(self):
+        radio = self.model.radio
+        radio.sequence = 15
+        for length in (0, 509):
+            with self.assertRaises(ValueError):
+                radio.send(bytes(length))
+        self.assertFalse(any(op[0] == 0x83 for op in self.model.ops))
+        for length, header in ((508, 0xf1), (254, 0)):
+            payload = (bytes(range(256)) * 2)[:length]
+            self.assertEqual(self.session.handle(0, payload), kiss(0x0f, b"\x01"))
+            for start in range(0, length, 254):
+                self.assertEqual(self.model.out.get_nowait(), bytes([header]) + payload[start:start+254])
+            self.assertTrue(self.model.out.empty())
+            self.assertEqual(self.model.mode, "rx")
+
+    def test_timeout_and_missing_irq_do_not_ack_partial_datagram(self):
+        model = self.model
+        for outcome in (0x0200, 0):
+            with self.subTest(irq=outcome):
+                def fail_second(frame):
+                    model.out.put(frame)
+                    model.tx_result = outcome
+
+                model.emit = fail_second
+                model.radio.HOST_TIMEOUT = .02
+                payload = b"x" * 300
+                self.assertEqual(self.session.handle(0, payload), kiss(0x90, b"\x02"))
+                first = model.out.get_nowait()
+                self.assertEqual(first[1:], payload[:254])
+                self.assertTrue(model.out.empty())
+                self.assertEqual((model.mode, model.mask, model.length), ("rx", 0x62, 255))
+                model.frames.put((2, b"\x30incoming"))
+                self.assertTrue(self.session.poll().endswith(kiss(0, b"incoming")))
+                model.emit = model.out.put
+                model.tx_result = 1
+                self.assertEqual(self.session.handle(0, payload), kiss(0x0f, b"\x01"))
+                retry, last = model.out.get_nowait(), model.out.get_nowait()
+                self.assertNotEqual(first[0], retry[0])
+                reassembly = Reassembly()
+                for frame in (first, retry):
+                    self.assertIsNone(reassembly.accept(frame))
+                self.assertEqual(reassembly.accept(last), payload)
+
+    def test_failed_rx_restore_propagates_and_cannot_report_ready(self):
+        self.model.radio.on = Mock(side_effect=OSError("RX failed"))
+        with self.assertRaisesRegex(OSError, "RX failed"):
+            self.session.handle(0, b"message")
+
+    def test_board_profile_rejects_tx_before_spi(self):
+        model = Model(500_000)
+        session = Session(model.radio)
+        for cmd, value in PARAMS.items():
+            session.handle(cmd, value)
+        session.handle(6, b"\x01")
+        count = len(model.ops)
+        self.assertEqual(session.handle(0, b"message"), kiss(0x90, b"\x02"))
+        self.assertEqual(count, len(model.ops))
+        for opcode in (0x95, 0x8e, 0x0e, 0x83):
+            self.assertNotIn(opcode, model.radio.COMMANDS)
+        self.assertFalse(hasattr(Transceiver, "open"))
 
 
 if __name__=="__main__":

@@ -2,6 +2,26 @@
 
 **System → Hardware → SX1262 mode** (`sudo armbian-config-zero2w --cmd SXMD01`) now has **Check Reticulum hardware profile (read only)** and **SPI bus clock (Hz)**. The prepared hardware interface receives RNode normal-mode LoRa frames, reassembles them and presents them to Reticulum's standard `RNodeInterface`. Hardware transmission is disabled. The Zero 2W test installation stays in `no-radio / Off`.
 
+## Bidirectional LXMF on the SX1262 twin
+
+On 2026-11-21, two independent RNS 1.6.1 / LXMF 1.3.1 processes on a Linux workstation each sent and received a signed DIRECT message. Both senders reached `DELIVERED`. Each proof's message ID matched the ID independently reopened from the other endpoint's inbox. The test checked both addresses, the exact UTF-8 subject and body, the encrypted link and the sender's signature.
+
+| Twin direction | Matching sender and inbox message ID | SX1262 frames sent by this endpoint during the exchange |
+|---|---|---:|
+| Workstation → board | `ed0f2b15e8a4ece4b12aca8e0416e75cdc15f2571bb55a39050181d36e0c76de` | 10 |
+| Board → workstation | `85a6bbac9ef4f2795e2ae6d963c6b7ef84483146a4c90253a617fcb2c44155cf` | 10 |
+
+Each process opens one upstream `RNodeInterface` on a fresh pseudo-terminal. KISS DATA runs through the adapter, RNode fragmentation, modeled SPI FIFO writes, `SetTx` and `TxDone`. The peer reads those frames from its modeled RX FIFO. Both directions exercised split frames. A control pipe exchanges only endpoint addresses, result hashes and a shutdown barrier. The digital link models ideal frame transfer while the peer is receiving. Physical RF performance and interoperability with a second physical RNode remain outstanding.
+
+The test instantiates the [transceiver](sx1262_tx.py) with in-memory SPI and GPIO. The board service opens the RX-only driver. Its RNS profile specifies `outgoing=no`, and the driver rejects KISS DATA before any SPI operation. The failure tests exercise a chip timeout and a missing DIO1 interrupt on the second fragment. In both cases the host receives `ERROR_TXFAILED`, RX resumes, and a subsequent datagram can complete.
+
+To reproduce on Linux from the repository root, use an environment with RNS 1.6.1, LXMF 1.3.1 and pyserial 3.5. Both identities and inboxes live in a temporary directory. The test config limits stamp calculation to one worker per endpoint and uses a lower announce work factor.
+
+```sh
+python -B -m unittest discover -s hardware/reticulum-sx1262/tests
+PYTHON_CPU_COUNT=1 python -B hardware/reticulum-sx1262/tests/check_lxmf_twin.py
+```
+
 ## Two separate clocks
 
 | Setting | Tested profile |
@@ -105,15 +125,16 @@ The two fragments carry only a four-bit sequence and split flag. This cannot dis
 Use a checkout of the pinned upstream revision for the independent framing oracle. The builder verifies the source hashes before compiling only the framing functions. On the board:
 
 ```sh
-tests=$PWD/hardware/reticulum-sx1262/tests
+radio=$PWD/hardware/reticulum-sx1262
+tests=$radio/tests
 work=$(mktemp -d)
 python3 "$tests/build_reference.py" /path/to/RNode_Firmware "$work/oracle"
 sudo systemd-run --quiet --wait --collect --pipe -p PrivateNetwork=yes -p PrivateDevices=yes \
     -p DevicePolicy=closed -p PrivateTmp=yes -p ProtectSystem=strict -p CapabilityBoundingSet= \
     -p NoNewPrivileges=yes -p MemoryMax=180M -p RuntimeMaxSec=100 \
-    -p "BindReadOnlyPaths=$work/oracle:/run/opi-rnode-oracle $tests/check_interop.py:/run/opi-rnode-check.py" \
-    --setenv=PYTHONPATH=/opt/opi-mesh --setenv=PYTHON_CPU_COUNT=1 \
-    /opt/opi-mesh/venv/bin/python /run/opi-rnode-check.py /run/opi-rnode-oracle 500000
+    -p "BindReadOnlyPaths=$work/oracle:/run/opi-rnode-oracle $radio:/run/opi-rnode-checks" \
+    --setenv=PYTHONPATH=/run/opi-rnode-checks:/opt/opi-mesh --setenv=PYTHON_CPU_COUNT=1 \
+    /opt/opi-mesh/venv/bin/python /run/opi-rnode-checks/tests/check_interop.py /run/opi-rnode-oracle 500000
 sudo bash "$tests/run-native.sh"
 python3 "$tests/test_rnode.py"
 ```
