@@ -66,6 +66,10 @@ class Profiles(unittest.TestCase):
         now.write_text("rootdev=keep\noverlays=old\nuser_overlays=opi-uart3-header\nusbstoragequirks=same\n")
         rollback_reordered(before, after, now, out)
         self.assertEqual(out.read_text(), "rootdev=keep\noverlays=old\nusbstoragequirks=same\n")
+        now.write_text(after.read_text().replace("rootdev=keep", "rootdev=changed"))
+        with self.assertRaises(ValueError):
+            rollback_reordered(before, after, now, out)
+        now.write_text(after.read_text())
         for bad in ("rootdev=changed\n", "# manual edit\n", "newkey=value\n"):
             with now.open("a") as f:
                 f.write(bad)

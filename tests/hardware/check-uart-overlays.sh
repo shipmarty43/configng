@@ -62,4 +62,17 @@ cmp "$conf" "$temp/original"
 sed -i 's/^overlays=.*/& i2c2-pi/' "$conf"
 cp "$conf" "$temp/conflict"
 reject api enable uart3; cmp "$conf" "$temp/conflict"
+# On the stock image the boot quirk hook removes/re-appends the same setting.
+cp "$temp/original" "$conf"
+echo 'usbstoragequirks=test:fixture:u' >> "$conf"
+cp "$conf" "$temp/quirks-before"
+api enable uart3
+id=
+for dir in "$conf".uart-backups/change.*; do
+    if cmp -s "$dir/after" "$conf" && cmp -s "$dir/before" "$temp/quirks-before"; then id=${dir##*/}; fi
+done
+[[ $id ]]
+sed -i '/^usbstoragequirks=/d' "$conf"
+echo 'usbstoragequirks=test:fixture:u' >> "$conf"
+api boot-rollback "$id"; cmp "$conf" "$temp/quirks-before"
 echo 'PASS all four header routes, stock UART4 correction, pin conflicts in both directions, GPS/UPS/PWM coexistence and rollback'
