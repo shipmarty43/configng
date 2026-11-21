@@ -80,7 +80,7 @@ def enabled(nodes, path):
     return True
 
 
-def owners(nodes):
+def owners(nodes, pio=PIO, first_bank=0):
     """Resolve pinctrl references and explicit GPIO specifiers from enabled consumers."""
     handles = {p["phandle"]: path for path, p in nodes.items() if "phandle" in p}
     claims = {}
@@ -94,16 +94,41 @@ def owners(nodes):
             if re.fullmatch(r"pinctrl-[0-9]+", key):
                 for handle in cells(raw):
                     group = handles.get(handle.to_bytes(4, "big"))
-                    if group and group.rpartition("/")[0] == PIO:
+                    if group and group.rpartition("/")[0] == pio:
                         for pin in strings(nodes[group].get("pins", b"")):
                             claim(pin, path)
+            elif key in ("interrupts", "interrupts-extended"):
+                specs = cells(raw)
+                parent = path
+                while key == "interrupts" and "interrupt-parent" not in nodes[parent] and parent != "/":
+                    parent = parent.rsplit("/",1)[0] or "/"
+                inherited = nodes[parent].get("interrupt-parent")
+                i = 0
+                while i < len(specs):
+                    if key == "interrupts-extended":
+                        ref = specs[i].to_bytes(4,"big")
+                        i += 1
+                    else:
+                        ref = inherited
+                    controller = handles.get(ref)
+                    if controller is None:
+                        if key == "interrupts-extended":
+                            raise ValueError(f"Unknown IRQ provider at {path}")
+                        break
+                    count, = cells(nodes[controller]["#interrupt-cells"])
+                    if not count or i + count > len(specs):
+                        raise ValueError(f"Truncated IRQ at {path}")
+                    if controller == pio:
+                        bank, line = specs[i:i+2]
+                        claim(f"P{chr(65+first_bank+bank)}{line}", path)
+                    i += count
             elif key in ("gpio", "gpios") or key.endswith(("-gpios", "-gpio")):
                 spec = cells(raw)
                 if "gpio-hog" in props:
-                    if path.rpartition("/")[0] == PIO:
+                    if path.rpartition("/")[0] == pio:
                         for i in range(0, len(spec), 3):
                             bank, line, _ = spec[i:i+3]
-                            claim(f"P{chr(65+bank)}{line}", path)
+                            claim(f"P{chr(65+first_bank+bank)}{line}", path)
                     continue
                 i = 0
                 while i < len(spec):
@@ -117,9 +142,9 @@ def owners(nodes):
                     count, = cells(nodes[controller]["#gpio-cells"])
                     if i + count > len(spec):
                         raise ValueError(f"Truncated {key} at {path}")
-                    if controller == PIO:
+                    if controller == pio:
                         bank, line, _ = spec[i:i+count]
-                        claim(f"P{chr(65+bank)}{line}", path)
+                        claim(f"P{chr(65+first_bank+bank)}{line}", path)
                     i += count
     return claims
 

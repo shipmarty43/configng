@@ -139,6 +139,13 @@ def core_files(src, root):
             "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
         rule = uart.parent / "80-opi-zero2w-uart.rules"
         copy(rule, root / "usr/lib/udev/rules.d" / rule.name)
+    a733 = src / "hardware/a733-io"
+    if a733.is_dir():
+        unit = a733 / "opi-a733-uart@.service"
+        write(root / UNITS / unit.name, unit.read_text().replace(
+            "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
+        rule = a733 / "80-opi-a733-uart.rules"
+        copy(rule, root / "usr/lib/udev/rules.d" / rule.name)
     reload_units(root, init_test_lock=True)
 
 

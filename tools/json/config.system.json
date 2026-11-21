@@ -123,6 +123,17 @@
                             "help": "EU433, OTAA, Class A. Check configuration and service state; starting transmits. Hardware qualification is pending."
                         },
                         {
+                            "id": "A733IO",
+                            "description": "Manage SPI3 chip selects, I2C clocks and header UARTs on Orange Pi Zero 3W.",
+                            "short": "A733 header buses",
+                            "module": "module_generic",
+                            "command": ["module_a733_io select"],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_a733_board",
+                            "help": "Configure physical routes for the next boot and restore saved selections."
+                        },
+                        {
                             "id": "I2C001",
                             "description": "Set next-boot SCL for an enabled TWI bus and inspect its DT clients.",
                             "short": "I2C bus clocks",

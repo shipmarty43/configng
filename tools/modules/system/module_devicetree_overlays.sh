@@ -646,6 +646,9 @@ function _zero2w_overlay_change() (
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi
+    if [[ $profile == a733-io ]]; then
+        _a733_io_cli "$work/after" verify >/dev/null || return 1
+    fi
     _zero2w_check_pwm "$work/after" || return 1
     if grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$work/after"; then
         _uart_overlay_validate "$work/after" || return 1

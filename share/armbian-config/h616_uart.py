@@ -111,11 +111,12 @@ class PortBusy(ValueError):
     pass
 
 
-def configure(name, node, action, target=None):
-    reason = busy(name)
+def configure(name, node, action, target=None, *, label=None):
+    label = label or f"UART{NODES[node.name]}"
+    reason = busy(name) or (reserved(name) if action != "status" else "")
     if reason:
         if action == "status":
-            print(f"{name}: {reason}; UART{NODES[node.name]}")
+            print(f"{name}: {reason}; {label}")
             return
         raise PortBusy(f"{name}: {reason}")
     fd = os.open("/dev/" + name, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
@@ -128,12 +129,12 @@ def configure(name, node, action, target=None):
             raise PortBusy("UART is held exclusively")
         fcntl.ioctl(fd, termios.TIOCEXCL)
         exclusive = True
-        if reason := busy(name, fd):
+        if reason := busy(name, fd) or (reserved(name) if action != "status" else ""):
             raise PortBusy(f"UART became busy: {reason}")
         current = fields(termios.tcgetattr(fd))
         backup = BACKUPS / (name + ".json")
         if action == "status":
-            print(f"UART{NODES[node.name]}: {describe(current)} (driver settings)")
+            print(f"{label}: {describe(current)} (driver settings)")
             return
         if action == "rollback":
             saved = load(backup)
