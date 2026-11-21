@@ -30,6 +30,7 @@ from sx1262_tx import Transceiver
 def open_rnode(state, port, transport=False, *, fast_announces=False):
     # This process has exactly one interface. The serial endpoint is an allocated PTY.
     config = state / "config"
+    path_stamps = "  pr_value = 6\n  pr_cost = 6\n  lr_cost = 4\n" if fast_announces else ""
     config.write_text(f"""[reticulum]
   share_instance = no
   enable_transport = {"yes" if transport else "no"}
@@ -37,7 +38,7 @@ def open_rnode(state, port, transport=False, *, fast_announces=False):
   max_workers = 1
   destination_value = 8
   destination_cost = 8
-[interfaces]
+{path_stamps}[interfaces]
   [[Twin]]
     type = RNodeInterface
     port = {port}
@@ -56,7 +57,16 @@ def open_rnode(state, port, transport=False, *, fast_announces=False):
             stream.write("    announce_cap = 100\n")
     RNS.Reticulum(configdir=str(state))
     iface, = RNS.Transport.interfaces
-    assert isinstance(iface, RNodeInterface) and iface.online and iface.OUT and iface.port == port
+    assert isinstance(iface, RNodeInterface) and iface.OUT and iface.port == port
+    # The official serial reader reconnects after a delayed/incomplete handshake.
+    deadline = time.monotonic() + 75
+    while not iface.online:
+        if time.monotonic() >= deadline:
+            raise TimeoutError(f"RNode handshake did not complete on {port}")
+        time.sleep(.1)
+    assert (iface.detected and iface.firmware_ok
+            and (iface.r_frequency, iface.r_bandwidth, iface.r_sf, iface.r_cr, iface.r_txpower, iface.r_state)
+            == (433875000, 125000, 9, 5, 0, 1))
     assert RNS.Reticulum.transport_enabled() == transport
     return iface
 

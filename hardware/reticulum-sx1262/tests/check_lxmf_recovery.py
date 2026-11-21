@@ -2,6 +2,7 @@
 import argparse
 from contextlib import ExitStack, redirect_stdout
 from io import StringIO
+import os
 from pathlib import Path
 import secrets
 import tempfile
@@ -10,6 +11,13 @@ import time
 
 from check_lxmf_twin import LXMF, RNS, Model, Transceiver, open_rnode, result, start_node
 import lxmf_mailbox as box
+
+
+# The ARM64 acceptance VM has one emulated CPU. Extend only the observer
+# deadlines, leaving the protocol timers and fault injection identical.
+WAIT_SCALE = int(os.environ.get("OPI_TWIN_WAIT_SCALE", "1"))
+if not 1 <= WAIT_SCALE <= 3:
+    raise ValueError("OPI_TWIN_WAIT_SCALE must be 1..3")
 
 
 def body(tag):
@@ -94,11 +102,11 @@ def worker(state, port, control, role):
 
 def call(c, *args):
     c.send(args)
-    return result(c, 30)
+    return result(c, 30 * WAIT_SCALE)
 
 
 def wait(fn, seconds=120):
-    deadline=time.monotonic()+seconds
+    deadline=time.monotonic()+seconds * WAIT_SCALE
     while time.monotonic()<deadline:
         value=fn()
         if value:
@@ -158,7 +166,7 @@ def run(case):
                 model.emit=fault.emit
             ctrl, proc=start_node(life,root/role,model,worker,role)
             controls[role],children[role],lifetimes[role]=ctrl,proc,life
-            return result(ctrl,40), (fault if role!="B" else None)
+            return result(ctrl,100 * WAIT_SCALE), (fault if role!="B" else None)
         def stop(role):
             radios.pop(role)
             children[role].kill()
@@ -189,7 +197,7 @@ def run(case):
             # First split datagram is partially lost on A -> B. Kill B while A awaits delivery.
             forward.mode="fragment"
             num=call(A,"send",tag,False)
-            assert forward.dropped.wait(80), "no second data fragment dropped"
+            assert forward.dropped.wait(80 * WAIT_SCALE), "no second data fragment dropped"
             assert call(A,"out",num)[0]=="sending" and call(C,"in",tag)==[]
             stop("B")
             forward.mode=None
@@ -211,7 +219,7 @@ def run(case):
             tag=secrets.token_hex(13)
             reverse.mode="proof"
             num=call(A,"send",tag,False)
-            assert reverse.dropped.wait(90), "no delivery proof dropped"
+            assert reverse.dropped.wait(90 * WAIT_SCALE), "no delivery proof dropped"
             wait(lambda: call(C,"in",tag))
             assert call(A,"out",num)[0]=="sending"
             call(A,"repeat",tag)

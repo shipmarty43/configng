@@ -2,8 +2,8 @@
 # Isolated QEMU virt boot of a regular Armbian Zero 2W image. No mount, host
 # block device, network, directory export or physical peripheral is passed in.
 set -euo pipefail
-if (( $# < 4 || $# > 5 )); then
-    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|mesh-recovery|fresh-current|io-current|uart-boot|pwm-boot]" >&2
+if (( $# < 4 || $# > 6 )); then
+    echo "Usage: $0 CLEAN.img RELEASE_DIR ARM64_BUSYBOX NEW_DISK_WORKDIR [lifecycle|mesh-recovery|fresh-current|io-current|uart-boot|pwm-boot] [COMPLETED_UPGRADE_WORKDIR]" >&2
     exit 2
 fi
 base=$(realpath "$1")
@@ -29,7 +29,15 @@ kernel=$(debugfs -R 'ls -p /boot' "$base?offset=$offset" 2>/dev/null | awk -F/ '
 test -n "$kernel"
 debugfs -R "dump /boot/$kernel $work/Image" "$base?offset=$offset"
 test -s "$work/Image"
-qemu-img create -q -f qcow2 -F raw -b "$base" "$work/root.qcow2"
+if [[ $# == 6 ]]; then
+    checkpoint=$(realpath "$6")
+    [[ $scenario == mesh-recovery && -f $checkpoint/root.qcow2 && -f $checkpoint/first.log ]] || exit 2
+    grep -aq '^STATE-PASS upgraded ' "$checkpoint/first.log"
+    [[ "$(qemu-img info --output=json "$checkpoint/root.qcow2" | jq -r '."full-backing-filename"')" == "$base" ]] || exit 2
+    qemu-img create -q -f qcow2 -F qcow2 -b "$checkpoint/root.qcow2" "$work/root.qcow2"
+else
+    qemu-img create -q -f qcow2 -F raw -b "$base" "$work/root.qcow2"
+fi
 mkdir -p "$work/payload"/{previous,current,ubuntu}
 cp "$release"/previous/*.deb "$work/payload/previous/"
 cp "$release"/current/*.deb "$work/payload/current/"
@@ -40,6 +48,7 @@ cp "$release"/{SHA256SUMS,apply.sh} "$work/payload/"
 serial_fixture=()
 if [[ $scenario == mesh-recovery ]]; then
     mkdir "$work/payload/mesh-recovery"
+    if [[ $# == 6 ]]; then touch "$work/payload/resume-upgraded"; fi
     cp "$tests/../../hardware/reticulum-sx1262/tests/"{check_lxmf_twin.py,check_lxmf_recovery.py,sx1262_model.py} "$work/payload/mesh-recovery/"
     cp "$tests/../../hardware/mesh/check_lxmf_lan.py" "$work/payload/mesh-recovery/"
 fi

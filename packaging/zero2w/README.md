@@ -90,3 +90,5 @@ The release with the A733 pin audit and LXMF recovery uses `59a145bd` as the pre
 ```sh
 tests/packaging/run-armbian-vm.sh /path/to/clean.img release /path/to/arm64/busybox work/mesh-vm mesh-recovery
 ```
+
+To repeat a fault test after the VM has shut down with the current packages installed, pass the previous work directory as a sixth argument. Use a new output directory. The runner creates another copy-on-write layer, checks that the saved disk is backed by the same clean image, then verifies package versions and the seeded mailbox snapshot inside the guest before it resumes. A fresh run requires no checkpoint.

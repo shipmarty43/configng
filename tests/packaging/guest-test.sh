@@ -48,6 +48,24 @@ feature_files() {
         if [[ -f $path ]]; then printf '%s\n' "$path"; fi
     done
 }
+finish_upgrade() {
+    if [[ -d $media/mesh-recovery ]]; then
+        export PYTHONPATH=/opt/opi-mesh:$shared
+        "$py" -c 'import lxmf_mailbox as m, sx1262_tx as tx; assert m.__file__.startswith("/opt/opi-mesh/") and tx.__file__.startswith("/opt/opi-mesh/")'
+        OPI_TWIN_WAIT_SCALE=3 "$py" -Bu "$media/mesh-recovery/check_lxmf_recovery.py"
+        verify_version current
+        echo PASS-PACKAGED-LXMF-RECOVERY
+    fi
+    bash "$media/apply.sh" previous
+    verify_version previous
+    runtime_tools "$baseline"
+    "$py" guest_state.py downgraded
+    armbian-config-zero2w --api module_sx1262_mode spi | grep -F '500000 Hz'
+    feature_files > "$proof/downgraded.files"
+    cmp "$proof/baseline.files" "$proof/downgraded.files"
+    cat /proc/sys/kernel/random/boot_id > "$proof/reboot"
+    echo PASS-INSTALL-UPGRADE-DOWNGRADE
+}
 if [[ -f $media/pwm-boot && -s $proof/pwm-boot-id ]]; then
     verify_version current
     bash "$media/guest-pwm-boot.sh" verify
@@ -64,6 +82,13 @@ if [[ -e "$proof/reboot" ]]; then
     "$py" guest_state.py reboot-after-downgrade
     armbian-config-zero2w --api module_sx1262_mode spi | grep -F '500000 Hz'
     echo PASS-REBOOT
+    exit 0
+fi
+if [[ -e $media/resume-upgraded ]]; then
+    verify_version current
+    runtime_tools "$candidate"
+    "$py" guest_state.py resumed-upgrade
+    finish_upgrade
     exit 0
 fi
 for p in "${pkg[@]}"; do ! dpkg-query -W "$p" >/dev/null 2>&1 || exit 1; done
@@ -158,19 +183,4 @@ runtime_tools "$candidate"
 armbian-config-zero2w --api module_sx1262_mode diagnostics | grep -F '500000 Hz'
 python3 guest_menu.py MESH01 'Choose a software node'
 python3 guest_menu.py SXMD01 'Diagnostics'
-if [[ -d $media/mesh-recovery ]]; then
-    export PYTHONPATH=/opt/opi-mesh:$shared
-    "$py" -c 'import lxmf_mailbox as m, sx1262_tx as tx; assert m.__file__.startswith("/opt/opi-mesh/") and tx.__file__.startswith("/opt/opi-mesh/")'
-    "$py" -Bu "$media/mesh-recovery/check_lxmf_recovery.py"
-    verify_version current
-    echo PASS-PACKAGED-LXMF-RECOVERY
-fi
-bash "$media/apply.sh" previous
-verify_version previous
-runtime_tools "$baseline"
-"$py" guest_state.py downgraded
-armbian-config-zero2w --api module_sx1262_mode spi | grep -F '500000 Hz'
-feature_files > "$proof/downgraded.files"
-cmp "$proof/baseline.files" "$proof/downgraded.files"
-cat /proc/sys/kernel/random/boot_id > "$proof/reboot"
-echo PASS-INSTALL-UPGRADE-DOWNGRADE
+finish_upgrade
