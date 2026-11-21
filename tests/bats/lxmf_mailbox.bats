@@ -33,3 +33,27 @@ setup() {
     _lxmf_save send
     [ ! -e "$calls" ]
 }
+
+@test 'propagated send uses the chosen contact and separate delivery mode' {
+    dialog_inputbox() { echo message; }
+    _lxmf_save send-propagated
+    [ "$(head -1 "$calls")" = 'send-propagated 12' ]
+}
+
+@test 'contact route menu passes the selected contact to the read-only route command' {
+    systemctl() { return 0; }
+    dialog_menu() {
+        if [[ $1 == 'Contact route' ]]; then echo 12; return; fi
+        if [[ ! -e $calls.open ]]; then touch "$calls.open"; echo route; else return 1; fi
+    }
+    _lxmf_cli() {
+        case "$1" in
+            list) printf '12\tPeer\n' ;;
+            route) echo "$*" > "$calls"; echo 'Known path: 2 hops via middle' ;;
+        esac
+    }
+    dialog_msgbox() { printf '%s' "$2" > "$calls.screen"; }
+    module_lxmf select
+    [ "$(cat "$calls")" = 'route 12' ]
+    grep -Fq '2 hops via middle' "$calls.screen"
+}

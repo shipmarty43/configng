@@ -15,14 +15,22 @@ STATE = Path("/var/lib/opi-lxmf")
 PAGE = 16
 
 
-def initialize(state):
-    with database(state) as db:
-        db.executescript("""
+def ensure_propagation_schema(db):
+    db.executescript("""
             CREATE TABLE IF NOT EXISTS propagation (
                 id INTEGER PRIMARY KEY CHECK(id=1), serve INTEGER NOT NULL DEFAULT 0,
                 peer TEXT, sync INTEGER NOT NULL DEFAULT 0);
             INSERT OR IGNORE INTO propagation(id) VALUES (1);
             CREATE TABLE IF NOT EXISTS last_announce (address TEXT PRIMARY KEY, heard INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS sync_result (
+                id INTEGER PRIMARY KEY CHECK(id=1), result TEXT NOT NULL);
+            """)
+
+
+def initialize(state):
+    with database(state) as db:
+        ensure_propagation_schema(db)
+        db.executescript("""
             CREATE TABLE IF NOT EXISTS contacts (
                 id INTEGER PRIMARY KEY, address TEXT UNIQUE NOT NULL, name TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS messages (
@@ -31,6 +39,7 @@ def initialize(state):
                 status TEXT NOT NULL, hash TEXT, UNIQUE(direction, hash));
             CREATE INDEX IF NOT EXISTS mailbox_folder ON messages(direction, id);
         """)
+        db.execute("UPDATE propagation SET sync=1 WHERE sync=2")
         # A process may have handed these to LXMF before losing power.
         db.execute("UPDATE messages SET status='unconfirmed' WHERE direction='out' AND status='sending'")
 
@@ -146,11 +155,23 @@ def configure_propagation(state, router):
 
 def sync_pending(state, router, key):
     with database(state) as db:
-        if not db.execute("SELECT sync FROM propagation WHERE id=1").fetchone()[0]:
+        pending = db.execute("SELECT sync FROM propagation WHERE id=1").fetchone()[0]
+        if not pending:
             return
         if not router.get_outbound_propagation_node():
             return
-        router.request_messages_from_propagation_node(key)
+        if pending == 1:
+            router.request_messages_from_propagation_node(key)
+            db.execute("UPDATE propagation SET sync=2 WHERE id=1")
+            return
+        stage = router.propagation_transfer_state
+        if stage == router.PR_COMPLETE:
+            result = "complete"
+        elif stage >= router.PR_NO_PATH:
+            result = f"failed (LXMF state 0x{stage:02x})"
+        else:
+            return
+        db.execute("INSERT OR REPLACE INTO sync_result VALUES (1,?)", (result,))
         db.execute("UPDATE propagation SET sync=0 WHERE id=1")
 
 
@@ -281,6 +302,8 @@ def main():
         if not (STATE / "mailbox.sqlite").exists():
             raise ValueError("Start the LXMF mailbox first.")
         with database(STATE) as db:
+            if args.action.startswith("prop-") or args.action in ("sync", "send-propagated", "route"):
+                ensure_propagation_schema(db)
             if args.action == "route":
                 import RNS
                 contact_route(db,args.contact,RNS.Reticulum(configdir="/var/lib/opi-reticulum",require_shared_instance=True))
@@ -292,12 +315,14 @@ def main():
                     key = RNS.Identity.from_file(str(STATE/"identity"))
                     print("Local node address:",RNS.Destination.hash_from_name_and_identity("lxmf.propagation",key).hex())
                 print("Remote propagation node:", cfg["peer"] or "unset")
+                last = db.execute("SELECT result FROM sync_result WHERE id=1").fetchone()
+                print("Collection:", "pending" if cfg["sync"] else (last[0] if last else "not requested"))
             elif args.action in ("prop-on","prop-off"):
                 db.execute("UPDATE propagation SET serve=? WHERE id=1", (args.action=="prop-on",))
             elif args.action == "prop-peer":
                 db.execute("UPDATE propagation SET peer=?,sync=0 WHERE id=1", (address(args.node) if args.node!="off" else None,))
             elif args.action == "sync":
-                if not db.execute("UPDATE propagation SET sync=1 WHERE id=1 AND peer IS NOT NULL").rowcount:
+                if not db.execute("UPDATE propagation SET sync=CASE WHEN sync=2 THEN 2 ELSE 1 END WHERE id=1 AND peer IS NOT NULL").rowcount:
                     raise ValueError("Set the remote propagation node first")
                 print("Collection requested")
             elif args.action == "list":

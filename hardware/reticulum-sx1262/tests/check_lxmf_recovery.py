@@ -1,4 +1,5 @@
 """Drop RNode fragments and proofs, reboot the relay, then collect offline LXMF."""
+import argparse
 from contextlib import ExitStack, redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -16,7 +17,7 @@ def body(tag):
 
 
 def worker(state, port, control, role):
-    open_rnode(state, port, role == "B")
+    open_rnode(state, port, role == "B", fast_announces=True)
     rns = RNS.Reticulum.get_instance()
     # Keep the recovery test bounded on a slow emulated CPU.
     RNS.Link.KEEPALIVE_MAX = 10
@@ -50,6 +51,10 @@ def worker(state, port, control, role):
                     return
                 if action == "announce":
                     dest.announce(app_data=router.get_announce_app_data(dest.hash))
+                    for contact in db.execute("SELECT address FROM contacts"):
+                        peer = bytes.fromhex(contact["address"])
+                        if not RNS.Transport.has_path(peer):
+                            RNS.Transport.request_path(peer)
                     if role=="B":
                         router.propagation_destination.announce(app_data=router.get_propagation_node_app_data())
                 elif action == "peer":
@@ -76,6 +81,10 @@ def worker(state, port, control, role):
                     RNS.Packet(router.direct_links[msg.destination_hash],msg.packed).send()
                 elif action == "sync":
                     db.execute("UPDATE propagation SET sync=1 WHERE id=1")
+                elif action == "sync-status":
+                    pending = db.execute("SELECT sync FROM propagation WHERE id=1").fetchone()[0]
+                    last = db.execute("SELECT result FROM sync_result WHERE id=1").fetchone()
+                    reply = "pending" if pending else (last[0] if last else "idle")
                 elif action == "stored":
                     reply=len(router.propagation_entries)
             control.send(reply)
@@ -124,7 +133,7 @@ class Fault:
         self.deliver(frame)
 
 
-def run():
+def run(case):
     with tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
         root=Path(temp)
         controls={}
@@ -169,49 +178,56 @@ def run():
                     for ctrl in (A,C,B):
                         call(ctrl,"announce")
                     next_announce = time.monotonic() + 12
-                return via in call(A,"path") and via in call(C,"path")
+                paths = (call(A,"path"), call(C,"path"))
+                return all(via in path and "RNodeInterface" in path
+                           and "not observed" not in path for path in paths)
             wait(ready,150)
             print("Two-hop routes via", b[1].hex(), flush=True)
         discover()
-        tag=secrets.token_hex(13)
-        # First split datagram is partially lost on A -> B. Kill B while A awaits delivery.
-        forward.mode="fragment"
-        num=call(A,"send",tag,False)
-        assert forward.dropped.wait(80), "no second data fragment dropped"
-        assert call(A,"out",num)[0]=="sending" and call(C,"in",tag)==[]
-        stop("B")
-        forward.mode=None
-        restarted,_=start("B")
-        assert restarted==b
-        B=controls["B"]
-        discover()
-        # Use the normal link timeout/retry logic, leaving both endpoints running.
-        second=secrets.token_hex(13)
-        reply=call(C,"send",second,False)
-        wait(lambda: call(C,"out",reply)[0]=="delivered",210)
-        assert call(A,"in",second)==[call(C,"out",reply)[1]]
-        status=call(A,"out",num)[0]
-        assert status!="delivered" or len(call(C,"in",tag))==1
-        print("PASS split fragment dropped; relay identity and two-hop route recovered; interrupted row:",status,flush=True)
-        # Prove the reverse loss is distinct from losing the original message.
-        tag=secrets.token_hex(13)
-        reverse.mode="proof"
-        num=call(A,"send",tag,False)
-        assert reverse.dropped.wait(90), "no delivery proof dropped"
-        wait(lambda: call(C,"in",tag))
-        assert call(A,"out",num)[0]=="sending"
-        call(A,"repeat",tag)
-        time.sleep(1)
-        assert len(call(C,"in",tag))==1 and call(A,"out",num)[0]!="delivered"
-        stop("A")
-        a2,_=start("A")
-        assert a2[0]==a[0]
-        A=controls["A"]
-        assert call(A,"out",num)[0]=="unconfirmed"
-        reverse.mode=None
-        print("PASS missing proof, verified inbox, duplicate suppressed, restored outbox unconfirmed",flush=True)
-        call(A,"peer",c[0],b[2])
-        discover()
+        if case != "propagation":
+            tag=secrets.token_hex(13)
+            # First split datagram is partially lost on A -> B. Kill B while A awaits delivery.
+            forward.mode="fragment"
+            num=call(A,"send",tag,False)
+            assert forward.dropped.wait(80), "no second data fragment dropped"
+            assert call(A,"out",num)[0]=="sending" and call(C,"in",tag)==[]
+            stop("B")
+            forward.mode=None
+            restarted,_=start("B")
+            assert restarted==b
+            B=controls["B"]
+            discover()
+            # Use the normal link timeout/retry logic, leaving both endpoints running.
+            second=secrets.token_hex(13)
+            reply=call(C,"send",second,False)
+            wait(lambda: call(C,"out",reply)[0]=="delivered",210)
+            assert call(A,"in",second)==[call(C,"out",reply)[1]]
+            status=call(A,"out",num)[0]
+            assert status in ("sending","unconfirmed","delivered")
+            if status == "delivered":
+                assert call(C,"in",tag) == [call(A,"out",num)[1]]
+            print("PASS split fragment dropped; relay identity and two-hop route recovered; interrupted row:",status,flush=True)
+            # Prove the reverse loss is distinct from losing the original message.
+            tag=secrets.token_hex(13)
+            reverse.mode="proof"
+            num=call(A,"send",tag,False)
+            assert reverse.dropped.wait(90), "no delivery proof dropped"
+            wait(lambda: call(C,"in",tag))
+            assert call(A,"out",num)[0]=="sending"
+            call(A,"repeat",tag)
+            time.sleep(1)
+            assert len(call(C,"in",tag))==1 and call(A,"out",num)[0]!="delivered"
+            stop("A")
+            a2,_=start("A")
+            assert a2[0]==a[0]
+            A=controls["A"]
+            assert call(A,"out",num)[0]=="unconfirmed"
+            reverse.mode=None
+            print("PASS missing proof, verified inbox, duplicate suppressed, restored outbox unconfirmed",flush=True)
+            call(A,"peer",c[0],b[2])
+            discover()
+        if case == "recovery":
+            return
         stop("C")
         tag=secrets.token_hex(13)
         n=call(A,"send",tag,True)
@@ -229,8 +245,9 @@ def run():
         discover()
         call(C,"sync")
         wait(lambda: call(C,"in",tag)==[sent],180)
+        wait(lambda: call(C,"sync-status")=="complete")
         call(C,"sync")
-        time.sleep(2)
+        wait(lambda: call(C,"sync-status")=="complete")
         assert call(C,"in",tag)==[sent] and call(A,"out",n)[0]=="accepted-by-node"
         print("PASS offline C, persistent B store, signed retrieval:",sent,flush=True)
 
@@ -238,4 +255,6 @@ def run():
 if __name__=="__main__":
     if not __debug__:
         raise RuntimeError("Assertions required")
-    run()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--case", choices=("all","recovery","propagation"), default="all")
+    run(parser.parse_args().case)

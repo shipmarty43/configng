@@ -27,7 +27,7 @@ from sx1262_model import Model
 from sx1262_tx import Transceiver
 
 
-def open_rnode(state, port, transport=False):
+def open_rnode(state, port, transport=False, *, fast_announces=False):
     # This process has exactly one interface. The serial endpoint is an allocated PTY.
     config = state / "config"
     config.write_text(f"""[reticulum]
@@ -50,6 +50,10 @@ def open_rnode(state, port, transport=False):
     txpower = 0
     flow_control = yes
 """)
+    if fast_announces:
+        # Fault and persistence tests repeatedly recreate nodes and routes.
+        with config.open("a") as stream:
+            stream.write("    announce_cap = 100\n")
     RNS.Reticulum(configdir=str(state))
     iface, = RNS.Transport.interfaces
     assert isinstance(iface, RNodeInterface) and iface.online and iface.OUT and iface.port == port

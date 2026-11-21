@@ -116,6 +116,21 @@ and outbox survive restarts. Message bodies are stored locally in SQLite.
 Earlier acceptance fixtures retain their own identities and inbox files.
 For future LAN use, configure the desired Reticulum TCP interface as described below.
 
+### Contact routes and propagation mail
+
+The LXMF mailbox in MESH01 can inspect the saved contact's known RNS hop count, next hop and interface. It records the last delivery announce heard for that contact. An existing route may outlive a disconnected relay.
+
+**Propagation node settings** controls the local LXMF store and the address of the remote propagation node. Changing either setting restarts the mailbox worker. The local store uses a 16 MB limit. The displayed propagation address is distinct from the mailbox delivery address. Use **Send via propagation node** to queue mail for a contact whose public identity is known while their endpoint is offline. The sender must be able to reach the chosen propagation node. **Collect stored messages** requests mail from that node with the recipient's own identity.
+
+| Outbox result | Evidence |
+|---|---|
+| `delivered` | LXMF confirmed the DIRECT transfer. |
+| `accepted-by-node` | The propagation node acknowledged the sender's upload. The recipient can collect later. |
+| `unconfirmed` | The sender lacks a delivery proof, including submissions interrupted by a service restart. |
+| `expired` | An unsent queued item exceeded the ten-minute queue window. |
+
+The [SX1262 recovery test](../reticulum-sx1262/tests/check_lxmf_recovery.py) uses in-memory radios and fresh mailboxes to interrupt a fragmented transfer, restart the middle node, suppress a delivery proof, and retrieve offline mail after restarting its propagation node.
+
 ## Install on an ARM64 Zero 2W running Ubuntu 26.04
 
 The [offline package kit](../../packaging/zero2w/README.md) bundles the configurator, mesh services and ARM64 runtime for Resolute. It includes both versions for an APT upgrade and downgrade. The manual setup follows below.

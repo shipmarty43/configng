@@ -160,3 +160,15 @@ python3 "$tests/test_rnode.py"
 ```
 
 The native fixture needs a C compiler and libgpiod v2 headers (`GPIOD_INCLUDE` can point at an extracted header directory). It never forwards device ioctls to the kernel. The full-worker test uses only a temporary profile, binding description and owner lock inside the test namespace.
+
+## Relay and mailbox recovery
+
+From the same Linux environment as the three-node test run:
+
+```sh
+PYTHON_CPU_COUNT=1 python -B hardware/reticulum-sx1262/tests/check_lxmf_recovery.py
+```
+
+A, B and C use one modeled SX1262 each. The fault injector drops a second RNode fragment of link data, kills B, and restarts it from the same state. Both mail endpoints stay active for route recovery and a verified reply. A separate loss drops the reverse RNS packet proof after C receives the letter. Replaying the same signed envelope leaves one verified inbox row. Restarting A preserves its delivery address and records the unproved submission as unconfirmed.
+
+The propagation test takes C completely offline, observes B accepting and indexing the letter, then kills and restarts B. C returns with its original identity and collects the signed letter. The sender retains the node-acceptance status. The harness uses reduced stamp work, shorter link keepalives and accelerated announce scheduling for fault tests. The regular three-node test above retains the normal announce airtime limit. Timeouts, electrical behavior and radio range on physical hardware require separate measurements.
