@@ -5,8 +5,9 @@ Updated 2026-11-21. Earlier lists used different numbering; use these names with
 numbers when discussing work. Browser checkpoint: `9d0a7ede` on
 `codex/display-controls`; its remaining limitations are retained separately.
 
-Item 5 now includes [two-way signed LXMF delivery over the SX1262 twin](../../hardware/reticulum-sx1262/README.md#bidirectional-lxmf-on-the-sx1262-twin).
-Both senders received delivery proofs. The board's Reticulum profile remains receive-only.
+Item 5 includes [two-way signed LXMF delivery over the SX1262 twin](../../hardware/reticulum-sx1262/README.md#bidirectional-lxmf-on-the-sx1262-twin)
+and [delivery through a third SX1262 twin acting as a Reticulum transport node](../../hardware/reticulum-sx1262/README.md#three-node-reticulum-route).
+The board's Reticulum profile remains receive-only.
 
 | ID | Scope | Remaining acceptance |
 |---|---|---|

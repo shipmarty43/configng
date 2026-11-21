@@ -22,6 +22,26 @@ python -B -m unittest discover -s hardware/reticulum-sx1262/tests
 PYTHON_CPU_COUNT=1 python -B hardware/reticulum-sx1262/tests/check_lxmf_twin.py
 ```
 
+### Three-node Reticulum route
+
+The routed test wires three memory-backed SX1262 radios as **A ↔ B ↔ C**. A and C can write frames only to B's receive FIFO. B has a single half-duplex radio that both neighbors can hear. Each RNS process opens exactly one RNode pseudo-terminal. Only A and C run LXMF.
+
+Run both parts from the repository root with the same Python environment:
+
+```sh
+PYTHON_CPU_COUNT=1 python -B hardware/reticulum-sx1262/tests/check_lxmf_twin.py --routed
+```
+
+1. With transport disabled on B, B must learn both endpoint addresses at one hop. Both ends actively announce and request a path. For another ten seconds after B confirms both neighbors, each end must still have an empty inbox and no known path or identity for its peer. B must report zero routed link bytes.
+2. The test starts fresh processes, identities and path tables, with transport enabled on B alone. Both ends must learn a two-hop route via B's transport identity. A sends a signed LXMF DIRECT message to C, and C replies. Each sender must receive a delivery proof matching the message ID reopened from the other end's inbox. B must record forwarded link traffic and all three radios must process fragmented frames.
+
+On 2026-11-21 both parts passed with RNS 1.6.1 and LXMF 1.3.1 on the workstation. A and C both reported B as next hop (`dceca5e61e06efe6b2c7a3f93646ef5f`). B's routed link counters were 1,333 bytes received and 1,333 bytes transmitted. The SX1262 models recorded 12, 15 and 9 `SetTx` frames on A, B and C respectively, including protocol traffic. This run used the default RNS announce airtime cap.
+
+| Route | Sender status | Message ID verified in the recipient's inbox |
+|---|---|---|
+| A → B → C | `DELIVERED` | `e4b349d700d6e2063d9b825a7abf7c07d67be1671e9296298349dabe04480572` |
+| C → B → A | `DELIVERED` | `226cc42e54913d62abef9d486ce17ce0bee6746c54a32db8d0132dc493f278a7` |
+
 ## Two separate clocks
 
 | Setting | Tested profile |
