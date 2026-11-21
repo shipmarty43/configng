@@ -637,7 +637,7 @@ function _zero2w_overlay_change() (
 		}
 		if cmp -s "$work/before" "$saved/after"; then
 			cp "$saved/before" "$work/after" || return 1
-		elif [[ $profile == uart || $profile == pwm ]]; then
+		elif [[ $profile == uart || $profile == pwm || $profile == a733-io ]]; then
 			python3 "${script_dir:-/usr/bin}/../share/armbian-config/uart_routes.py" rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
 		else
 			echo 'Boot configuration has changed since this backup.' >&2

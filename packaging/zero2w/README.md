@@ -30,6 +30,8 @@ directory. The selected bus clock lives in
 `/etc/armbian-config/sx1262-spi-hz`. The packages own none of these files.
 The editable `/etc/opi-mesh/reticulum.conf` is a dpkg conffile.
 
+The ARM64 Resolute kit also contains the A733 header module (`--cmd A733IO`). Its board check selects the Orange Pi Zero 3W vendor DT. [A733 pin routes and offline acceptance](../../hardware/a733-io/README.md). LXMF propagation and contact route settings are in the existing MESH01 mailbox.
+
 ## Rebuild both releases
 
 Run from the repository root with a full Git history, Python 3.12+ with
@@ -80,3 +82,11 @@ must exit successfully. Logs and the writable overlay stay in the chosen
 work directory for inspection. The overlay contains a generated test identity.
 
 The independent `fresh-current` run installs the current release directly on a second clean overlay and checks the default SPI clock and idle owner.
+
+### LXMF relay and propagation acceptance
+
+The release with the A733 pin audit and LXMF recovery uses `59a145bd` as the previous revision. Build the candidate with the same pinned runtime inputs. The `mesh-recovery` scenario runs the install, upgrade, downgrade and reboot sequence. After upgrading it executes the synthetic radio fault and propagation test against Python modules imported from the installed packages in the guest.
+
+```sh
+tests/packaging/run-armbian-vm.sh /path/to/clean.img release /path/to/arm64/busybox work/mesh-vm mesh-recovery
+```

@@ -79,6 +79,13 @@ message=$(api default uart2)
 backup=$(basename "$(find "$root/armbianEnv.txt.a733-io-backups" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)")
 api rollback "$backup"
 cmp "$envfile" "$fixture_dir/before-uart"
+api default uart2
+backup=$(basename "$(find "$root/armbianEnv.txt.a733-io-backups" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)")
+# A boot helper may reorder assignments without changing any value.
+tac "$envfile" > "$fixture_dir/reordered"
+cp "$fixture_dir/reordered" "$envfile"
+api rollback "$backup"
+diff <(sort "$fixture_dir/before-uart") <(sort "$envfile")
 api default spi3-cs0
 api default spi3-cs1
 api set uart6 on
