@@ -21,3 +21,5 @@ bash tests/hardware/check-a733-io.sh "$A733_ALLWINNER_DIR"
 ```
 
 Physical acceptance still requires observing each CS during transfers and measuring TX pause/resume against CTS with a four-wire peer. [H616/A733 audit and hardware references](pin-manual-audit.md) · [A733 BSP pinmux](https://github.com/orangepi-xunlong/linux-orangepi/blob/2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f/bsp/drivers/pinctrl/pinctrl-sun60iw2.c)
+
+The offline package set was built at `6e3fffa6` (version `0.1~git1434.6e3fffa6`). The extracted package contains the assembled menu, both discovery rules and both restore units. Its packaged helper composed SPI2 CS2 and four-wire UART2 against the Zero 3W distribution DTB. The package checksums, udev rule syntax and systemd unit syntax were verified on the workstation.

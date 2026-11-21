@@ -92,3 +92,7 @@ tests/packaging/run-armbian-vm.sh /path/to/clean.img release /path/to/arm64/busy
 ```
 
 To repeat a fault test after the VM has shut down with the current packages installed, pass the previous work directory as a sixth argument. Use a new output directory. The runner creates another copy-on-write layer, checks that the saved disk is backed by the same clean image, then verifies package versions and the seeded mailbox snapshot inside the guest before it resumes. A fresh run requires no checkpoint.
+
+### Header chip selects and RTS/CTS
+
+The `zero2w-zero3w-cs-rtscts-arm64.tar` kit has `13f6cad0` in `previous` and `6e3fffa6` in `current`. Open A733IO for native SPI2 CS1–CS3 or UART2/UART6 flow control on Zero 3W. UART01 offers the four-wire header routes on Zero 2W. [Offline DTB and termios acceptance](../../tests/hardware/header-cs-rtscts.md).
