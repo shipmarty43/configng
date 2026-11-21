@@ -52,7 +52,9 @@ The six H616 UARTs use a nominal baud of SCLK / (16 × divisor), with a
 16-bit divisor. The manual's examples use several input clocks for the high
 baud rates. A request accepted by termios does not measure wire baud.
 `UART01` discovers enabled DW APB UARTs by their DT node, independently of
-tty numbering. It offers Linux baud constants up to 4 Mbaud, 5–8 data bits,
+tty numbering. The manual specifies two-wire UART0/UART5 and four-wire
+UART1–UART4; RTS/CTS also requires the corresponding board pinmux. The
+menu offers Linux baud constants up to 4 Mbaud, 5–8 data bits,
 none/even/odd parity and 1 or 2 stop bits (1.5 for a five-bit frame).
 Unrelated tty settings including flow control are preserved.
 [H616 UART baud table, §9.2.3.5.2](https://linux-sunxi.org/images/1/1d/H616_User_Manual_V1.0.pdf#page=598)

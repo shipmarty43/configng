@@ -66,6 +66,29 @@ class Controls(unittest.TestCase):
             os.close(m)
             os.close(s)
 
+    def test_uart_driver_roundtrip_required(self):
+        # Represent a driver which silently substitutes 8N1 for 7E2.
+        old = [0, 0, termios.CS8, 0, termios.B9600, termios.B9600, []]
+        wanted = uart.framing(57600, 7, "even", "2")
+        with patch.object(termios, "tcgetattr", return_value=old), patch.object(termios, "tcsetattr") as put:
+            with self.assertRaisesRegex(ValueError, "did not accept"):
+                uart.apply(3, wanted)
+            self.assertEqual(put.call_count, 2)
+            self.assertEqual(put.call_args.args, (3, termios.TCSANOW, old))
+
+    def test_twi_input_clock_and_duplicate_selections(self):
+        with TemporaryDirectory() as tmp:
+            sysroot = Path(tmp)
+            path = sysroot / "kernel/debug/clk/bus-i2c1/clk_rate"
+            path.parent.mkdir(parents=True)
+            path.write_text("100000000\n")
+            self.assertEqual(twi.clock("twi1", sysroot), (100_000_000, "live bus-i2c1"))
+            self.assertIn("example", twi.clock("s-twi0", sysroot)[1])
+        for names in (["opi-twi-clock-twi1-100000", "opi-twi-clock-twi1-400000"],
+                      ["opi-twi-clock-s-twi0-999999"], ["opi-twi-clock-twi9-100000"]):
+            with self.assertRaises(ValueError):
+                twi.selections(names)
+
     def test_pwm_bounds_and_cleanup(self):
         for duty, active in (("0", 0), ("37.5", 375000), ("100", 1000000)):
             self.assertEqual(pwm.waveform(pwm.settings(1000, duty, "normal")), (1000000, active))
