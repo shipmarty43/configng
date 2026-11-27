@@ -30,6 +30,8 @@ directory. The selected bus clock lives in
 `/etc/armbian-config/sx1262-spi-hz`. The packages own none of these files.
 The editable `/etc/opi-mesh/reticulum.conf` is a dpkg conffile.
 
+Open PWM002 for complementary outputs, A733 capture and finite bursts, or the Zero 3W thermal fan curve. [Kernel support and test procedure](../../tests/hardware/pwm-modes.md).
+
 The ARM64 Resolute kit also contains the A733 header module (`--cmd A733IO`). Its board check selects the Orange Pi Zero 3W vendor DT. [A733 pin routes and offline acceptance](../../hardware/a733-io/README.md). LXMF propagation and contact route settings are in the existing MESH01 mailbox.
 
 ## Rebuild both releases

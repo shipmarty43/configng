@@ -1,0 +1,2 @@
+# Unified diff context begins with a space, including before tabs and empty lines.
+hardware/*/patches/pwm*.patch -whitespace

@@ -146,6 +146,10 @@ def core_files(src, root):
             "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/"))
         rule = a733 / "80-opi-a733-uart.rules"
         copy(rule, root / "usr/lib/udev/rules.d" / rule.name)
+    for patch in ("h616-io/patches/pwm-pair-stop.patch", "a733-io/patches/pwm-capture-burst.patch"):
+        path = src / "hardware" / patch
+        if path.exists():  # Older revisions built for rollback predate PWM002.
+            copy(path, prefix / "share/armbian-config/pwm" / path.name)
     bridge = src / "hardware/header-gpio"
     if bridge.is_dir():
         for name in ("Makefile", "dkms.conf", "opi_header_gpio.c"):

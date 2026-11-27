@@ -1,0 +1,178 @@
+--- a/drivers/pwm/pwm-sunxi-enhance.c
++++ b/drivers/pwm/pwm-sunxi-enhance.c
+@@ -652,12 +652,9 @@
+     bind_num = pc->config[pwm->hwpwm].bind_pwm;
+     if (bind_num == 255) {
+         sunxi_pwm_config_single(chip, pwm, duty_ns, period_ns);
++        return 0;
+     }
+-    else {
+-        sunxi_pwm_config_dual(chip, pwm, duty_ns, period_ns, bind_num);
+-    }
+-
+-    return 0;
++    return sunxi_pwm_config_dual(chip, pwm, duty_ns, period_ns, bind_num);
+ }
+ 
+ static int sunxi_pwm_enable_single(struct pwm_chip *chip, struct pwm_device *pwm)
+@@ -760,16 +757,9 @@
+         sunxi_pwm_writel(chip, reg_offset[i], value[i]);
+     }
+ 
+-    /* enable pwm controller */
+-    for (i = 0; i < PWM_BIND_NUM; i++)
+-    {
+-        reg_offset[i] = PWM_PER;
+-        reg_shift[i] = pwm_index[i];
+-        reg_width[i] = 0x1;
+-        value[i] = sunxi_pwm_readl(chip, reg_offset[i]);
+-        value[i] = SET_BITS(reg_shift[i], reg_width[i], value[i], 1);
+-        sunxi_pwm_writel(chip, reg_offset[i], value[i]);
+-    }
++    sunxi_pwm_set_polarity_dual(chip, pwm, PWM_POLARITY_NORMAL, bind_num);
++    sunxi_pwm_writel(chip, PWM_PER, sunxi_pwm_readl(chip, PWM_PER) |
++                     BIT(pwm_index[0]) | BIT(pwm_index[1]));
+ 
+     return 0;
+ }
+@@ -786,7 +776,8 @@
+     else
+         ret = sunxi_pwm_enable_dual(chip, pwm, bind_num);
+ 
+-    sunxi_pwm_set_polarity(chip, pwm, PWM_POLARITY_NORMAL);
++    if (bind_num == 255)
++        sunxi_pwm_set_polarity(chip, pwm, PWM_POLARITY_NORMAL);
+ 
+     return ret;
+ }
+@@ -844,76 +835,16 @@
+ 
+ static void sunxi_pwm_disable_dual(struct pwm_chip *chip, struct pwm_device *pwm, int bind_num)
+ {
+-    u32 value[2] = {0};
+-    unsigned int reg_offset[2], reg_shift[2], reg_width[2];
+-    struct device_node *sub_np[2];
+-    struct platform_device *pwm_pdevice[2];
+-    int i = 0;
+-    unsigned int pwm_index[2] = {0};
+-
+-    pwm_index[0] = pwm->hwpwm;
+-    pwm_index[1] = bind_num - (int)chip->id;
+-
+-    /* get current index pwm device */
+-    sub_np[0] = of_parse_phandle(pwmchip_parent(chip)->of_node, "pwms", pwm_index[0]);
+-    if (IS_ERR_OR_NULL(sub_np[0]))
+-    {
+-        pr_err("%s: can't parse \"pwms\" property\n", __func__);
+-        return;
+-    }
+-    pwm_pdevice[0] = of_find_device_by_node(sub_np[0]);
+-    if (IS_ERR_OR_NULL(pwm_pdevice[0]))
+-    {
+-        pr_err("%s: can't parse pwm device\n", __func__);
+-        return;
+-    }
+-    /* get bind pwm device */
+-    sub_np[1] = of_parse_phandle(pwmchip_parent(chip)->of_node, "pwms", pwm_index[1]);
+-    if (IS_ERR_OR_NULL(sub_np[1]))
+-    {
+-        pr_err("%s: can't parse \"pwms\" property\n", __func__);
+-        return;
+-    }
+-    pwm_pdevice[1] = of_find_device_by_node(sub_np[1]);
+-    if (IS_ERR_OR_NULL(pwm_pdevice[1]))
+-    {
+-        pr_err("%s: can't parse pwm device\n", __func__);
+-        return;
+-    }
+-
+-    /* disable pwm controller */
+-    for (i = 0; i < PWM_BIND_NUM; i++)
+-    {
+-        reg_offset[i] = PWM_PER;
+-        reg_shift[i] = pwm_index[i];
+-        reg_width[i] = 0x1;
+-        value[i] = sunxi_pwm_readl(chip, reg_offset[i]);
+-        value[i] = SET_BITS(reg_shift[i], reg_width[i], value[i], 0);
+-        sunxi_pwm_writel(chip, reg_offset[i], value[i]);
+-    }
++    unsigned int n = pwm->hwpwm, peer = bind_num - (int)chip->id;
++    unsigned int offset;
+ 
+-    /* disable pwm clk gating */
+-    for (i = 0; i < PWM_BIND_NUM; i++)
+-    {
+-        get_pccr_reg_offset(pwm_index[i], &reg_offset[i]);
+-        reg_shift[i] = PWM_CLK_GATING_SHIFT;
+-        reg_width[i] = 0x1;
+-        value[i] = sunxi_pwm_readl(chip, reg_offset[i]);
+-        value[i] = SET_BITS(reg_shift[i], reg_width[i], value[i], 0);
+-        sunxi_pwm_writel(chip, reg_offset[i], value[i]);
+-    }
+-
+-    /* disable pwm dead zone,one for the two pwm */
+-    get_pdzcr_reg_offset(pwm_index[0], &reg_offset[0]);
+-    reg_shift[0] = PWM_DZ_EN_SHIFT;
+-    reg_width[0] = PWM_DZ_EN_WIDTH;
+-    value[0] = sunxi_pwm_readl(chip, reg_offset[0]);
+-    value[0] = SET_BITS(reg_shift[0], reg_width[0], value[0], 0);
+-    sunxi_pwm_writel(chip, reg_offset[0], value[0]);
+-
+-    /* config pin sleep */
+-    // sunxi_pwm_pin_set_state(&pwm_pdevice[0]->dev, PWM_PIN_STATE_SLEEP);
+-    // sunxi_pwm_pin_set_state(&pwm_pdevice[1]->dev, PWM_PIN_STATE_SLEEP);
++    /* Stop both outputs even when pinctrl child devices have gone away. */
++    sunxi_pwm_writel(chip, PWM_PER,
++                     sunxi_pwm_readl(chip, PWM_PER) & ~(BIT(n) | BIT(peer)));
++    get_pccr_reg_offset(n, &offset);
++    sunxi_pwm_writel(chip, offset, sunxi_pwm_readl(chip, offset) & ~BIT(PWM_CLK_GATING_SHIFT));
++    get_pdzcr_reg_offset(n, &offset);
++    sunxi_pwm_writel(chip, offset, sunxi_pwm_readl(chip, offset) & ~BIT(PWM_DZ_EN_SHIFT));
+ }
+ 
+ static void sunxi_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+@@ -981,6 +912,23 @@
+ 	.apply = sunxi_pwm_apply,
+ };
+ 
++static ssize_t header_pwm_profiles_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct pwm_chip *pc = dev_get_drvdata(dev);
++	struct sunxi_pwm_chip *chip = to_sunxi_pwm_chip(pc);
++	unsigned int i;
++	ssize_t len = 0;
++
++	for (i = 0; i < pc->npwm; i++)
++		len += sysfs_emit_at(buf, len, "%u %u %u %u\n", i, chip->config[i].bind_pwm,
++				     chip->config[i].dead_time, 0U);
++	return len;
++}
++static DEVICE_ATTR_RO(header_pwm_profiles);
++
++static struct attribute *header_pwm_attrs[] = { &dev_attr_header_pwm_profiles.attr, NULL };
++static const struct attribute_group header_pwm_group = { .attrs = header_pwm_attrs };
++
+ static int sunxi_pwm_probe(struct platform_device *pdev)
+ {
+     int ret;
+@@ -1103,7 +1051,11 @@
+         goto err_alloc;
+     }
+ 
+-    return 0;
++    ret = device_add_group(&pdev->dev, &header_pwm_group);
++    if (!ret)
++        return 0;
++    clk_disable_unprepare(pwm->bus_clk);
++    clk_disable_unprepare(pwm->clk);
+ 
+ err_get_config:
+ err_alloc:
+@@ -1118,6 +1070,7 @@
+ {
+     struct pwm_chip *chip = platform_get_drvdata(pdev);
+     struct sunxi_pwm_chip *pwm = to_sunxi_pwm_chip(chip);
++    device_remove_group(&pdev->dev, &header_pwm_group);
+     clk_disable(pwm->clk);
+     clk_disable(pwm->bus_clk);
+     reset_control_assert(pwm->pwm_rst_clk);

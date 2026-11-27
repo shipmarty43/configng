@@ -1,5 +1,7 @@
 # Orange Pi Zero 2W development handoff
 
+[PWM002 channel matrix, fan settings, driver patches and offline acceptance](pwm-modes.md).
+
 [Pin and peripheral audit of H616/H618 and A733, including negative DT tests](pin-manual-audit.md).
 
 This directory preserves board evidence and reproducible experiments for future

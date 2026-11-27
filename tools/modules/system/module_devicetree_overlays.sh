@@ -406,6 +406,9 @@ function _dt_overlays_write_config_unlocked() (
     if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-a733-' "$conf_tmp"; then
         _a733_board && _a733_io_cli "$conf_tmp" verify >/dev/null || return 1
     fi
+    if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-pwmx-' "$conf_tmp"; then
+        _pwm_modes_verify "$conf_tmp" || return 1
+    fi
     if [[ $is_pi != true ]]; then _zero2w_check_pwm "$conf_tmp" || return 1; fi
     if [[ $is_pi != true ]] && grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$conf_tmp"; then
         _uart_overlay_validate "$conf_tmp" || return 1
@@ -643,7 +646,7 @@ function _zero2w_overlay_change() (
 		}
 		if cmp -s "$work/before" "$saved/after"; then
 			cp "$saved/before" "$work/after" || return 1
-		elif [[ $profile == uart || $profile == pwm || $profile == a733-io || $profile == header-gpio ]]; then
+		elif [[ $profile == uart || $profile == pwm || $profile == a733-io || $profile == header-gpio || $profile == pwm-modes ]]; then
 			python3 "${script_dir:-/usr/bin}/../share/armbian-config/uart_routes.py" rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
 		else
 			echo 'Boot configuration has changed since this backup.' >&2
@@ -660,6 +663,9 @@ function _zero2w_overlay_change() (
     fi
     if [[ $profile == a733-io ]]; then
         _a733_io_cli "$work/after" verify >/dev/null || return 1
+    fi
+    if [[ $profile == pwm-modes ]] || grep -Eq '^user_overlays=.*opi-pwmx-' "$work/after"; then
+        _pwm_modes_verify "$work/after" || return 1
     fi
     _zero2w_check_pwm "$work/after" || return 1
     if grep -Eq '^user_overlays=.*opi-uart[2-5]-header' "$work/after"; then

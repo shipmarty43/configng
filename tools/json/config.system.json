@@ -173,6 +173,19 @@
                             "help": "Select PWM1–PWM4 header routes and save or run each channel’s waveform."
                         },
                         {
+                            "id": "PWM002",
+                            "description": "Configure header PWM capture, bursts, dead time and thermal fan levels.",
+                            "short": "PWM and cooling",
+                            "module": "module_generic",
+                            "command": [
+                                "module_pwm_modes select"
+                            ],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_header_gpio_board >/dev/null",
+                            "help": "Save a boot profile, run a bounded test or restore the previous settings."
+                        },
+                        {
                             "id": "SPI001",
                             "description": "Configure a Linux boot clock per SPI controller and chip select",
                             "short": "SPI device clocks",

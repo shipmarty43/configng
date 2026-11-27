@@ -122,13 +122,20 @@ def verify(nodes, text, boot):
         pin = targets[0]
         path = channel_node(n)
         children = cells(nodes[CTRL].get("sunxi-pwms", b""))
+        from pwm_modes import MARK, decode
+        bindings = ([], [255])
+        for name in tokens(text):
+            if name.startswith("opi-pwmx-h618-pair-"):
+                pair = decode(name)
+                if n in pair.channels and strings(nodes[path].get(MARK, b"")) == [name]:
+                    bindings = ([n ^ 1],)
         if (not enabled(nodes, CTRL) or "allwinner,sun50i-h616-pwm" not in strings(nodes[CTRL]["compatible"])
                 or len(children) != 6 or nodes[path].get("phandle") != children[n].to_bytes(4, "big")
                 or strings(nodes[path].get("pinctrl-names", b"")) != ["default"]
                 or strings(nodes[path]["compatible"]) != [f"allwinner,sunxi-pwm{n}"]
-                or routed_pin(nodes, n) != pin or cells(nodes[path].get("bind_pwm", b"")) not in ([], [255])
+                or routed_pin(nodes, n) != pin or cells(nodes[path].get("bind_pwm", b"")) not in bindings
                 or cells(nodes[path].get("clk_bypass_output", b"")) not in ([], [0])):
-            raise ValueError(f"Expected independent PWM{n} routed to {pin}")
+            raise ValueError(f"Expected PWM{n} routed to {pin}")
         conflict = claims.get(pin, set()) - {path}
         if conflict:
             raise ValueError(f"PWM{n}: {pin} is claimed by " + ", ".join(sorted(conflict)))
