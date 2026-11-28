@@ -26,7 +26,7 @@ module_h616_uart() {
     case "${1:-select}" in
         list|rates|status|set|rollback|save|saved|forget|restore-profile) _h616_uart_cli "$@"; return ;;
         routes) _uart_routes_list; return ;;
-        enable|enable-rtscts|enable-rtscts-ph|disable)
+        enable|enable-rtscts|enable-rtscts-ph|enable-rs485|enable-rs485-ph|disable)
             [[ $# == 2 ]] && _ups_dfr_board || return 2
             _zero2w_overlay_change "$1" uart _uart_prepare; return ;;
         backups)
@@ -76,9 +76,9 @@ _uart_boot_menu() {
         options=()
         if [[ $port != uart0 ]]; then options+=(enable 'Enable header TX/RX on next boot' disable 'Remove header overlay on next boot'); fi
         case "$port" in
-            uart2) options+=(enable-rtscts 'TX/RX/RTS/CTS on 15/22/5/3 (PI)' enable-rtscts-ph 'TX/RX/RTS/CTS on 24/23/19/21 (PH)') ;;
-            uart3) options+=(enable-rtscts 'TX/RX/RTS/CTS on 28/27/32/33') ;;
-            uart4) options+=(enable-rtscts 'TX/RX/RTS/CTS on 7/16/31/37') ;;
+            uart2) options+=(enable-rs485 'Reserve PI7 (pin 5) for RS-485 DE' enable-rs485-ph 'Reserve PH7 (pin 19) for RS-485 DE' enable-rtscts 'TX/RX/RTS/CTS on 15/22/5/3 (PI)' enable-rtscts-ph 'TX/RX/RTS/CTS on 24/23/19/21 (PH)') ;;
+            uart3) options+=(enable-rs485 'Reserve PI11 (pin 32) for RS-485 DE' enable-rtscts 'TX/RX/RTS/CTS on 28/27/32/33') ;;
+            uart4) options+=(enable-rs485 'Reserve PI15 (pin 31) for RS-485 DE' enable-rtscts 'TX/RX/RTS/CTS on 7/16/31/37') ;;
         esac
         action=$(dialog_menu "$port boot settings" "$data" 18 78 7 -- "${options[@]}" \
             save 'Save baud and framing for future boots' forget 'Clear saved profile') || return 0

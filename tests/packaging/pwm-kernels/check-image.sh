@@ -24,6 +24,25 @@ if [[ $candidate != before ]]; then
     phases=(install downgrade restored)
 fi
 echo "$board $pkg $rel $orig $new $stocksha $expected" > "$w/input/manifest"
+dt_args=()
+if [[ -n ${PWM_CONFIG_KIT:-} ]]; then
+    [[ $candidate != before ]]
+    kit=$(realpath "$PWM_CONFIG_KIT")
+    (cd "$kit" && sha256sum --quiet -c SHA256SUMS)
+    cmp "$w/input/current.deb" "$kit"/current/*.deb
+    cmp "$w/input/stock.deb" "$kit"/rollback/*.deb
+    cp -a "$kit" "$w/input/kit"
+    cp "$here/../header-kit/"{menu.py,profile.sh} "$w/input/"
+    case "$board" in
+        orangepizero2w) chip=allwinner,sun50i-h618 ;;
+        orangepizero3w) chip=arm,sun60iw2p1 ;;
+        *) exit 2 ;;
+    esac
+    # Supply the board identity for the real menu guard, with QEMU peripherals only.
+    "$q" -machine "virt,gic-version=3,dumpdtb=$w/virt.dtb" -cpu cortex-a55 -smp 2 -m 896M -nic none -nodefaults -display none
+    fdtput -t s "$w/virt.dtb" / compatible linux,dummy-virt "xunlong,$(echo "$board" | sed s/orangepizero/orangepi-zero/)" "$chip"
+    dt_args=(-dtb "$w/virt.dtb")
+fi
 cp "$here/init" "$w/early/init"; chmod 755 "$w/early/init"
 cp "$busy" "$w/early/bin/busybox"
 if [[ $# == 7 ]]; then test -f "$7"; cp "$7" "$w/early/qa-ecam.ko"; fi
@@ -41,7 +60,7 @@ for phase in "${phases[@]}"; do
         -drive "if=none,id=root,file=$w/root.qcow2,format=qcow2,cache=none" -device usb-storage,bus=hc.0,drive=root \
         -drive "if=none,id=input,file=$w/input.ext4,format=raw,readonly=on" -device usb-storage,bus=hc.0,drive=input \
         -drive "if=none,id=result,file=$w/result.ext4,format=raw,cache=none" -device usb-storage,bus=hc.0,drive=result \
-        -kernel "$kernel" -initrd "$w/init.gz" -append "console=ttyS0,115200 rdinit=/init panic=2 qa_phase=$phase systemd.unit=pwm-qa.target fstab=no systemd.gpt_auto=0 systemd.mask=timers.target systemd.mask=armbian-zram-config.service systemd.mask=armbian-ramlog.service systemd.mask=systemd-zram-setup@zram0.service" || :
+        "${dt_args[@]}" -kernel "$kernel" -initrd "$w/init.gz" -append "console=ttyS0,115200 rdinit=/init panic=2 qa_phase=$phase systemd.unit=pwm-qa.target fstab=no systemd.gpt_auto=0 systemd.mask=timers.target systemd.mask=armbian-zram-config.service systemd.mask=armbian-ramlog.service systemd.mask=systemd-zram-setup@zram0.service" || :
     debugfs -R "dump /$phase.log $w/$phase.log" "$w/result.ext4" 2>/dev/null
     [[ -s $w/$phase.log ]] && tail -8 "$w/$phase.log"
     [[ $(debugfs -R "cat /$phase.pass" "$w/result.ext4" 2>/dev/null) == PASS ]] || exit 1

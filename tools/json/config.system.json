@@ -173,6 +173,17 @@
                             "help": "Select PWM1–PWM4 header routes and save or run each channel’s waveform."
                         },
                         {
+                            "id": "BUS001",
+                            "description": "Inspect I2C recovery and UART RS-485 support on header controllers.",
+                            "short": "Bus diagnostics",
+                            "module": "module_generic",
+                            "command": ["module_header_bus select"],
+                            "status": "Preview",
+                            "author": "@shipmarty43",
+                            "condition": "_header_gpio_board >/dev/null",
+                            "help": "Inspect registered I2C devices, request adapter recovery or test RS-485 direction control."
+                        },
+                        {
                             "id": "PWM002",
                             "description": "Configure header PWM capture, bursts, dead time and thermal fan levels.",
                             "short": "PWM and cooling",

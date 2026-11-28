@@ -14,7 +14,7 @@ import termios
 
 from console_tty import serial_users
 from h616_settings import load, save
-from uart_routes import FLOW, FLOW_CONFLICTS, FLOW_PROP, ROUTES
+from uart_routes import DE_PROP, FLOW, FLOW_CONFLICTS, FLOW_PROP, ROUTES
 
 SYS = Path("/sys")
 BACKUPS = Path("/run/armbian-config/uart")
@@ -201,8 +201,9 @@ def header_pins(node, port):
         if group is None or (group/"function").read_bytes() != port.encode() + b"\0":
             return False
         pins += (group/"pins").read_bytes().rstrip(b"\0").decode("ascii").split("\0")
-    if (node / FLOW_PROP).exists():
-        return ((node / FLOW_PROP).read_bytes() == b"h618\0" and (node/"uart-has-rtscts").is_file()
+    if (node / FLOW_PROP).exists() or (node / DE_PROP).exists():
+        marker = DE_PROP if (node / DE_PROP).exists() else FLOW_PROP
+        return (not ((node / FLOW_PROP).exists() and (node / DE_PROP).exists()) and (node / marker).read_bytes() == b"h618\0" and (node/"uart-has-rtscts").is_file()
                 and not any((node/key).exists() for key in FLOW_CONFLICTS)
                 and any(tuple(pins) == pads for (name, _), (pads, _) in FLOW.items() if name == port))
     return pins == list(ROUTES[port][:2])

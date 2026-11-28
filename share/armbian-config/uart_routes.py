@@ -31,6 +31,10 @@ FLOW = {
     ("uart3", "rtscts"): (("PI9", "PI10", "PI11", "PI12"), "28/27/32/33"),
     ("uart4", "rtscts"): (("PI13", "PI14", "PI15", "PI16"), "7/16/31/37"),
 }
+# Same validated pin group. DE profiles reserve RTS for direction control.
+FLOW.update({(port, mode.replace("rtscts", "rs485")): route
+             for (port, mode), route in list(FLOW.items())})
+DE_PROP = "armbian-config,rs485-de"
 FLOW_PROP = "armbian-config,rtscts"
 FLOW_CONFLICTS = ("rts-gpios", "cts-gpios", "linux,rs485-enabled-at-boot-time")
 
@@ -222,7 +226,8 @@ def inspect(blob, names):
                 or strings(props.get("function", b"")) != [port]
                 or strings(props.get("pins", b"")) != list(route_pins(port, mode))):
             raise ValueError(f"{port} controller or header pinmux was overridden")
-        if mode != "txrx" and (nodes[path].get(FLOW_PROP) != b"h618\0" or nodes[path].get("uart-has-rtscts") != b""
+        marker, other = (DE_PROP, FLOW_PROP) if mode.startswith("rs485") else (FLOW_PROP, DE_PROP)
+        if mode != "txrx" and (other in nodes[path] or nodes[path].get(marker) != b"h618\0" or nodes[path].get("uart-has-rtscts") != b""
                                or any(key in nodes[path] for key in FLOW_CONFLICTS)):
             raise ValueError(f"{port}: RTS/CTS capability or restore marker was overridden")
         for pin in route_pins(port, mode):
@@ -234,7 +239,8 @@ def inspect(blob, names):
 
 def overlay_data(port, mode="txrx"):
     pins = ", ".join(f'"{p}"' for p in route_pins(port, mode))
-    flow = f' uart-has-rtscts; {FLOW_PROP} = "h618";' if mode != "txrx" else ""
+    marker = DE_PROP if mode.startswith("rs485") else FLOW_PROP
+    flow = f' uart-has-rtscts; {marker} = "h618";' if mode != "txrx" else ""
     # Use a private pin group; some stock DTBs mislabel the UART3/4 groups.
     source = f'''/dts-v1/; /plugin/;
 / {{
@@ -341,7 +347,7 @@ def main():
     sub.add_argument("after", type=Path)
     sub.add_argument("folder", type=Path)
     sub.add_argument("port", choices=ROUTES)
-    sub.add_argument("action", choices=("enable", "enable-rtscts", "enable-rtscts-ph", "disable"))
+    sub.add_argument("action", choices=("enable", "enable-rtscts", "enable-rtscts-ph", "enable-rs485", "enable-rs485-ph", "disable"))
     args = parser.parse_args()
     if args.op == "rollback-reordered":
         rollback_reordered(args.before, args.after, args.current, args.output)

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run as a oneshot service in the disposable board root filesystem.
-set -eu
+set -euo pipefail
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin LC_ALL=C DEBIAN_FRONTEND=noninteractive
 cd /run/qa
 phase=$(sed -n 's/.*qa_phase=\([a-z]*\).*/\1/p' /proc/cmdline)
@@ -47,21 +47,24 @@ modprobe pwm-fan
 test -d /sys/module/pwm_fan
 modprobe -r pwm-fan
 echo "pwm-fan loaded and unloaded on the running kernel"
+if [[ -f input/profile.sh ]]; then . input/profile.sh; fi
 if [[ $phase == before || $phase == install ]]; then
     ! symbols || exit 1
     verify_pkg "$original" "$stocksha"
     boot_data > result/base.sha
     if [[ $phase == install ]]; then
-        upgrade input/current.deb
+        if [[ -f input/profile.sh ]]; then bash input/kit/apply.sh install; else upgrade input/current.deb; fi
         verify_pkg "$updated" "$patchedsha"
         sha256sum -c result/base.sha
+        if [[ -f input/profile.sh ]]; then kit_save; fi
         cp /boot/Image result/installed.Image
     fi
 elif [[ $phase == downgrade ]]; then
     symbols
+    if [[ -f input/profile.sh ]]; then kit_check; kit_undo; fi
     verify_pkg "$updated" "$patchedsha"
     sha256sum -c result/base.sha
-    upgrade input/stock.deb
+    if [[ -f input/profile.sh ]]; then bash input/kit/apply.sh rollback-kernel; else upgrade input/stock.deb; fi
     verify_pkg "$original" "$stocksha"
     sha256sum -c result/base.sha
     cp /boot/Image result/restored.Image

@@ -79,13 +79,13 @@ _a733_menu() {
         uart*)
             options=()
             case $key in
-                uart2) options+=(rtscts 'Hardware RTS/CTS on pins 5/3') ;;
-                uart6) options+=(rtscts 'Hardware RTS/CTS on pins 19/21') ;;
+                uart2) options+=(rs485 'Reserve PB2 (pin 5) for RS-485 DE' rtscts 'Hardware RTS/CTS on pins 5/3') ;;
+                uart6) options+=(rs485 'Reserve PE2 (pin 19) for RS-485 DE' rtscts 'Hardware RTS/CTS on pins 19/21') ;;
             esac
             action=$(dialog_menu "$key" 'Route and line settings.' 17 72 6 -- "${options[@]}" enable 'Enable at next boot' default 'Restore base route' save 'Save baud and framing for device discovery' show 'Inspect saved framing' forget 'Clear saved framing') || return 0
             case "$action" in
                 enable) params=(set "$key" on) ;;
-                rtscts) params=(set "$key" rtscts) ;;
+                rs485|rtscts) params=(set "$key" "$action") ;;
                 save) data=$(_uart_get_framing "$key") || return 0; read -r -a params <<< "$data"; params=(save "$key" "${params[@]}") ;;
                 *) params=("$action" "$key") ;;
             esac ;;

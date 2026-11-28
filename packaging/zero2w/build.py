@@ -244,7 +244,8 @@ def runtime_files(src, root, inputs, build):
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("revision")
-    cli.add_argument("--inputs", type=Path, required=True)
+    cli.add_argument("--core-only", action="store_true", help="Build the configurator without the mesh runtime")
+    cli.add_argument("--inputs", type=Path)
     cli.add_argument("--output", type=Path, required=True)
     cli.add_argument("--work", type=Path, required=True, help="Disk-backed scratch parent")
     args = cli.parse_args()
@@ -253,8 +254,11 @@ def main():
     version = f"0.1~git{count}.{rev[:8]}"
     epoch = output("git", "-C", REPO, "show", "-s", "--format=%ct", rev)
     env = os.environ | {"SOURCE_DATE_EPOCH": epoch}
-    inputs = args.inputs.resolve()
-    verify_inputs(inputs)
+    if not args.core_only:
+        if args.inputs is None:
+            cli.error("--inputs is required for the mesh runtime")
+        inputs = args.inputs.resolve()
+        verify_inputs(inputs)
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=args.work) as tmp:
@@ -272,6 +276,8 @@ def main():
         package(build / CORE, CORE, version, "all", core_deps,
                 rev, "Modular Orange Pi Zero 2W Armbian configurator", out, env)
 
+        if args.core_only:
+            return
         runtime_files(src, build / RUNTIME, inputs, build)
         native_deps = output("dpkg-deb", "-f", inputs / NATIVE, "Depends")
         runtime_deps = (native_deps + ", python3 (>= 3.14), python3 (<< 3.15), python3-cryptography, "

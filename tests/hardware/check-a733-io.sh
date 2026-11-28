@@ -135,6 +135,10 @@ sed -i '/^user_overlays=/s/$/ test-pwm0-pe3/' "$envfile"
 reject set uart6 rtscts
 grep -q 'PE3 also claimed' "$fixture_dir/rejection"
 sed -i 's/ test-pwm0-pe3//' "$envfile"
+api set uart6 rs485
+compose_current
+fdtget "$fixture_dir/composed.dtb" /soc@3000000/uart@2506000 armbian-config,rs485-de | grep -Fx a733
+reject set i2c3 100000
 api set uart6 rtscts
 compose_current
 python3 -B "$repo/tests/hardware/check-uart-flow.py" a733 uart6 "$fixture_dir/composed.dtb"
@@ -171,6 +175,14 @@ for spec in cs duplicate irq; do
     esac
     cp "$fixture_dir/no-injection" "$envfile"
 done
+# Both controllers and two real DT endpoints must coexist and roll back independently.
+api set spi2 on
+api set spi2-cs0 1000000 2
+compose_current
+[[ $(fdtget -t u "$fixture_dir/composed.dtb" /soc@3000000/spi@2542000/sensor@0 spi-max-frequency) == 1000000 ]]
+[[ $(fdtget -t u "$fixture_dir/composed.dtb" /soc@3000000/spi@2543000/spidev@0 spi-max-frequency) == 8000000 ]]
+api default spi2-cs0
+api default spi2
 api set spi3-cs1 250000 1
 api list | grep -F 'CS0 8000000 Hz mode 3, CS1 250000 Hz mode 1'
 reject set i2c2 100000
