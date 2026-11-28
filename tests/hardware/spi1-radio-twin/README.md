@@ -164,21 +164,24 @@ python3 tests/hardware/check-a733-panel.py "$A733_ALLWINNER_DTB_DIR" "$GUI_CHECK
 
 ### Release a pin and enable its next route together
 
-On Zero 3W, choose SPI3 while VIN owns PE0. The conflict screen offers a
-second preview showing the camera release and SPI3 enable together. Saving
-this preview writes one boot environment and one change record. Undo restores
-the preceding selection, including unrelated settings. The simple SPI3
-preview still reports its conflict until a release is explicitly selected.
+On Zero 3W, choose SPI3 while VIN owns PE0 and I²C2 owns PE1/PE2.
+The ordinary route preview lists all three conflicts. Select the offered
+transition to inspect the complete owner list and the old/new pin map.
+Saving writes one boot environment and one change record. Undo restores both
+previous routes, including the saved I²C2 clock and unrelated settings.
 
-BUS002 offers this action when a single catalogued owner holds the contested
-pins. The privileged helper accepts `preview a733-spi3-on+camera` and
-`apply a733-spi3-on+camera TOKEN`. It stages both edits in a private directory,
-validates the released owner and final DTB, and rechecks the preview token
-under the boot lock. An additional claimant or a declared client of a bus
-being removed can block the entire change.
+The broker accepts `preview a733-spi3-on+camera+i2c2` and
+`apply a733-spi3-on+camera+i2c2 TOKEN`. Single-owner requests such as
+`a733-spi3-on+camera` still work. The offer is built from distinct, catalogued
+owners of contested pins. The helper stages their releases in a private
+directory, checks each owner and its clients against the original tree, and
+validates the final DTB under the boot lock before publishing. Missing,
+unknown, unrelated or duplicate owners cannot authorize a partial transfer.
 
 Run the focused twin test with
 `python3 tests/hardware/check-a733-panel.py --transition-only "$A733_ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"`.
-The test composes and boots both OF fixtures in userspace, checks the physical
-owner of pin 24, counts journal entries and compares the restored environment
-byte for byte. Set `PANEL_TEST_CHROMIUM` to exercise the real browser buttons.
+The test simulates reboots from composed DTBs, checks the owners of pins 19,
+23 and 24, counts journal entries and compares the restored environment byte
+for byte. Set `PANEL_TEST_CHROMIUM` to a Chromium executable to exercise the
+Web buttons. Set `PANEL_TEST_DIALOG=1` to exercise the native dialog in a PTY
+with `dialog` and Python `pexpect` installed.

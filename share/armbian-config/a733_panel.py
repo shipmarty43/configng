@@ -85,22 +85,26 @@ RELEASES = {r.port: r for r in ROUTES.values() if
 
 
 def selection(target):
-    key, sep, port = target.partition("+")
+    key, *ports = target.split("+")
     route = ROUTES.get(key)
     if route is None:
         raise ValueError("INVALID: Неизвестный маршрут гребёнки")
-    if not sep:
-        return route, None
-    release = RELEASES.get(port)
-    if release is None or not route.values or route.port in RESERVES or release.port == route.port:
-        raise ValueError("INVALID: Недопустимая пара владельца и маршрута")
-    return route, release
+    if not ports:
+        return route, ()
+    owners = set(ports)
+    if (not route.values or route.port in RESERVES or route.port in owners or
+            len(ports) != len(owners) or not owners.issubset(RELEASES)):
+        raise ValueError("INVALID: Недопустимый список владельцев для этого маршрута")
+    return route, tuple(RELEASES[port] for port in sorted(ports))
 
 
-def transition_label(route, release):
-    owner = {"camera": "камеру VIN", "pinctrl-test": "тестовый драйвер PIO"}.get(
-        release.port, release.port.upper().replace("I2C", "I²C"))
-    return f"Отключить {owner} и включить {route.label}"
+def transition_label(route, releases):
+    names = {"camera": "камеру VIN", "pinctrl-test": "тестовый драйвер PIO"}
+    owners = [names.get(r.port, r.port.upper().replace("I2C", "I²C")) for r in releases]
+    if len(owners) == 1:
+        return f"Отключить {owners[0]} и включить {route.label}"
+    owner_list = ", ".join(owners[:-1]) + " и " + owners[-1]
+    return f"Отключить {owner_list}, затем включить {route.label}"
 
 
 def owners_on_route(route, current, candidate):
@@ -112,10 +116,13 @@ def alternative(key, route, current, candidate):
     if not route.values or route.port in RESERVES:
         return None
     conflicts = owners_on_route(route, candidate, candidate)
-    for port, release in RELEASES.items():
-        if conflicts == {release.path} and release.path in owners_on_route(route, current, candidate):
-            return {"id": f"{key}+{port}", "label": transition_label(route, release)}
-    return None
+    if not conflicts or not conflicts <= owners_on_route(route, current, candidate):
+        return None
+    ports = sorted(port for port, release in RELEASES.items() if release.path in conflicts)
+    releases = [RELEASES[port] for port in ports]
+    if {r.path for r in releases} != conflicts:
+        return None
+    return {"id": "+".join([key, *ports]), "label": transition_label(route, releases)}
 
 
 def choices():

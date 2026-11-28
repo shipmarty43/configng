@@ -64,10 +64,11 @@ def stage(root, snapshot, work, target, board):
     if (root / "overlay-user").is_symlink() or any(os.path.lexists(root / n) for n in
             ("fixup.scr", "overlay-user/user-fixup.scr", "extlinux/extlinux.conf")):
         raise ValueError("Unsupported custom boot route")
-    route = release = None
+    route = None
+    releases = ()
     if target not in ("state", "undo"):
         if board == "a733":
-            route, release = a733_panel.selection(target)
+            route, releases = a733_panel.selection(target)
         else:
             route = header.ROUTES.get(target)
             if not route and target not in PROFILES:
@@ -107,7 +108,7 @@ def stage(root, snapshot, work, target, board):
         if board == "h618":
             names.update(saved_names(text))
     if board == "a733":
-        providers = [step.provider for step in (release, route) if step]
+        providers = [step.provider for step in (*releases, route) if step]
     elif route and route.group == "UART" and route.mode not in ("off", "txrx-ph"):
         providers = [uart.token(route.port, route.mode)]
     else:
@@ -123,9 +124,10 @@ def stage(root, snapshot, work, target, board):
     if board == "a733":
         if route:
             seed = before
-            if release:
-                seed = work / "released.env"
-                a733_panel.edit(release, before, seed, folder)
+            for release in releases:
+                intermediate = work / f"release-{release.port}.env"
+                a733_panel.edit(release, seed, intermediate, folder)
+                seed = intermediate
             a733_panel.edit(route, seed, work / "base.env", folder, strip=True)
             a733_panel.edit(route, seed, after, folder)
         elif target == "state":
@@ -263,15 +265,17 @@ def describe(work, target, dt, devices, locks, board):
         try:
             a733_panel.validate_stock_pwm(trees[1], (work/"after").read_text())
             if target not in ("state", "undo"):
-                route, release = a733_panel.selection(target)
+                route, releases = a733_panel.selection(target)
                 issues.extend(a733_panel.route_issues(route, read_tree(work / "base.dtb"), *trees))
-                if release:
-                    transition = a733_panel.transition_label(route, release)
-                    if changed and release.path not in a733_panel.owners_on_route(route, current["pins"], candidate["pins"]):
-                        issues.append("Выбранный владелец не занимает выводы запрошенного маршрута.")
-                    if enabled(trees[1], release.path):
-                        issues.append(f"Итоговый DTB не освободил {release.path}.")
-                    issues.extend(a733_panel.route_issues(release, trees[1], *trees))
+                if releases:
+                    transition = a733_panel.transition_label(route, releases)
+                    owners = a733_panel.owners_on_route(route, current["pins"], candidate["pins"])
+                    for release in releases:
+                        if changed and release.path not in owners:
+                            issues.append(f"{release.port}: владелец не занимает выводы запрошенного маршрута.")
+                        if enabled(trees[1], release.path):
+                            issues.append(f"Итоговый DTB не освободил {release.path}.")
+                        issues.extend(a733_panel.route_issues(release, trees[1], *trees))
                 elif issues:
                     alternative = a733_panel.alternative(target, route, current["pins"], candidate["pins"])
         except (ValueError, KeyError) as exc:

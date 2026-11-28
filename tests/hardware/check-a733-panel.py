@@ -39,13 +39,46 @@ def sysfs(dt, dest):
             (path/key).write_bytes(val)
 
 
+def native_dialog(helper, undo):
+    """Drive the actual BUS002 dialogs. Opt in with PANEL_TEST_DIALOG=1 (pexpect)."""
+    import pexpect
+    down = "\x1bOB"
+    confirm = "\x1bOD\r"
+    with pexpect.spawn(str(helper), ["dialog"], encoding="utf-8", timeout=25,
+                       dimensions=(34,120), env=os.environ | {"TERM":"xterm","LC_ALL":"C.UTF-8"}) as tty:
+        tty.expect_exact("40-контактная")
+        if undo:
+            tty.send(down*6 + "\r")
+        else:
+            tty.send(down + "\r")
+            tty.expect_exact("CS0 (11)")
+            tty.send(down*9 + "\r")
+            tty.expect_exact("Предпросмотр перехода?")
+            tty.expect_exact("камеру VIN и I²C2")
+            tty.send(confirm)
+            tty.expect_exact("Сохранить для следующей загрузки?")
+            tty.expect_exact("камеру VIN и I²C2")
+            tty.send(confirm)
+        tty.expect_exact("Сохранено для")
+        tty.send("\r")
+        tty.expect(pexpect.EOF)
+    assert tty.exitstatus == 0
+
+
 def check_transition(tmp, helper, get, post, browser=None):
     boot = tmp / "boot"
     env = boot / "armbianEnv.txt"
     original = env.read_bytes()
     # Keep a real unrelated route, comments and ordering across both UI paths.
-    baseline = original + b"# keep this assignment in place\noverlays=i2c0\n"
-    env.write_bytes(baseline)
+    env.write_bytes(original + b"# keep this assignment in place\noverlays=i2c0\n")
+    enable_i2c = "a733-i2c2-400000"
+    p = post("preview", {"profile":enable_i2c}, viewer=True)
+    post("apply", {"profile":enable_i2c,"token":p["token"]})
+    baseline = env.read_bytes()
+    spi_path = io.SOC + io.ROUTES["spi3"][0]
+    i2c_path = io.SOC + io.ROUTES["i2c2"][0]
+    routes = {19:(i2c_path,"I²C2 SDA","SPI3 MOSI"), 23:(i2c_path,"I²C2 SCL","SPI3 CLK"),
+              24:(io.CAMERA,"Камера VIN · MCLK","SPI3 CS0")}
     journal = boot / "armbianEnv.txt.a733-panel-backups"
     def history():
         return set(journal.glob("change.*"))
@@ -59,15 +92,19 @@ def check_transition(tmp, helper, get, post, browser=None):
         tree, saved = io.compose(boot, env.read_text(), image)
         io.verify(tree, saved)
         assert io.enabled(tree, io.CAMERA) == (not spi)
-        assert io.enabled(tree, io.SOC + io.ROUTES["spi3"][0]) == spi
+        assert io.enabled(tree, i2c_path) == (not spi)
+        assert io.enabled(tree, spi_path) == spi
+        if not spi:
+            assert io.cells(tree[i2c_path]["clock-frequency"]) == [400000]
         assert io.enabled(tree, io.SOC + io.ROUTES["i2c0"][0])
         live = tmp / f"handoff-boot-{boot_number}"
         sysfs(image, live)
         (tmp / "live-next").symlink_to(live)
         (tmp / "live-next").replace(tmp / "live")
         model = get()["live"]
-        row = next(r for r in model["pins"] if r["pin"] == 24)
-        assert [o["path"] for o in row["owners"]] == [io.SOC+io.ROUTES["spi3"][0] if spi else io.CAMERA]
+        pins = {row["pin"]:row["owners"] for row in model["pins"]}
+        for pin, (source, old, new) in routes.items():
+            assert pins[pin] == [{"path":spi_path if spi else source, "label":new if spi else old}]
         assert [(r["cs"],r["pin"]) for r in model["rows"]] == ([(0,24),(1,26)] if spi else [])
 
     def preview(target):
@@ -79,7 +116,7 @@ def check_transition(tmp, helper, get, post, browser=None):
         assert (change/"after").read_bytes() == env.read_bytes() != baseline
 
     plain = "a733-spi3-on"
-    combined = plain + "+camera"
+    combined = plain + "+camera+i2c2"
     # All selection/confirmation dialogs of the GUI TUI call the real broker.
     module = SystemModule()
     menu = dict(module.get_menu_items())["Шины и контакты"]
@@ -91,9 +128,9 @@ def check_transition(tmp, helper, get, post, browser=None):
             if title.startswith("SPI ·"):
                 return next(i for i, item in enumerate(items) if item.startswith("SPI3 · CS0"))
             if "Конфликт" in title:
-                assert "Вывод 24 (PE0)" in title
-                return next(i for i, item in enumerate(items) if "камеру VIN" in item and "SPI3" in item)
-            assert "Отключить камеру VIN" in title and "SPI3 CS0" in title
+                assert all(f"Вывод {pin} (" in title for pin in routes)
+                return next(i for i, item in enumerate(items) if all(n in item for n in ("камеру VIN","I²C2","SPI3")))
+            assert all(n in title for n in ("камеру VIN","I²C2","SPI3 CS0","SPI3 MOSI","SPI3 CLK"))
             return items.index("Назад" if action == "cancel" else "Сохранить для следующей загрузки")
         with patch.object(module,"show_menu",side_effect=select), patch.object(module,"show_message"), \
              patch.object(module,"show_error",side_effect=AssertionError):
@@ -104,14 +141,19 @@ def check_transition(tmp, helper, get, post, browser=None):
                 for p in boot.rglob("*") if not p.is_symlink()}
 
     try:
+        reboot(False)
         prior = history()
         untouched = contents()
         blocked = preview(plain)
         assert not blocked["token"] and blocked["alternative"]["id"] == combined
         plan = preview(combined)
         assert plan["token"] and not plan["issues"] and plan["transition"] == blocked["alternative"]["label"]
-        change, = [r for r in plan["changes"] if r["pin"]==24]
-        assert change["before"][0]["path"] == io.CAMERA and change["after"][0]["label"] == "SPI3 CS0"
+        changes = {r["pin"]:r for r in plan["changes"]}
+        for pin, (source, old, new) in routes.items():
+            assert changes[pin]["before"] == [{"path":source,"label":old}]
+            assert changes[pin]["after"] == [{"path":spi_path,"label":new}]
+        for bad in (combined + "+camera", combined + "+unknown", combined + "+spi3"):
+            post("preview", {"profile":bad}, 400)
         tui("cancel")
         assert contents() == untouched
         post("apply", {"profile":combined, "token":plan["token"]}, 403, viewer=True)
@@ -119,16 +161,33 @@ def check_transition(tmp, helper, get, post, browser=None):
         post("apply", {"profile":combined,"token":plan["token"]}, 409)
         assert env.read_bytes() == baseline+b"verbosity=7\n" and history() == prior
         env.write_bytes(baseline)
-        # A second owner still blocking SPI3 must prevent both parts of the save.
-        env.write_bytes(baseline.replace(b"overlays=i2c0",b"overlays=i2c0 i2c2"))
-        obstructed = env.read_bytes()
-        remaining = preview(combined)
-        assert not remaining["token"] and any("I²C2" in issue for issue in remaining["issues"])
-        post("apply", {"profile":combined,"token":"0"*64}, 409)
-        assert env.read_bytes() == obstructed and history() == prior
+        # An omitted, unrelated or protected owner must never cause a partial handoff.
+        for suffix in ("+camera", "+i2c2", "+camera+i2c2+pinctrl-test"):
+            incomplete = plain + suffix
+            assert not preview(incomplete)["token"]
+            post("apply", {"profile":incomplete, "token":plan["token"]}, 409)
+        assert env.read_bytes() == baseline and history() == prior
+        from dt_clock_overlay import tokens, write_selection
+        sensor = boot/"overlay-user"/"handoff-i2c2-sensor.dtbo"
+        dts = f'/dts-v1/; /plugin/; &{{{i2c_path}}} {{ sensor@42 {{ compatible="test,sensor"; reg=<0x42>; }}; }};'
+        subprocess.run(["dtc","-q","-@","-o",sensor],input=dts.encode(),check=True)
+        write_selection(env.read_text(), env, [*tokens(env.read_text()), sensor.stem])
+        protected = env.read_bytes()
+        check = preview(combined)
+        assert not check["token"] and any("sensor@42" in issue for issue in check["issues"])
+        post("apply", {"profile":combined,"token":plan["token"]}, 409)
+        assert env.read_bytes() == protected and history() == prior
         env.write_bytes(baseline)
-        unrelated = preview(plain + "+pinctrl-test")
-        assert not unrelated["token"]
+        # An uncatalogued claimant must block the whole transition, including the offer.
+        busy = boot/"overlay-user"/"handoff-foreign.dtbo"
+        dts = '/dts-v1/; /plugin/; &{/} { extra-device { test-gpios=<&pio 4 3 0>; }; };'
+        subprocess.run(["dtc","-q","-@","-o",busy],input=dts.encode(),check=True)
+        write_selection(env.read_text(), env, [*tokens(env.read_text()), busy.stem])
+        protected = env.read_bytes()
+        assert preview(plain)["alternative"] is None and not preview(combined)["token"]
+        post("apply", {"profile":combined,"token":plan["token"]}, 409)
+        assert env.read_bytes() == protected and history() == prior
+        env.write_bytes(baseline)
         tui("save")
         assert_one_change(prior)
         repeat = preview(combined)
@@ -139,19 +198,22 @@ def check_transition(tmp, helper, get, post, browser=None):
         tui("undo")
         assert env.read_bytes() == baseline and len(history()-prior)==2
         reboot(False)
-        print("PASS urwid: cancelled preview writes nothing; one save camera → SPI3; one undo restores camera and exact env after simulated boots",flush=True)
+        print("PASS urwid: cancelled preview writes nothing; one save VIN + I2C2 → SPI3; one undo restores VIN, I2C2 at 400 kHz and exact env after simulated boots",flush=True)
 
         prior = history()
         for group, choice, spi in (("SPI",plain,True),("undo","undo",False)):
-            cmd = subprocess.run([helper,"native"],env=os.environ | {"GROUP":group,"CHOICE":choice},
-                                 check=True,capture_output=True,text=True)
-            assert "Сохранено" in cmd.stdout, cmd.stdout
+            if os.environ.get("PANEL_TEST_DIALOG"):
+                native_dialog(helper, undo=not spi)
+            else:
+                cmd = subprocess.run([helper,"native"],env=os.environ | {"GROUP":group,"CHOICE":choice},
+                                     check=True,capture_output=True,text=True)
+                assert "Сохранено" in cmd.stdout, cmd.stdout
             if spi:
                 assert_one_change(prior)
             else:
                 assert env.read_bytes() == baseline
             reboot(spi)
-        print("PASS native BUS002: one camera/SPI3 journal entry, one undo; extra owner and stale token refused before saving",flush=True)
+        print("PASS native BUS002: one VIN + I2C2 / SPI3 journal entry, one undo; partial/duplicate/protected owners and stale token refused",flush=True)
         # Managed bus owners can yield a pin too, subject to their normal client checks.
         uart_id = "a733-uart2-rtscts"
         pair = preview(uart_id)["alternative"]["id"]
@@ -165,7 +227,7 @@ def check_transition(tmp, helper, get, post, browser=None):
         sensor = folder / "handoff-sensor.dtbo"
         dts = '/dts-v1/; /plugin/; &{/soc@3000000/twi@2510000} { sensor@42 { compatible="test,sensor"; reg=<0x42>; }; };'
         subprocess.run(["dtc","-q","-@","-o",sensor], input=dts.encode(), check=True)
-        env.write_bytes(baseline+b"user_overlays=handoff-sensor\n")
+        write_selection(env.read_text(), env, [*tokens(env.read_text()), sensor.stem])
         protected = env.read_bytes()
         check = preview(pair)
         assert check["token"] is None and any("sensor@42" in issue for issue in check["issues"])
@@ -203,7 +265,7 @@ def run(tmp):
     helper.write_text('''#!/bin/bash
 set -eu
 script_dir="$PANEL_PREFIX/bin"
-declare -A module_options
+declare -A module_options menu_options
 if [[ -n $PANEL_PACKAGE ]]; then
     source "$PANEL_PREFIX/lib/armbian-config/config.system.sh"
 else
@@ -218,6 +280,14 @@ if [[ $1 == native ]]; then
     dialog_menu() { if [[ $1 == 'Шины и контакты' ]]; then echo "$GROUP"; else echo "$CHOICE"; fi; }
     dialog_yesno() { return 0; }
     dialog_msgbox() { echo "$2"; }
+    module_spi1_panel select
+elif [[ $1 == dialog ]]; then
+    if [[ -n $PANEL_PACKAGE ]]; then
+        source "$PANEL_PREFIX/lib/armbian-config/config.functions.sh"
+    else
+        source "$PANEL_PREFIX/tools/modules/functions/module_dialog_ui.sh"
+    fi
+    DIALOG=dialog BACKTITLE="Zero 3W"
     module_spi1_panel select
 else
     module_spi1_panel "$@"
