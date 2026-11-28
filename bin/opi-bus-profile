@@ -1,0 +1,21 @@
+#!/usr/bin/python3 -I
+"""Fixed command boundary for the SPI1 panel, including optional sudo delegation."""
+import os
+from pathlib import Path
+import re
+import sys
+
+args = sys.argv[1:]
+if not re.fullmatch(r"state|preview (single|shared|off)|apply (single|shared|off) [0-9a-f]{64}|undo [0-9a-f]{64}",
+                    " ".join(args)) or any(" " in arg for arg in args):
+    sys.exit("Expected state, preview PROFILE, apply PROFILE TOKEN or undo TOKEN")
+script = """
+script_dir=$1
+shift
+declare -A module_options
+source "$script_dir/../lib/armbian-config/config.system.sh" || exit 1
+module_spi1_panel "$@"
+"""
+os.chdir("/")
+os.execve("/bin/bash", ["bash", "-p", "-c", script, "opi-bus-profile", str(Path(__file__).resolve().parent), *args],
+          {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C.UTF-8", "PYTHONDONTWRITEBYTECODE": "1"})

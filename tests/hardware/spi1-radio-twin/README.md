@@ -87,3 +87,34 @@ Run `package-menu.py CONFIGURATOR.deb ALLWINNER_DTB_DIR` with dialog and dtc
 installed to repeat this check. The single-HAT regression suite passed 17 ARM64
 tests separately. The shared-route check fed the same composed board tree and
 five malformed variants to the GUI, mesh helper and C++ LoRaWAN validator.
+
+### Bus and header profile panel
+
+On Zero 2W, open **System → Шины и контакты (BUS002)**. The first table reads
+the live Device Tree, spidev bindings and advisory locks. The second uses the
+DTB selected for the next boot. Speeds are client requests and DT ceilings in
+Hz. Chip selects use physical header numbering. An unattached spidev or missing
+lock file is reported separately from the configured device.
+
+Preview composes the candidate with Armbian's installed base DTB and overlays
+in a temporary directory. Saving rechecks the preview under the boot writer's
+lock. No reboot or SPI transfer is performed. Moving away from the shared
+profile stores the immutable CS1/CS2 clock overlay names in
+`opi_spi1_saved_clocks` in the same atomic environment update. Selecting
+shared restores those clocks. SPI001 can inspect or clear a saved request.
+One-step undo uses the matching record in
+`/boot/armbianEnv.txt.spi1-panel-backups`; later unrelated edits require a new
+preview. The legacy DTO001 profile selector uses the same clock preservation.
+
+To repeat the cross-interface test with Python, Flask, PyYAML, urwid, jq,
+dtc/libfdt and both checkouts available:
+
+```sh
+python3 tests/hardware/spi1-radio-twin/panel.py "$ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
+```
+
+An optional third argument points at the extracted package prefix. The fixture
+builds the board DT and a private sysfs view, holds a real file lock and drives
+the Web endpoints and both terminal menu handlers across independent processes.
+It also exercises cancellation, stale previews, manual edits, an interrupted
+rename and a corrupted saved clock overlay.

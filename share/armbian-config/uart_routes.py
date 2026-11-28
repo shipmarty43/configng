@@ -304,7 +304,7 @@ def env_content(text):
     return assignments, notes
 
 
-def rollback_reordered(before, after, current, output):
+def rollback_reordered(before, after, current, output, allowed=("overlays", "user_overlays")):
     """Armbian re-appends usbstoragequirks at boot. Retain today's ordering."""
     saved, _ = env_content(before.read_text())
     expected = env_content(after.read_text())
@@ -313,8 +313,8 @@ def rollback_reordered(before, after, current, output):
         raise ValueError("Boot configuration has changed since this backup")
     updated = expected[0]
     changed = {k for k in saved.keys() | updated.keys() if saved.get(k) != updated.get(k)}
-    if not changed <= {"overlays", "user_overlays"}:
-        raise ValueError("Unexpected keys in the UART backup")
+    if not changed <= set(allowed):
+        raise ValueError("Unexpected keys in the boot configuration backup")
     lines = []
     for line in text.splitlines(keepends=True):
         key = line.partition("=")[0]
@@ -339,6 +339,7 @@ def main():
     undo = cmds.add_parser("rollback-reordered")
     for name in ("before", "after", "current", "output"):
         undo.add_argument(name, type=Path)
+    undo.add_argument("--spi1-profile", action="store_true")
     inactive = cmds.add_parser("inactive")
     inactive.add_argument("dtb", type=Path)
     inactive.add_argument("port", choices=ROUTES)
@@ -350,7 +351,10 @@ def main():
     sub.add_argument("action", choices=("enable", "enable-rtscts", "enable-rtscts-ph", "enable-rs485", "enable-rs485-ph", "disable"))
     args = parser.parse_args()
     if args.op == "rollback-reordered":
-        rollback_reordered(args.before, args.after, args.current, args.output)
+        allowed = ["overlays", "user_overlays"]
+        if args.spi1_profile:
+            allowed.append("opi_spi1_saved_clocks")
+        rollback_reordered(args.before, args.after, args.current, args.output, allowed)
         return
     if args.op == "prepare":
         prepare(args.before, args.after, args.folder, args.port, args.action)

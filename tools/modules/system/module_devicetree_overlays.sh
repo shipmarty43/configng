@@ -613,6 +613,7 @@ function _zero2w_overlay_prepare() (
                 _spi1_radio_cli validate "$composed" "$base" "${blobs[@]}" || return 1
             elif [[ " ${custom[*]} " == *' opi-zero2w-sx1262 '* ]]; then
 				_sx1262_validate "$composed" || return 1
+                _spi1_radio_cli validate --single "$composed" "$base" "${blobs[@]}" || return 1
 			fi
             if [[ $action == base || $action == compose ]]; then cp "$composed" "$output"; return; fi
 			;;
@@ -631,34 +632,9 @@ function _zero2w_overlay_prepare() (
 	' "$input" > "$output"
 )
 
-function _zero2w_overlay_change() (
-	local profile="$2" prepare="$3"
-	local action="$1" root conf lock work backup
-	root=$(_ups_dfr_boot); conf="$root/armbianEnv.txt"; lock="$conf.overlay.lock"
-	[[ -f "$conf" && ! -L "$conf" && ! -L "$lock" ]] || { echo 'Unsafe boot configuration path.' >&2; return 1; }
-	exec {lockfd}>"$lock" || return 1
-	flock -x "$lockfd" || return 1
-	work=$(mktemp -d "$root/.overlay-change.XXXXXX") || return 1
-	trap 'rm -rf "$work"' EXIT
-	cp -p "$conf" "$work/before" || return 1
-	if [[ "$action" == rollback ]]; then
-		local id="$4" saved="$conf.$profile-backups/$4"
-		[[ "$id" =~ ^change\.[[:alnum:]]+$ && ! -L "$conf.$profile-backups" && ! -L "$saved" &&
-			-f "$saved/before" && ! -L "$saved/before" && -f "$saved/after" && ! -L "$saved/after" ]] || {
-			echo 'Supply the change.ID from the saved backup.' >&2; return 1;
-		}
-		if cmp -s "$work/before" "$saved/after"; then
-			cp "$saved/before" "$work/after" || return 1
-		elif [[ $profile == uart || $profile == pwm || $profile == a733-io || $profile == header-gpio || $profile == pwm-modes || $profile == sx1262 ]]; then
-			python3 "${script_dir:-/usr/bin}/../share/armbian-config/uart_routes.py" rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
-		else
-			echo 'Boot configuration has changed since this backup.' >&2
-			return 1
-		fi
-	else
-		"$prepare" "$action" "$work/before" "$work/after" || return 1
-	fi
-    if [[ $profile == sx1262 ]] || grep -Eq '^user_overlays=.*opi-zero2w-spi1-radios' "$work/after"; then
+_zero2w_validate_change() {
+    local profile=$1 work=$2
+    if [[ $profile == sx1262 || $profile == spi1-panel ]] || grep -Eq '^user_overlays=.*opi-zero2w-spi1-radios' "$work/after"; then
         _zero2w_overlay_prepare compose "$work/after" "$work/radio.dtb" sx1262 '' || return 1
     fi
     if grep -Eq '^user_overlays=.*opi-header-gpio-' "$work/after"; then
@@ -680,6 +656,39 @@ function _zero2w_overlay_change() (
     if grep -Eq '^user_overlays=.*opi-(sclk|twi-clock)-' "$work/after"; then
         _bus_clocks_validate_config "$work/after" || return 1
     fi
+    return 0
+}
+
+function _zero2w_overlay_change() (
+	local profile="$2" prepare="$3"
+	local action="$1" root conf lock work backup
+	root=$(_ups_dfr_boot); conf="$root/armbianEnv.txt"; lock="$conf.overlay.lock"
+	[[ -f "$conf" && ! -L "$conf" && ! -L "$lock" ]] || { echo 'Unsafe boot configuration path.' >&2; return 1; }
+	exec {lockfd}>"$lock" || return 1
+	flock -x "$lockfd" || return 1
+	work=$(mktemp -d "$root/.overlay-change.XXXXXX") || return 1
+	trap 'rm -rf "$work"' EXIT
+	cp -p "$conf" "$work/before" || return 1
+	if [[ "$action" == rollback ]]; then
+		local id="$4" saved="$conf.$profile-backups/$4"
+		[[ "$id" =~ ^change\.[[:alnum:]]+$ && ! -L "$conf.$profile-backups" && ! -L "$saved" &&
+			-f "$saved/before" && ! -L "$saved/before" && -f "$saved/after" && ! -L "$saved/after" ]] || {
+			echo 'Supply the change.ID from the saved backup.' >&2; return 1;
+		}
+		if cmp -s "$work/before" "$saved/after"; then
+			cp "$saved/before" "$work/after" || return 1
+		elif [[ $profile == uart || $profile == pwm || $profile == a733-io || $profile == header-gpio || $profile == pwm-modes || $profile == sx1262 ]]; then
+			local -a undo_args=()
+			[[ $profile != sx1262 ]] || undo_args+=(--spi1-profile)
+			python3 "${script_dir:-/usr/bin}/../share/armbian-config/uart_routes.py" rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" "${undo_args[@]}" || return 1
+		else
+			echo 'Boot configuration has changed since this backup.' >&2
+			return 1
+		fi
+	else
+		"$prepare" "$action" "$work/before" "$work/after" || return 1
+	fi
+    _zero2w_validate_change "$profile" "$work" || return 1
 	if cmp -s "$work/before" "$work/after"; then echo 'Boot configuration already matches; no change.'; return 0; fi
 	cmp -s "$conf" "$work/before" || { echo 'Boot config changed concurrently.' >&2; return 1; }
 	[[ ! -L "$conf.$profile-backups" ]] || return 1

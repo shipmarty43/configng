@@ -89,6 +89,26 @@ def managed(names):
     return result
 
 
+PARKED = "opi_spi1_saved_clocks"
+
+
+def saved_names(text):
+    values = [line.partition("=")[2].split() for line in text.splitlines()
+              if line.startswith(PARKED + "=")]
+    if len(values) > 1:
+        raise ValueError(f"Duplicate {PARKED}")
+    return values[0] if values else []
+
+
+def replace_saved(text, names):
+    if saved_names(text) == names:
+        return text
+    text = re.sub(rf"^{PARKED}=.*(?:\n|$)", "", text, flags=re.M)
+    if not names:
+        return text
+    return text + ("" if text.endswith("\n") else "\n") + PARKED + "=" + " ".join(names) + "\n"
+
+
 def verify(blob, effective, names, folder):
     selected = managed(names)
     buses = {bus for bus, _ in selected}
@@ -128,26 +148,34 @@ def main():
     before = args.env.read_text()
     names = tokens(before)
     if args.action == "default-all":
-        write_selection(before, args.after, [name for name in names if not name.startswith(PREFIX)])
+        write_selection(replace_saved(before, []), args.after, [name for name in names if not name.startswith(PREFIX)])
         return
     saved = managed(names)
     if args.action == "verify":
         verify(args.baseline, args.effective, names, args.folder)
         return
     devices = endpoints(args.baseline, args.bus)
+    parked = managed(saved_names(before))
     if args.action == "list":
-        for cs in sorted(set(devices) | {cs for bus, cs in saved if bus == args.bus}):
+        for cs in sorted(set(devices) | {cs for bus, cs in saved.keys() | parked.keys() if bus == args.bus}):
             ep = devices.get(cs)
             description = ep.compatible if ep else "previously configured, route absent"
+            if not ep and (args.bus, cs) in parked:
+                description = f"shared profile clock saved: {parked[args.bus, cs][1]} Hz"
             if ep and ep.sx1262:
                 description += " (SXMD01)"
             print(f"{cs}\t{description}")
         return
     item, hz = saved.get((args.bus, args.cs), (None, None))
     if args.action == "default":
-        write_selection(before, args.after, [name for name in names if name != item])
+        parked_name, _ = parked.get((args.bus, args.cs), (None, None))
+        updated = replace_saved(before, [n for n in saved_names(before) if n != parked_name])
+        write_selection(updated, args.after, [name for name in names if name != item])
         return
     ep = devices.get(args.cs)
+    if not ep and args.action == "status" and (args.bus, args.cs) in parked:
+        print(f"{args.bus.upper()} CS{args.cs}: saved for shared profile, {parked[args.bus, args.cs][1]} Hz")
+        return
     if not ep:
         raise ValueError(f"No enabled device on {args.bus} CS{args.cs}; use default to clear a stale setting")
     if ep.sx1262:

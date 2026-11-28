@@ -1,0 +1,17 @@
+/dts-v1/;
+/plugin/;
+
+&spi1 {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&spi1_pins>;
+    num-cs = <1>;
+    cs-gpios = <&pio 8 3 1>;
+    radio@0 {
+        reg = <0>;
+        compatible = "semtech,sx1262", "armbian,spi-dev";
+        spi-max-frequency = <16000000>;
+    };
+};

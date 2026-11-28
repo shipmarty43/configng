@@ -41,7 +41,10 @@ for spec in '8 3' '7 9' '7 5' '7 4' '8 1' '8 4' '2 12' '8 15'; do
 done
 cp "$w/shared" "$envfile"
 module_spi_clocks set spi1 1 1000000; module_spi_clocks set spi1 2 4000000
-reject radio disable
+radio disable
+grep -q '^opi_spi1_saved_clocks=.*1000000.*4000000' "$envfile"
+radio shared
+grep -q '^user_overlays=.*1000000.*4000000' "$envfile"
 module_spi_clocks default spi1 1; module_spi_clocks default spi1 2
 radio disable
 echo 'PASS radio selection, conflicts on all eight pads, provider ownership, per-CS clocks and rollback'
