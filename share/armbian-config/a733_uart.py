@@ -6,7 +6,7 @@ import re
 import sys
 import termios
 
-from a733_io import DE_PROP, FLOW_PROP, PIO, R_PIO, ROUTES, SOC, UART_FLOW
+from a733_io import FLOW_PROP, PIO, R_PIO, ROUTES, SOC, UART_FLOW
 import h616_uart as serial
 from h616_settings import save
 
@@ -32,9 +32,8 @@ def identify(name, sysroot=Path("/sys")):
             if ((node/"compatible").read_bytes().split(b"\0")[0] != b"allwinner,uart-v100" or
                     (node/"status").is_file() and (node/"status").read_bytes().rstrip(b"\0") not in (b"ok", b"okay")):
                 return None
-            if (node/FLOW_PROP).exists() or (node/DE_PROP).exists():
-                marker = DE_PROP if (node/DE_PROP).exists() else FLOW_PROP
-                if ((node/FLOW_PROP).exists() and (node/DE_PROP).exists() or port not in UART_FLOW or (node/marker).read_bytes() != b"a733\0"
+            if (node/FLOW_PROP).exists():
+                if (port not in UART_FLOW or (node/FLOW_PROP).read_bytes() != b"a733\0"
                         or not (node/"uart-has-rtscts").is_file()
                         or any((node/key).exists() for key in serial.FLOW_CONFLICTS)
                         or (node/(port+"_type")).read_bytes() != (4).to_bytes(4, "big")):

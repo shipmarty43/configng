@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 from dt_clock_overlay import install_blob, tokens, write_selection
-from uart_routes import DE_PROP, FLOW_CONFLICTS, FLOW_PROP, cells, enabled, owners, read_tree, strings
+from uart_routes import FLOW_CONFLICTS, FLOW_PROP, cells, enabled, owners, read_tree, strings
 
 BASE = "allwinner/sun60i-a733-orangepi-zero3w.dtb"
 SOC = "/soc@3000000/"
@@ -104,7 +104,7 @@ def selection(key, values):
         props += f" clock-frequency = <{values[0]}>;"
     elif key == "spi2":
         spi2_selects(values)
-    elif key in UART_FLOW and values in (["rtscts"], ["rs485"]):
+    elif key in UART_FLOW and values == ["rtscts"]:
         pass
     elif values != ["on"]:
         raise ValueError("Use on to enable the header route")
@@ -131,8 +131,7 @@ def overlay(key, values):
             }}; }};
         }};'''
         return subprocess.check_output(["dtc", "-@", "-I", "dts", "-O", "dtb"], input=source.encode())
-    if key in UART_FLOW and values in (["rtscts"], ["rs485"]):
-        marker = DE_PROP if values == ["rs485"] else FLOW_PROP
+    if key in UART_FLOW and values == ["rtscts"]:
         pins = (ROUTES[key][2] + " " + UART_FLOW[key][0]).split()
         pin_list = ", ".join(f'"{pin}"' for pin in pins)
         source = f'''/dts-v1/; /plugin/; / {{
@@ -141,7 +140,7 @@ def overlay(key, values):
                 {key}_sleep: opi-{key}-flow-sleep {{ pins = {pin_list}; function = "io_disabled"; drive-strength = <10>; }};
             }}; }};
             fragment@1 {{ target-path = "{path}"; __overlay__ {{
-                status = "okay"; uart-has-rtscts; {marker} = "a733"; {key}_type = <4>;
+                status = "okay"; uart-has-rtscts; {FLOW_PROP} = "a733"; {key}_type = <4>;
                 pinctrl-names = "default", "sleep"; pinctrl-0 = <&{key}_flow>; pinctrl-1 = <&{key}_sleep>;
             }}; }};
         }};'''
@@ -295,17 +294,15 @@ def verify(nodes, selected, *, report=False):
                     raise ValueError(f"Unexpected endpoint or overridden SPI settings at {child}")
                 descriptions.append(f"CS{cs} {hz} Hz mode {mode}")
             detail = ", ".join(descriptions)
-        if selected.get(name) in (["rtscts"], ["rs485"]):
-            de = selected[name] == ["rs485"]
-            marker, other = (DE_PROP, FLOW_PROP) if de else (FLOW_PROP, DE_PROP)
+        if selected.get(name) == ["rtscts"]:
             flow_pins, header = UART_FLOW[name]
             pins += " " + flow_pins
-            if (other in props or props.get(marker) != b"a733\0" or props.get("uart-has-rtscts") != b""
+            if (props.get(FLOW_PROP) != b"a733\0" or props.get("uart-has-rtscts") != b""
                     or any(key in props for key in FLOW_CONFLICTS)
                     or cells(props.get(name + "_type", b"")) != [4]
                     or strings(props["pinctrl-names"]) != ["default", "sleep"]):
                 raise ValueError(f"{name}: overridden RTS/CTS configuration")
-            detail = f"RS-485 DE {header.split('/')[0]}" if de else f"RTS/CTS {header}"
+            detail = f"RTS/CTS {header}"
         if is_on:
             group_root = R_PIO if name == "uart7" else PIO
             for index, allowed in (("0", {function}), ("1", {"io_disabled", "gpio_in"})):

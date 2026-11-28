@@ -32,6 +32,7 @@ if [[ -n ${PWM_CONFIG_KIT:-} ]]; then
     cmp "$w/input/current.deb" "$kit"/current/*.deb
     cmp "$w/input/stock.deb" "$kit"/rollback/*.deb
     cp -a "$kit" "$w/input/kit"
+    rm "$w/input/current.deb" "$w/input/stock.deb"
     cp "$here/../header-kit/"{menu.py,profile.sh} "$w/input/"
     case "$board" in
         orangepizero2w) chip=allwinner,sun50i-h618 ;;
@@ -41,6 +42,24 @@ if [[ -n ${PWM_CONFIG_KIT:-} ]]; then
     # Supply the board identity for the real menu guard, with QEMU peripherals only.
     "$q" -machine "virt,gic-version=3,dumpdtb=$w/virt.dtb" -cpu cortex-a55 -smp 2 -m 896M -nic none -nodefaults -display none
     fdtput -t s "$w/virt.dtb" / compatible linux,dummy-virt "xunlong,$(echo "$board" | sed s/orangepizero/orangepi-zero/)" "$chip"
+    if [[ -n ${PWM_QA_I2C:-} ]]; then
+        cp "$PWM_QA_I2C" "$w/input/qa_i2c.ko"
+        if [[ $board == orangepizero2w ]]; then parent=/soc; child=i2c@5002400; else parent=/soc@3000000; child=twi@2510000; fi
+        fdtget -p "$w/virt.dtb" "$parent" >/dev/null 2>&1 || fdtput -c "$w/virt.dtb" "$parent"; fdtput -c "$w/virt.dtb" "$parent/$child"
+        fdtput -t s "$w/virt.dtb" "$parent/$child" status disabled
+    fi
+    if [[ -n ${PWM_QA_GPIO:-} ]]; then
+        [[ $board == orangepizero3w ]]
+        cp "$PWM_QA_GPIO" "$w/input/qa_gpio.ko"
+        fdtget -p "$w/virt.dtb" /soc@3000000 >/dev/null 2>&1 || fdtput -c "$w/virt.dtb" /soc@3000000
+        for node in pinctrl@2000000 pinctrl@7025000; do
+            addr=/soc@3000000/$node
+            fdtput -c "$w/virt.dtb" "$addr"
+            fdtput -t s "$w/virt.dtb" "$addr" status disabled
+            fdtput -t i "$w/virt.dtb" "$addr" '#gpio-cells' 3
+            fdtput "$w/virt.dtb" "$addr" gpio-controller
+        done
+    fi
     dt_args=(-dtb "$w/virt.dtb")
 fi
 cp "$here/init" "$w/early/init"; chmod 755 "$w/early/init"
@@ -48,7 +67,7 @@ cp "$busy" "$w/early/bin/busybox"
 if [[ $# == 7 ]]; then test -f "$7"; cp "$7" "$w/early/qa-ecam.ko"; fi
 (cd "$w/early" && find . -print0 | cpio --null -o -H newc 2>/dev/null | gzip -1 > "$w/init.gz")
 qemu-img create -q -f qcow2 -F raw -b "$clean" "$w/root.qcow2"
-truncate -s "$(( $(du -sm "$w/input" | cut -f1) + 16 ))M" "$w/input.ext4"
+truncate -s "$(( $(du -sm --apparent-size --count-links "$w/input" | cut -f1) + 32 ))M" "$w/input.ext4"
 mke2fs -q -F -t ext4 -m0 -L PWM_INPUT -d "$w/input" "$w/input.ext4"
 truncate -s 128M "$w/result.ext4"; mke2fs -q -F -t ext4 -m0 -L PWM_RESULT "$w/result.ext4"
 kernel="$w/stock.Image"

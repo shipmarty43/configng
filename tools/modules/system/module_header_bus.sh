@@ -26,6 +26,7 @@ module_header_bus() {
         if [[ $data != *'adapter recovery supported' ]]; then dialog_msgbox "$name" "$data" 12 80; return; fi
         actions=(recover 'Request recovery under the kernel adapter lock')
     else
+        if [[ $data == *'native RTS/DE unsupported'* ]]; then dialog_msgbox "$name" "$data" 12 80; return; fi
         actions=(high 'Enable, RTS high during TX' low 'Enable, RTS low during TX' off 'Disable RS-485')
     fi
     action=$(dialog_menu "$name" "$data" 16 82 4 -- "${actions[@]}") || return 0

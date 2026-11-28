@@ -79,8 +79,12 @@ api boot-rollback "$id"; cmp "$conf" "$temp/quirks-before"
 # Exercise safe feedback in both directions: the DFR0528 bus uses the PI handshake pair.
 cp "$temp/original" "$conf"
 cp "$conf" "$temp/unchanged-flow"
+reject api enable-rs485 uart2
 reject api enable-rtscts uart2
 cmp "$temp/unchanged-flow" "$conf"
+api enable-rs485-ph uart2
+_zero2w_overlay_prepare compose "$conf" "$temp/de.dtb" uart ''
+fdtget "$temp/de.dtb" /soc/serial@5000800 armbian-config,rs485-de | grep -Fx h618
 api enable-rtscts-ph uart2
 api routes | grep 'uart2.*24/23/19/21.*managed, enabled'
 _zero2w_overlay_prepare compose "$conf" "$temp/ph-flow.dtb" uart ''

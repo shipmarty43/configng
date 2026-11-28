@@ -135,10 +135,7 @@ sed -i '/^user_overlays=/s/$/ test-pwm0-pe3/' "$envfile"
 reject set uart6 rtscts
 grep -q 'PE3 also claimed' "$fixture_dir/rejection"
 sed -i 's/ test-pwm0-pe3//' "$envfile"
-api set uart6 rs485
-compose_current
-fdtget "$fixture_dir/composed.dtb" /soc@3000000/uart@2506000 armbian-config,rs485-de | grep -Fx a733
-reject set i2c3 100000
+reject set uart6 rs485
 api set uart6 rtscts
 compose_current
 python3 -B "$repo/tests/hardware/check-uart-flow.py" a733 uart6 "$fixture_dir/composed.dtb"

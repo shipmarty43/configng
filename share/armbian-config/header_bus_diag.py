@@ -62,7 +62,14 @@ def recovery(name, do_recover=False, sysroot=Path("/sys"), helper=Path("/dev/opi
         if do_recover:
             if not bus[2]:
                 raise OSError(errno.EOPNOTSUPP, "Adapter driver has no recovery callback")
-            fcntl.ioctl(fd, RECOVER, bus, True)
+            try:
+                fcntl.ioctl(fd, RECOVER, bus, True)
+            except OSError as exc:
+                messages = {errno.EBUSY: "Adapter busy or SDA/SCL still held",
+                            errno.ETIMEDOUT: "Adapter recovery timed out"}
+                if exc.errno in messages:
+                    raise OSError(exc.errno, messages[exc.errno], name) from exc
+                raise
             return description + "; kernel recovery completed"
     return description + ("; adapter recovery supported" if bus[2] else "; recovery unsupported")
 
@@ -106,7 +113,7 @@ def header_ttys():
     for path in Path("/sys/class/tty").glob("ttyS[0-9]*"):
         match = a733_uart.identify(path.name)
         if match:
-            result[path.name] = (match[1], (match[1]/DE_PROP).is_file())
+            result[path.name] = (match[1], False)
     return result
 
 
@@ -114,6 +121,9 @@ def serial_op(name, mode):
     ports = header_ttys()
     if name not in ports:
         raise ValueError("Expected an enabled header tty")
+    vendor = (ports[name][0]/"compatible").read_bytes().split(b"\0")[0] == b"allwinner,uart-v100"
+    if vendor and mode != "status":
+        raise ValueError("A733 uart-v100 has no native RTS direction control; its separate GPIO-DE mode requires a transceiver profile")
     reason = uart.busy(name) or uart.reserved(name)
     if reason:
         raise uart.PortBusy(reason)
@@ -130,7 +140,18 @@ def serial_op(name, mode):
             exclusive = True
             if reason := uart.busy(name,fd) or uart.reserved(name):
                 raise uart.PortBusy(reason)
-            return rs485(fd,mode,has_de=ports[name][1])
+            try:
+                report = rs485(fd,mode,has_de=ports[name][1])
+            except OSError as exc:
+                if exc.errno in (errno.ENOTTY, errno.EOPNOTSUPP):
+                    raise OSError(exc.errno, "RS-485 ioctl unsupported by this tty driver", name) from exc
+                raise
+            if mode == "status":
+                if vendor:
+                    report += "; native RTS/DE unsupported by uart-v100"
+                elif not ports[name][1]:
+                    report += "; no reserved RTS/DE route"
+            return report
         finally:
             try:
                 if exclusive:

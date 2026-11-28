@@ -388,6 +388,8 @@ def main():
             if mode is not None:
                 state = "managed, " + state
             signals = "TX/RX " + pins if wiring in (None, "txrx") else "TX/RX/RTS/CTS " + FLOW[port, wiring][1]
+            if wiring and wiring.startswith("rs485"):
+                signals += "; RTS reserved for DE"
             print(f"{port}\t{signals}; {state}")
 
 
