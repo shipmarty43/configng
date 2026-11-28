@@ -1,0 +1,94 @@
+[
+  {
+    "board": "zero2w",
+    "clean_image": "Armbian_community_26.11.0-trunk.108_Orangepizero2w_resolute_current_6.18.57_xfce_desktop.img",
+    "clean_image_sha256": "a398fa766ee849ef30f367534aa09d640ea0ff9d11f139a5bf2838e4a17b26fe",
+    "archive": "zero2w-resolute-header-offline-arm64.tar",
+    "sha256": "bb81a0ba28cf0c65a26a89f234e1accc96be3b6f1f0e10305a25652668e5fbfe",
+    "kernel_before_and_after": "8a1a6efaf6bb72da026eaf3fa807b3b58dc23dfc26f833146f7519930ffa4794",
+    "kernel_with_pwm": "876b044fc38a64a4069773f840b92f7c634a8546f158611fc2d33c217d99b725",
+    "packages": [
+      {
+        "filename": "linux-image-current-sunxi64_26.11.0-trunk.108+pwm002.1_arm64.deb",
+        "sha256": "07b927e9bbbd1c016f38bb8d82ca2364c225fd8ee4e008af01ff1f88f9ea9ec0",
+        "version": "26.11.0-trunk.108+pwm002.1"
+      },
+      {
+        "filename": "linux-image-current-sunxi64_26.11.0-trunk.108_arm64.deb",
+        "sha256": "41ce65cefcb8ea76287553c4104c76b210737d4566dcd2d3f291c863f6c16b28",
+        "version": "26.11.0-trunk.108"
+      },
+      {
+        "filename": "armbian-config-zero2w_0.1~git1445.99e98d82_all.deb",
+        "sha256": "b7ee2e6f7f7373125968bc3d72716bd8f0f53a8a80d8defc4d0769236b0282de",
+        "version": "0.1~git1445.99e98d82"
+      },
+      {
+        "filename": "opi-board-helpers-6.18.57-current-sunxi64_0.1~git1445.99e98d82_arm64.deb",
+        "sha256": "64aebb74503146fa095d5c14b44044fbd2cb5d13da8dd3d404686b8713cafe39",
+        "version": "0.1~git1445.99e98d82"
+      },
+      {
+        "filename": "opi-header-gpio-modules-6.18.57-current-sunxi64_1.0-1_arm64.deb",
+        "sha256": "328f35477b08f2650c257a6e05b5c8d1306e15a3715ac644aa633513e5a8d52a",
+        "version": "1.0-1"
+      },
+      {
+        "filename": "wiringpi-orange-gpio_3.20+opi.658.2a5e311e_arm64.deb",
+        "sha256": "10761461517fdc7be10b400a8e315ab8232920549b913aa70c35c6d528c028ce",
+        "version": "3.20+opi.658.2a5e311e"
+      }
+    ],
+    "tests": [
+      "native stock boot and menu save",
+      "patched boot, driver and profile verification, rollback",
+      "restored boot"
+    ]
+  },
+  {
+    "board": "zero3w",
+    "clean_image": "a.img",
+    "clean_image_sha256": "8d405be165fc648d41bc2a661a04c8a6372efc1c70b371dca1020efc6bf69596",
+    "archive": "zero3w-trixie-header-offline-arm64.tar",
+    "sha256": "2795f15236e9bdbfaae9a0da27d4999966f6da7fdecb9def1a4718a51835136a",
+    "kernel_before_and_after": "cb0eb7837725f746d534f17c2deca2e1d7033a32a6317ce5bf2b80901d615fa7",
+    "kernel_with_pwm": "bd2e709f76b8fee5bfc40fb6c8aae20e8d3c615e56615d87f8bc6feabc382f3f",
+    "packages": [
+      {
+        "filename": "linux-image-vendor-sun60iw2_26.11.3+pwm002.1_arm64.deb",
+        "sha256": "91b13614c681045f075b7bcdd34435afec7f5df66e50c16037bde3d3534b080b",
+        "version": "26.11.3+pwm002.1"
+      },
+      {
+        "filename": "linux-image-vendor-sun60iw2_26.11.3_arm64.deb",
+        "sha256": "e0b0a9d93879f40e360df6152162fbcea3805846bed833a72d53e0d9f9d33412",
+        "version": "26.11.3"
+      },
+      {
+        "filename": "armbian-config-zero2w_0.1~git1445.99e98d82_all.deb",
+        "sha256": "b7ee2e6f7f7373125968bc3d72716bd8f0f53a8a80d8defc4d0769236b0282de",
+        "version": "0.1~git1445.99e98d82"
+      },
+      {
+        "filename": "opi-board-helpers-6.6.98-vendor-sun60iw2_0.1~git1445.99e98d82_arm64.deb",
+        "sha256": "facd502126aec09ac72729bbbbd4fd65e1787830cf2c5a1f566d1d3429ecb2bb",
+        "version": "0.1~git1445.99e98d82"
+      },
+      {
+        "filename": "opi-header-gpio-modules-6.6.98-vendor-sun60iw2_1.0-1_arm64.deb",
+        "sha256": "2fb1d13b1dc1047c77535ead49d2b87b3543bcc7a9a23e2c796a54301dfab13d",
+        "version": "1.0-1"
+      },
+      {
+        "filename": "wiringpi-orange-gpio_3.20+opi.660.fc1a92b6_arm64.deb",
+        "sha256": "7e67366741f72bed4ada380f44be753370584955171e0278287d6ca34d392149",
+        "version": "3.20+opi.660.fc1a92b6"
+      }
+    ],
+    "tests": [
+      "native stock boot and menu save",
+      "patched boot, driver and profile verification, rollback",
+      "restored boot"
+    ]
+  }
+]

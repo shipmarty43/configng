@@ -1,5 +1,7 @@
 # Orange Pi Zero 2W development handoff
 
+[Combined header kits, A733 GPIO, bus diagnostics and Web/TUI acceptance](header-software-2026-11-28.md).
+
 [PWM002 channel matrix, fan settings, driver patches and offline acceptance](pwm-modes.md).
 
 [Pin and peripheral audit of H616/H618 and A733, including negative DT tests](pin-manual-audit.md).

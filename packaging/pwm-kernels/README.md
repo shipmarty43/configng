@@ -54,3 +54,33 @@ Both boards completed three cold boots of their own kernels under QEMU. With sys
 The build used the configs from the images, GCC 14.3, binutils 2.46 and pahole 1.31 with BTF enabled. Temporary DWARF sections were compressed on disk. The Zero 2W build used the 6.18.57 stable kernel, the board distribution's kernel-code patches and its enabled extra drivers, including UWE5622. The Zero 3W build applied the distribution patch set to the pinned Orange Pi kernel and rebuilt the separate PowerVR module. Both packages retained the board DTBs supplied by their original Armbian artifacts. [Zero 2W framework revision](https://github.com/armbian/build/tree/fac57a02f1c6ff2221a3f3099a1094dcdf41be26) · [Zero 3W framework revision](https://github.com/armbian/build/tree/0bf4c8e96) · [A733 vendor kernel](https://github.com/orangepi-xunlong/linux-orangepi/tree/2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f)
 
 Both distribution DTBs also passed the PWM002 profile and rollback checks. The register double passed on the selected driver inputs. It checked complementary output shutdown, fan-channel preservation and A733 capture, error cleanup and counted bursts. QEMU executed the package-selected Image with a test initramfs. These runs cover packaging, boot selection and the Linux userspace lifecycle. Electrical timing and the board's U-Boot execution remain physical acceptance items.
+
+## Matched header configurator kits
+
+The full kit has a configurator and WiringPi C/Python package in `support/`,
+the ABI-matched GPIO preset and I²C recovery modules, and the PWM kernel and
+rollback in `current/` and `rollback/`. Zero 2W also includes its DFR0528 driver.
+Build the configurator with `packaging/zero2w/build.py REVISION --core-only --output OUT --work WORK`.
+Build the WiringPi package in the corresponding WiringPi fork. The Zero 3W Trixie
+image requires a library built against an appropriate Debian sysroot.
+
+```sh
+python3 packaging/pwm-kernels/assemble-kit.py "$KERNEL_KIT" "$CORE_DEB" "$GPIO_DEB"     "$NEW_KIT" "$I2C_RECOVERY_KO" --wiringpi "$WIRINGPI_DEB"
+```
+
+For Zero 2W include the DFR0528 .ko as another positional module. The assembler
+checks module names and vermagic, pairs the kernel with its original version,
+and emits the checksum manifest. The complete kit installs with
+`sudo ./apply.sh install`. Use PWM002 to undo the saved profile and
+`sudo ./apply.sh rollback-kernel` to restore the original kernel. Support
+packages stay installed. The installer checks board identity, the installed
+kernel package version and the kit checksums.
+
+Set `PWM_CONFIG_KIT` when running the image lifecycle test to exercise the
+real packaged PWM002 menu under a PTY. `PWM_QA_I2C` adds the memory-backed
+test adapter from `tests/packaging/header-kit/qa_i2c.c`. On Zero 3W,
+`PWM_QA_GPIO` additionally supplies `qa_gpio.c` built as a module. They
+belong on the test input disk only. The reboot check compares every boot
+assignment and comment and the contents of the PWM overlays. Armbian may
+reappend the usbstoragequirks assignment during boot. The test preserves that
+distinction while checking the selected profile, the fan levels and rollback.
