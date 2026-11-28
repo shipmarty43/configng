@@ -184,16 +184,30 @@ def route_issues(route, base, before, after):
             clients = [c for c in clients if strings(before[c].get("compatible", b"")) != ["rohm,dh2228fv"]]
         if clients:
             return ["Маршрут обслуживает " + ", ".join(clients)]
-    if route.group == "PWM" and not route.values and enabled(before, route.path):
+    if route.group == "PWM" and (route.values or enabled(before, route.path)):
         n = int(route.port[3:])
         users = pwm.consumers(before, pwm.controller("a733", n)).get(n % 10, set())
         if users:
             return ["Канал PWM обслуживает " + ", ".join(sorted(users))]
-    if route.group == "PWM" and route.values:
-        n = int(route.port[3:])
-        # Reuse the BSP's channel-map, ownership and pinmux validation.
-        pwm.check("a733", after, pwm.Profile("a733", "capture", n, ()), applied=False)
     return []
+
+
+def validate_stock_pwm(tree, env):
+    """Validate selected stock pin routes on apply and undo, including foreign DT edits."""
+    names = {n.removeprefix("sun60i-a733-") for n in io.environment(env).get("overlays", "").split()}
+    for n in pwm.A733:
+        if ("spwm2" if n == 22 else f"pwm{n}") not in names:
+            continue
+        path = pwm.channel("a733", n)
+        ctrl = pwm.controller("a733", n)
+        provider = tree[ctrl]
+        compat = "allwinner,sunxi-pwm-v204" if n == 22 else "allwinner,sunxi-pwm-v203"
+        refs = cells(provider["sunxi-pwms"])
+        if (not enabled(tree, path) or not enabled(tree, ctrl) or compat not in strings(provider["compatible"])
+                or len(refs) != 10 or cells(provider["pwm-base"]) != [20 if n == 22 else 0]
+                or cells(tree[path]["phandle"]) != [refs[n % 10]]):
+            raise ValueError(f"Неверный контроллер или отключённый PWM-канал {n}: {path}")
+        pwm.a733_mux_pin(tree, n)
 
 
 def compose(work):

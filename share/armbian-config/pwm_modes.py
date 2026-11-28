@@ -121,6 +121,24 @@ def consumers(nodes, ctrl):
     return result
 
 
+def a733_mux_pin(nodes, ch):
+    """Verify both BSP pinctrl states without starting or selecting a PWM mode."""
+    d = nodes[channel("a733", ch)]
+    pin = A733[ch]
+    ctl = CONTROLLERS["a733"][int(ch == 22)].path
+    groups = [g for k, g in nodes.items() if k.rpartition("/")[0] == ctl and
+              g.get("phandle") == d.get("pinctrl-0") and "phandle" in g]
+    function = "s_pwm0_2" if ch == 22 else f"pwm0_{ch}"
+    if (strings(d["pinctrl-names"]) != ["active", "sleep"] or len(groups) != 1 or
+            strings(groups[0]["pins"]) != [pin] or strings(groups[0]["function"]) != [function]):
+        raise ValueError(f"Unqualified active route for {function}")
+    sleeps = [g for k, g in nodes.items() if k.rpartition("/")[0] == ctl and
+              "phandle" in g and g["phandle"] == d.get("pinctrl-1")]
+    if len(sleeps) != 1 or strings(sleeps[0]["pins"]) != [pin]:
+        raise ValueError(f"Unexpected sleep route for {function}")
+    return pin
+
+
 def check(board, nodes, profile, *, applied):
     if not set(BOARD[board]) <= set(strings(nodes["/"]["compatible"])) or profile.board != board:
         raise ValueError("PWM profile and device tree board differ")
@@ -162,18 +180,7 @@ def check(board, nodes, profile, *, applied):
             if pin not in PINS[ch]:
                 raise ValueError(f"Select the PWM{ch} header route in PWM001 first")
         else:
-            pin = A733[ch]
-            ctl = CONTROLLERS[board][int(ch == 22)].path
-            groups = [g for k, g in nodes.items() if k.rpartition("/")[0] == ctl and
-                      g.get("phandle") == d.get("pinctrl-0") and "phandle" in g]
-            function = "s_pwm0_2" if ch == 22 else f"pwm0_{ch}"
-            if (strings(d["pinctrl-names"]) != ["active", "sleep"] or len(groups) != 1 or
-                    strings(groups[0]["pins"]) != [pin] or strings(groups[0]["function"]) != [function]):
-                raise ValueError(f"Unqualified active route for {function}")
-            sleeps = [g for k, g in nodes.items() if k.rpartition("/")[0] == ctl and
-                      "phandle" in g and g["phandle"] == d.get("pinctrl-1")]
-            if len(sleeps) != 1 or strings(sleeps[0]["pins"]) != [pin]:
-                raise ValueError(f"Unexpected sleep route for {function}")
+            pin = a733_mux_pin(nodes, ch)
         conflict = occupied_pins.get(pin, set()) - {path}
         if conflict:
             raise ValueError(f"{pin} already claimed by " + ", ".join(sorted(conflict)))

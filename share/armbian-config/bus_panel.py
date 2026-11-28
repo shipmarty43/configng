@@ -248,11 +248,12 @@ def describe(work, target, dt, devices, locks, board):
                 for r in live_state["pins"] if r["pin"] in affected and r.get("gpio_consumer")]
     if board == "a733":
         issues = a733_panel.conflicts(candidate["pins"])
-        if target in a733_panel.ROUTES:
-            try:
+        try:
+            a733_panel.validate_stock_pwm(trees[1], (work/"after").read_text())
+            if target in a733_panel.ROUTES:
                 issues.extend(a733_panel.route_issues(a733_panel.ROUTES[target], read_tree(work / "base.dtb"), *trees))
-            except (ValueError, KeyError) as exc:
-                issues.append(str(exc))
+        except (ValueError, KeyError) as exc:
+            issues.append(str(exc))
     else:
         issues = header.conflict_messages(candidate["pins"])
     if board == "h618" and target in header.ROUTES:
