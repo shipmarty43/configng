@@ -9,6 +9,15 @@ kit_api() (
     "$@"
 )
 kit_backup() { sed -n 's/.*Backup: .*\/\(change\.[[:alnum:]]*\).*/\1/p' | tail -1; }
+kit_compare_env() {
+    PYTHONPATH=/opt/armbian-config-zero2w/share/armbian-config python3 - "$1" <<'PYENV'
+from pathlib import Path
+import sys
+from uart_routes import env_content
+if env_content(Path(sys.argv[1]).read_text()) != env_content(Path("/boot/armbianEnv.txt").read_text()):
+    raise SystemExit("Boot variable, duplicate key or comment changed")
+PYENV
+}
 kit_save() {
     local first=0
     if [[ $BOARD == orangepizero2w ]]; then
@@ -29,12 +38,7 @@ kit_save() {
 kit_check() {
     local module
     sha256sum -c result/profile.sha
-    PYTHONPATH=/opt/armbian-config-zero2w/share/armbian-config python3 - <<'PYENV'
-from pathlib import Path
-from uart_routes import env_content
-if env_content(Path("result/profile.env").read_text()) != env_content(Path("/boot/armbianEnv.txt").read_text()):
-    raise SystemExit("Saved environment changed across reboot")
-PYENV
+    kit_compare_env result/profile.env
     kit_api module_pwm_modes verify
     kit_api module_pwm_modes list | grep -F pair
     for module in opi_header_gpio opi_i2c_recovery; do modprobe "$module"; test -d "/sys/module/$module"; done
@@ -43,6 +47,7 @@ PYENV
     if [[ -f input/qa_i2c.ko ]]; then
         # Use the packaged Python and the real recovery bridge. Only the adapter is a double.
         local diag=/opt/armbian-config-zero2w/share/armbian-config/header_bus_diag.py bus
+        echo "Checking the virtual kernel adapter"; sync
         insmod input/qa_i2c.ko
         bus=$(python3 "$diag" i2c list); [[ $bus =~ ^i2c-[0-9]+$ ]]
         python3 "$diag" i2c status "$bus" | grep 'adapter recovery supported'
@@ -66,6 +71,7 @@ PYENV
         echo "PASS I2C recovery: release after clocks, stuck SDA/SCL, timeout, unsupported adapter"
     fi
     if [[ -f input/qa_gpio.ko ]]; then
+        echo "Checking the two virtual GPIO chips"; sync
         insmod input/qa_gpio.ko
         python3 - <<'PYGPIO'
 import errno

@@ -3,6 +3,7 @@
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/platform_device.h>
 
 static int fault;
 module_param(fault, int, 0600);
@@ -44,6 +45,7 @@ static int transfer(struct i2c_adapter *a, struct i2c_msg *msg, int n) { return 
 static const struct i2c_algorithm algorithm = {.functionality = caps, .master_xfer = transfer, .smbus_xfer = twin_read};
 static struct i2c_adapter adapter = {.owner = THIS_MODULE, .algo = &algorithm, .name = "QEMU stuck-SDA fixture"};
 static struct i2c_client *battery;
+static struct platform_device *parent;
 static int __init fixture_init(void)
 {
 	const char *path = of_machine_is_compatible("xunlong,orangepi-zero2w")
@@ -54,6 +56,12 @@ static int __init fixture_init(void)
 	adapter.dev.of_node = of_find_node_by_path(path);
 	if (!adapter.dev.of_node)
 		return -ENODEV;
+	parent = platform_device_register_simple("qa-i2c-host", -1, NULL, 0);
+	if (IS_ERR(parent)) {
+		of_node_put(adapter.dev.of_node);
+		return PTR_ERR(parent);
+	}
+	adapter.dev.parent = &parent->dev;
 	adapter.bus_recovery_info = supported ? &recovery : NULL;
 	ret = i2c_add_adapter(&adapter);
 	if (!ret && supported && of_machine_is_compatible("xunlong,orangepi-zero2w")) {
@@ -64,8 +72,10 @@ static int __init fixture_init(void)
 			i2c_del_adapter(&adapter);
 		}
 	}
-	if (ret)
+	if (ret) {
+		platform_device_unregister(parent);
 		of_node_put(adapter.dev.of_node);
+	}
 	return ret;
 }
 static void __exit fixture_exit(void)
@@ -74,6 +84,7 @@ static void __exit fixture_exit(void)
 	if (battery)
 		i2c_unregister_device(battery);
 	i2c_del_adapter(&adapter);
+	platform_device_unregister(parent);
 	of_node_put(node);
 }
 module_init(fixture_init);

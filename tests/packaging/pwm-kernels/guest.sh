@@ -37,6 +37,14 @@ boot_data() {
     esac
     sha256sum /boot/armbianEnv.txt "/boot/dtb/allwinner/$dtb" /boot/boot.scr
 }
+verify_boot() {
+    if [[ -f input/profile.sh ]]; then
+        kit_compare_env result/base.env
+        grep -v '  /boot/armbianEnv.txt$' result/base.sha | sha256sum -c -
+    else
+        sha256sum -c result/base.sha
+    fi
+}
 symbols() { grep -q ' header_pwm_profiles_show' /proc/kallsyms; }
 upgrade() {
     dpkg --force-confold -i "$1"
@@ -52,10 +60,11 @@ if [[ $phase == before || $phase == install ]]; then
     ! symbols || exit 1
     verify_pkg "$original" "$stocksha"
     boot_data > result/base.sha
+    cp /boot/armbianEnv.txt result/base.env
     if [[ $phase == install ]]; then
         if [[ -f input/profile.sh ]]; then bash input/kit/apply.sh install; else upgrade input/current.deb; fi
         verify_pkg "$updated" "$patchedsha"
-        sha256sum -c result/base.sha
+        verify_boot
         if [[ -f input/profile.sh ]]; then kit_save; fi
         cp /boot/Image result/installed.Image
     fi
@@ -63,12 +72,12 @@ elif [[ $phase == downgrade ]]; then
     symbols
     if [[ -f input/profile.sh ]]; then kit_check; kit_undo; fi
     verify_pkg "$updated" "$patchedsha"
-    sha256sum -c result/base.sha
+    verify_boot
     if [[ -f input/profile.sh ]]; then bash input/kit/apply.sh rollback-kernel; else upgrade input/stock.deb; fi
     verify_pkg "$original" "$stocksha"
-    sha256sum -c result/base.sha
+    verify_boot
     cp /boot/Image result/restored.Image
 elif [[ $phase == restored ]]; then
     ! symbols || exit 1
-    verify_pkg "$original" "$stocksha"; sha256sum -c result/base.sha
+    verify_pkg "$original" "$stocksha"; verify_boot
 else exit 2; fi
