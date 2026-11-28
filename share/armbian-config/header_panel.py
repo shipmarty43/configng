@@ -176,6 +176,12 @@ def pins(tree):
         return []
     claims = uart.owners(tree)
     labels = signals(tree)
+    phandle = tree[uart.PIO].get("phandle")
+    bus = tree.get(BUS, {})
+    waveshare_single = (phandle is not None and uart.cells(bus.get("num-cs", b"")) == [1] and
+                        uart.cells(bus.get("cs-gpios", b"")) == [int.from_bytes(phandle, "big"), 8, 3, 1] and
+                        set(default_pins(tree, BUS)) == {("PH6", "spi1"), ("PH7", "spi1"), ("PH8", "spi1")})
+
     # The single-HAT overlay describes NSS but the directly mounted Waveshare
     # also wires four sidebands. They remain occupied in that profile.
     for cs, mapping in CONTROL.items():
@@ -184,9 +190,14 @@ def pins(tree):
         if path not in tree or not uart.enabled(tree, path) or compatible not in uart.strings(tree[path].get("compatible", b"")):
             continue
         for prop, (bank, bit, _) in mapping.items():
-            pad = f"P{chr(65+bank)}{bit}"
-            if prop not in tree[path] and cs == 0:
+            spec = uart.cells(tree[path].get(prop, b""))
+            if len(spec) == 4 and spec[0].to_bytes(4, "big") == phandle and spec[1] < 26:
+                pad = f"P{chr(65+spec[1])}{spec[2]}"
+            elif prop not in tree[path] and cs == 0 and waveshare_single:
+                pad = f"P{chr(65+bank)}{bit}"
                 claims.setdefault(pad, set()).add(path)
+            else:
+                continue
             labels[path, pad] = ("SX1262" if cs == 0 else "nRF24") + " " + prop.split("-")[0].upper()
     return [dict(pin=pin, pad=pad, owners=[
         dict(path=path, label=labels.get((path, pad), path)) for path in sorted(claims.get(pad, ()))])

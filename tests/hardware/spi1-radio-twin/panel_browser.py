@@ -20,7 +20,7 @@ def check(app, chrome, temp):
         args = [chrome, "--headless", "--disable-gpu", "--no-first-run", "--disable-extensions",
                 "--disable-background-networking", "--disable-sync", "--disable-component-update",
                 "--proxy-server=http://127.0.0.1:9", "--proxy-bypass-list=127.0.0.1",
-                "--host-resolver-rules=MAP * ~NOTFOUND", "--remote-debugging-address=127.0.0.1",
+                "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "--remote-debugging-address=127.0.0.1",
                 "--remote-debugging-port=0", f"--user-data-dir={profile}", "about:blank"]
         proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         cdp = None
@@ -30,7 +30,7 @@ def check(app, chrome, temp):
                 if check():
                     return
                 time.sleep(.1)
-            raise RuntimeError("Browser check timed out")
+            raise RuntimeError("Browser check timed out: " + (str(cdp.evaluate("document.body?.innerText"))[:1200] if cdp else "startup"))
         try:
             portfile = profile / "DevToolsActivePort"
             until(lambda: portfile.is_file())
@@ -40,7 +40,9 @@ def check(app, chrome, temp):
             cdp = cdp_class(tab["webSocketDebuggerUrl"])
             cdp.call("Network.enable")
             cdp.call("Network.setExtraHTTPHeaders", {"headers": {"Authorization": "Bearer " + os.environ["OPI_WEB_OPERATOR_TOKEN"]}})
-            cdp.call("Page.navigate", {"url": f"http://127.0.0.1:{server.server_port}/buses"})
+            nav = cdp.call("Page.navigate", {"url": f"http://127.0.0.1:{server.server_port}/buses"})
+            if "errorText" in nav:
+                raise RuntimeError(nav["errorText"])
             js = cdp.evaluate
             until(lambda: js("!!document.querySelector('#preview:not(:disabled)')"))
             js("el('all-pins').click()")

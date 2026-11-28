@@ -260,6 +260,17 @@ def check(boot, helper, tmp):
     native("undo","yes",group="undo")
     assert not owners(backend("state")["current"],11)
     print("PASS native UART selection/one-step undo and TUI I²C conflict preview",flush=True)
+    save("off")
+    save("uart2-txrx-ph")
+    baseline = env.read_bytes()
+    assert not preview("uart2-txrx-ph")["changed"]
+    deny("shared", [23,24], "UART2 TX","SPI1 CS2")
+    denied = preview("single")
+    assert not denied["token"] and any("SPI1 CLK" in issue for issue in denied["issues"])
+    save("uart2-off")
+    save("shared")
+    verify_three(backend("state")["current"])
+    print("PASS reverse conflict from UART2 PH to SPI and restored CS1/CS2 clocks",flush=True)
 
 
 with tempfile.TemporaryDirectory() as temp:

@@ -149,7 +149,7 @@ def live_tree(dt):
     props = {"status", "reg", "compatible", "phandle", "spi-max-frequency", MARKER,
              "pins", "allwinner,pins", "function", "allwinner,function", "gpio", "gpios",
              "interrupts", "interrupts-extended", "interrupt-parent", "#interrupt-cells",
-             "gpio-hog", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", uart.DE_PROP}
+             "gpio-hog", "num-cs", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", uart.DE_PROP}
     tree = {}
     for directory, children, files in os.walk(dt):
         node = Path(directory)

@@ -77,14 +77,15 @@ function _panel_dialog() {
         if [[ $group == SPI1 ]]; then report=$(_panel_summary <<< "$state") || return 1; fi
         choice=$(dialog_menu "$group" "$report" 23 90 9 -- "${choices[@]}") || return 0
         plan=$(module_spi1_panel preview "$choice" 2>&1) || { dialog_msgbox 'Предпросмотр' "$plan" 14 78; return 1; }
-        if jq -e '.issues | length > 0' <<< "$plan" >/dev/null; then
-            dialog_msgbox 'Применение заблокировано' "$(jq -r '.issues[]' <<< "$plan")" 20 90; return 0
-        fi
         report=$(jq -r 'def owners: map(.label) | join(" + ") | if .=="" then "—" else . end;
             .changes[] | "\(.pin) \(.pad)   \(.before|owners) → \(.after|owners)"' <<< "$plan") || return 1
         report="$choice"$'\n'"${report:-Назначения контактов совпадают.}"
         if [[ $group == SPI1 ]]; then report+=$'\n'"$(_panel_summary <<< "$plan")"; fi
         if jq -e '.warnings | length > 0' <<< "$plan" >/dev/null; then report+=$'\n'"$(jq -r '.warnings[]' <<< "$plan")"; fi
+        if jq -e '.issues | length > 0' <<< "$plan" >/dev/null; then
+            dialog_msgbox 'Применение заблокировано' "$(jq -r '.issues[]' <<< "$plan")"$'\n'"$report" 22 90
+            return 0
+        fi
         if [[ $(jq -r .changed <<< "$plan") == false ]]; then
             dialog_msgbox 'Профиль уже выбран' "$report" 20 90; return 0
         fi
