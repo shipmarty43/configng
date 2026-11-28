@@ -28,6 +28,7 @@ class BusTests(unittest.TestCase):
             if op == diag.SET_RS485:
                 live[:] = buf
                 live[0] &= ~2  # driver sanitizes RTS_ON_SEND
+                buf[:] = live  # Linux also writes the sanitized value to the caller
             else:
                 buf[:] = live
         with patch.object(fcntl,"ioctl",ioctl), patch.object(termios,"tcgetattr",return_value=[0,0,0]):

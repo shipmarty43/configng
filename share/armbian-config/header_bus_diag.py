@@ -91,15 +91,20 @@ def rs485(fd, mode, *, has_de=False):
         target[0] &= ~RS_ENABLED
     else:
         target[0] = (target[0] & ~(RTS_ON_SEND | RTS_AFTER_SEND)) | RS_ENABLED | (RTS_ON_SEND if mode == "high" else RTS_AFTER_SEND)
-    fcntl.ioctl(fd, SET_RS485, target, True)
+    # TIOCSRS485 copies the sanitized driver state back into the argument.
+    fcntl.ioctl(fd, SET_RS485, array("I",target), True)
     try:
         actual = array("I", [0]*8)
         fcntl.ioctl(fd, GET_RS485, actual, True)
-        mask = RS_ENABLED if mode == "off" else RS_ENABLED | RTS_ON_SEND | RTS_AFTER_SEND
+        mask = RS_ENABLED if mode == "off" else 0xffffffff
         if (actual[0] & mask) != (target[0] & mask) or (mode != "off" and actual[1:3] != before[1:3]):
             raise ValueError("Driver rejected the requested RS-485 timing or RTS polarity")
     except (OSError, ValueError):
-        fcntl.ioctl(fd, SET_RS485, before, True)
+        fcntl.ioctl(fd, SET_RS485, array("I",before), True)
+        restored = array("I", [0]*8)
+        fcntl.ioctl(fd, GET_RS485, restored, True)
+        if restored != before:
+            raise OSError(errno.EIO,"Driver did not restore the previous RS-485 settings")
         raise
     return f"RS-485 {mode}; flags={actual[0]:#x}"
 
