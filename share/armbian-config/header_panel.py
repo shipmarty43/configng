@@ -20,6 +20,9 @@ I2C = {"i2c0-pi": ("PI5", "PI6"), "i2c1-pi": ("PI7", "PI8"),
        "i2c3-ph": ("PH4", "PH5"), "i2c4-ph": ("PH6", "PH7")}
 SPI_CHOICES = {"single": "SX1262", "shared": "SX1262 + CC1101 + nRF24", "off": "Выключить профиль SPI1"}
 
+SPI_TO_PH = "shared-to-i2c34-ph"
+SPI_TO_PH_LABEL = "Отключить общий SPI1 и включить I²C3 и I²C4 на PH"
+
 
 @dataclass(frozen=True)
 class Route:
@@ -87,7 +90,9 @@ RELEASES = {r.port: r for r in ROUTES.values() if r.mode == "off" and r.group !=
 
 
 def choices():
-    return [dict(group=r.group, id=k, label=r.label) for k, r in ROUTES.items()]
+    routes = [dict(group=r.group, id=k, label=r.label) for k, r in ROUTES.items()]
+    routes.append(dict(group="SPI1", id=SPI_TO_PH, label=SPI_TO_PH_LABEL))
+    return routes
 
 
 def edit(route, before, after, folder):

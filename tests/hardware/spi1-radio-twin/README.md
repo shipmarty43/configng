@@ -185,6 +185,30 @@ python3 tests/hardware/spi1-radio-twin/panel.py --spi-handoff-only "$ALLWINNER_D
 The package prefix, `PANEL_TEST_CHROMIUM` and `PANEL_TEST_DIALOG` options
 apply to this test too. All device trees and bindings are local fixtures.
 
+### Shared SPI1 to both PH I²C buses
+
+The Zero 2W SPI1 menu includes **Отключить общий SPI1 и включить I²C3 и I²C4
+на PH**. Preview `shared-to-i2c34-ph` and apply its token to make a new
+next-boot selection from the current three-device profile. The helper checks
+the source profile, all its endpoints and device-clock overlays. In the private
+candidate it disables SPI1, parks the configured CS1/CS2 clocks and selects
+both stock PH overlays. It verifies both controllers and their pin groups
+before committing one boot environment. Neither destination takes over a
+foreign route. Existing I²C settings apply; the operation does not replay
+an earlier I²C configuration.
+
+The focused test starts each interface with only the active configuration,
+device trees and installed overlays. Its boot tree has no backup journal. It
+uses this named operation and then the explicit `shared+i2c3+i2c4` handoff,
+checks the parked and active clock blobs, and simulates a boot in each direction.
+
+```sh
+python3 tests/hardware/spi1-radio-twin/panel.py --spi-to-ph-only "$ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
+```
+
+Set `PANEL_TEST_CHROMIUM` and `PANEL_TEST_DIALOG` as above to verify the real
+browser and terminal displays of both CS clocks.
+
 ### Zero 3W (A733)
 
 BUS002 selects the board from the live OF compatible strings. On Zero 3W it

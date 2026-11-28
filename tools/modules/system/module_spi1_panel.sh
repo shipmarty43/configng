@@ -27,7 +27,14 @@ function _panel_plan() (
             _zero2w_overlay_prepare panel-tree "$panel_work/base.env" "$panel_work/base.dtb" sx1262 '' || return 1
         fi
     fi
-    if ! _zero2w_validate_change "$panel_journal" "$panel_work" > "$panel_work/validation-log" 2>&1; then
+    # A reverse transition also consumes the original shared endpoints and clock
+    # overlays. Verify them before they disappear from the candidate tree.
+    if ! (
+        if [[ $target == shared-to-i2c34-ph ]]; then
+            _bus_clocks_validate_config "$panel_work/before" || exit 1
+        fi
+        _zero2w_validate_change "$panel_journal" "$panel_work"
+    ) > "$panel_work/validation-log" 2>&1; then
         mv "$panel_work/validation-log" "$panel_work/validation-error" || return 1
     fi
     _panel_py describe "$panel_work" "$target" "$(_ups_dfr_dt)" "$(_sx1262_class)" "$(_panel_locks)" > "$panel_work/result"
@@ -125,7 +132,7 @@ function module_spi1_panel() (
         select) _panel_dialog; return ;;
         state) [[ $# == 1 ]] || return 2; target=state ;;
         preview|apply)
-            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12}){0,19}|off|(shared|single|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})([+][a-z0-9-]{1,12}){0,13})$ ]] || return 2
+            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12}){0,19}|shared-to-i2c34-ph|off|(shared|single|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})([+][a-z0-9-]{1,12}){0,13})$ ]] || return 2
             target=$2
             if [[ $op == apply ]]; then [[ $# == 3 ]] || return 2; expected=$3
             else [[ $# == 2 ]] || return 2; fi ;;

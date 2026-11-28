@@ -11,7 +11,7 @@ import urllib.request
 from werkzeug.serving import make_server
 
 
-def check(app, chrome, temp, *, board="h618", observe=None, protect=None, spi1=False):
+def check(app, chrome, temp, *, board="h618", observe=None, protect=None, spi1=False, reverse_spi1=False):
     cdp_class = runpy.run_path(str(Path(__file__).resolve().parents[1] / "zero2w-browser-pixels.py"))["CDP"]
     with make_server("127.0.0.1", 0, app) as server:
         thread = Thread(target=server.serve_forever, daemon=True)
@@ -62,8 +62,11 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None, spi1=F
             else:
                 conflict, owner, pin = "uart3-rtscts", "PWM1", 32
                 free, signal = "i2c2-pi", "I²C2 SDA"
-            preview(conflict)
-            assert js(f"el('apply').disabled && el('issues').textContent.includes('{owner}') && el('issues').textContent.includes('{pin}')")
+            def preview_conflict():
+                preview(conflict)
+                assert js(f"el('apply').disabled && el('issues').textContent.includes('{owner}') && el('issues').textContent.includes('{pin}')")
+            if not reverse_spi1:
+                preview_conflict()
             if observe:
                 if board == "a733":
                     routes = {"19":["I²C2 SDA","SPI3 MOSI"], "23":["I²C2 SCL","SPI3 CLK"],
@@ -91,10 +94,25 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None, spi1=F
                     else:
                         body = js(f"el('{section}').textContent")
                         assert all(f"CS{cs} · сохранено {hz} Гц" in body for cs,hz in ((1,1000000),(2,4000000)))
-                assert owners(False,False)
                 if spi1:
                     js("document.querySelector('details').open=true")
+                if reverse_spi1:
+                    assert owners(True,True) and js("el('undo').disabled")
+                    rates("current",True)
+                    preview("shared-to-i2c34-ph")
+                    assert js("!el('apply').disabled && el('issues').textContent.includes('I²C3 и I²C4')")
+                    diff = js("el('changes').textContent")
+                    assert all(name in diff for pair in routes.values() for name in pair)
+                    rates("candidate",False)
+                    js("el('apply').click()")
+                    until(lambda: js("!el('refresh').disabled") and owners(True,False))
                     rates("current",False)
+                    observe(False)
+                    js("el('refresh').click()")
+                    until(lambda: js("!el('refresh').disabled") and owners(False,False))
+                    preview_conflict()  # switch back through the regular shared profile
+                assert owners(False,False)
+                if spi1: rates("current",False)
                 offer = js("el('issues').querySelector('button').textContent")
                 assert all(part in offer for part in parts)
                 js("el('issues').querySelector('button').click()")
@@ -110,6 +128,9 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None, spi1=F
                 js("el('refresh').click()")
                 until(lambda: js("!el('undo').disabled") and owners(True,True))
                 if spi1: rates("live",True)
+                if reverse_spi1:
+                    print("PASS Chromium: standalone SPI1 → I2C3/4 PH and explicit return; verified CS1/CS2 at preview, save and simulated boot",flush=True)
+                    return
                 js("el('undo').click()")
                 until(lambda: js("!el('refresh').disabled") and owners(True,False))
                 observe(False)

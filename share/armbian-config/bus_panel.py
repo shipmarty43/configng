@@ -13,7 +13,7 @@ import a733_panel
 import header_panel as header
 import pin_handoff
 from dt_clock_overlay import install_blob, tokens
-from spi1_radios import BUS, CLIENTS, peer_clocks
+from spi1_radios import BUS, CLIENTS, SHARED, peer_clocks
 from spi_devices import MARKER, PARKED, managed, saved_names
 from sx1262_spi import selected
 from uart_routes import DE_PROP, PIO, cells, enabled, env_content, read_tree, rollback_reordered, strings
@@ -58,16 +58,22 @@ def matching_backup(root, before, board):
     return None
 
 
+def plan_routes(target, catalog):
+    if target in ("state", "undo"):
+        return (), ()
+    if catalog is header and target == header.SPI_TO_PH:
+        return (header.ROUTES["i2c3-ph"], header.ROUTES["i2c4-ph"]), (header.ROUTES["off"],)
+    route, releases = pin_handoff.selection(target, catalog)
+    return (route,), releases
+
+
 def stage(root, snapshot, work, target, board):
     # The only symlink in the private tree points to the normal kernel DTB directory.
     if (root / "overlay-user").is_symlink() or any(os.path.lexists(root / n) for n in
             ("fixup.scr", "overlay-user/user-fixup.scr", "extlinux/extlinux.conf")):
         raise ValueError("Unsupported custom boot route")
-    route = None
-    releases = ()
     catalog = a733_panel if board == "a733" else header
-    if target not in ("state", "undo"):
-        route, releases = pin_handoff.selection(target, catalog)
+    routes, releases = plan_routes(target, catalog)
     before = work / "before"
     shutil.copyfile(regular(snapshot), before)
     shadow = work / "boot"
@@ -78,7 +84,7 @@ def stage(root, snapshot, work, target, board):
     folder = shadow / "overlay-user"
     folder.mkdir()
     try:
-        backup = matching_backup(root, before, board)
+        backup = None if target == header.SPI_TO_PH else matching_backup(root, before, board)
     except PermissionError:
         if target == "undo":
             raise
@@ -102,8 +108,8 @@ def stage(root, snapshot, work, target, board):
         names.update(tokens(text))
         if board == "h618":
             names.update(saved_names(text))
-    for step in (*releases, route):
-        if step and step.provider and os.path.lexists(root / "overlay-user" / (step.provider + ".dtbo")):
+    for step in (*releases, *routes):
+        if step.provider and os.path.lexists(root / "overlay-user" / (step.provider + ".dtbo")):
             names.add(step.provider)
     for name in names:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
@@ -120,13 +126,20 @@ def stage(root, snapshot, work, target, board):
         seed = intermediate
     if board == "h618":
         peer_clocks(saved_names(before.read_text()), folder, parked=True)
-    if route:
+    # Compose every destination from the same released seed. Only the last
+    # environment can be published; base.env strips all destination providers.
+    base_seed = seed
+    for i, route in enumerate(routes):
+        last = i == len(routes) - 1
+        base = work / ("base.env" if last else f"base-{i}.env")
+        dest = after if last else work / f"route-{i}.env"
         if board == "a733":
-            a733_panel.edit(route, seed, work / "base.env", folder, strip=True)
+            a733_panel.edit(route, base_seed, base, folder, strip=True)
         elif route.group != "SPI1":
-            header.edit(header.RELEASES[route.port], seed, work / "base.env", folder)
-        catalog.edit(route, seed, after, folder)
-    elif target == "state":
+            header.edit(header.RELEASES[route.port], base_seed, base, folder)
+        catalog.edit(route, seed, dest, folder)
+        base_seed, seed = base, dest
+    if target == "state":
         shutil.copyfile(before, after)
     if board == "h618":
         peer_clocks(saved_names(after.read_text()), folder, parked=True)
@@ -251,26 +264,36 @@ def describe(work, target, dt, devices, locks, board):
     try:
         if board == "a733":
             a733_panel.validate_stock_pwm(trees[1], (work/"after").read_text())
-        if target not in ("state", "undo"):
-            route, releases = pin_handoff.selection(target, catalog)
-            # The H618 radio profile has its own full SPI tree/clock validator.
-            if route.group != "SPI1":
-                issues.extend(catalog.route_issues(route, read_tree(work / "base.dtb"), *trees))
-            if releases:
-                transition = pin_handoff.transition_label(route, releases)
-                owners = pin_handoff.owners_on_route(route, current["pins"], candidate["pins"])
-                for release in releases:
-                    if changed and release.path not in owners:
-                        issues.append(f"{release.port}: владелец не занимает выводы запрошенного маршрута.")
-                    issues.extend(catalog.route_issues(release, trees[1], *trees))
-            elif issues:
-                offer = pin_handoff.conflicting_releases(route, current["pins"], candidate["pins"], catalog)
-                blockers = [msg for r in offer for msg in header.release_blockers(r, trees[0])] if board == "h618" else []
-                if blockers:
-                    issues.extend(blockers)
-                elif offer:
-                    alternative = {"id": "+".join([target, *(r.port for r in offer)]),
-                                   "label": pin_handoff.transition_label(route, offer)}
+        routes, releases = plan_routes(target, catalog)
+        # SPI1 has its own full SPI tree/clock validator.
+        mux_routes = [r for r in routes if r.group != "SPI1"]
+        if mux_routes:
+            base = read_tree(work / "base.dtb")
+            for route in mux_routes:
+                issues.extend(catalog.route_issues(route, base, *trees))
+        if target == header.SPI_TO_PH:
+            transition = header.SPI_TO_PH_LABEL
+            if changed and (current["profile"] != "shared" or SHARED not in tokens((work/"before").read_text())):
+                issues.append("Для перехода требуется выбранный профиль SX1262 + CC1101 + nRF24.")
+            if enabled(trees[1], BUS):
+                issues.append("Итоговый DTB оставляет SPI1 включённым.")
+        elif releases:
+            route, = routes
+            transition = pin_handoff.transition_label(route, releases)
+            owners = pin_handoff.owners_on_route(route, current["pins"], candidate["pins"])
+            for release in releases:
+                if changed and release.path not in owners:
+                    issues.append(f"{release.port}: владелец не занимает выводы запрошенного маршрута.")
+                issues.extend(catalog.route_issues(release, trees[1], *trees))
+        elif routes and issues:
+            route, = routes
+            offer = pin_handoff.conflicting_releases(route, current["pins"], candidate["pins"], catalog)
+            blockers = [msg for r in offer for msg in header.release_blockers(r, trees[0])] if board == "h618" else []
+            if blockers:
+                issues.extend(blockers)
+            elif offer:
+                alternative = {"id": "+".join([target, *(r.port for r in offer)]),
+                               "label": pin_handoff.transition_label(route, offer)}
     except (ValueError, KeyError) as exc:
         issues.append(str(exc))
     failure = work / "validation-error"

@@ -15,7 +15,7 @@ PINS = {3:("I²C1 SDA","UART2 CTS"), 5:("I²C1 SCL","UART2 RTS"),
         15:("I²C0 SCL","UART2 TX"), 22:("I²C0 SDA","UART2 RX")}
 
 
-def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners="I²C0 и I²C1"):
+def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners="I²C0 и I²C1", direct=False):
     import pexpect
     state = get()
     groups = list(dict.fromkeys(o["group"] for o in state["choices"]))
@@ -35,17 +35,22 @@ def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners=
                 tty.expect_exact("DFR0528")
                 tty.send("\r")
             else:
-                tty.expect_exact("Предпросмотр перехода?")
-                tty.expect_exact(owners)
-                tty.send(yes)
+                if not direct:
+                    tty.expect_exact("Предпросмотр перехода?")
+                    tty.expect_exact(owners)
+                    tty.send(yes)
                 tty.expect_exact("Сохранить для следующей загрузки?")
                 tty.expect_exact(owners)
                 if group == "SPI1":
                     tty.expect_exact("После применения")
-                    tty.expect_exact("CC1101")
-                    tty.expect_exact("1000000 Гц")
-                    tty.expect_exact("nRF24")
-                    tty.expect_exact("4000000 Гц")
+                    if direct:
+                        tty.expect_exact("CS1 сохранено 1000000 Гц")
+                        tty.expect_exact("CS2 сохранено 4000000 Гц")
+                    else:
+                        tty.expect_exact("CC1101")
+                        tty.expect_exact("1000000 Гц")
+                        tty.expect_exact("nRF24")
+                        tty.expect_exact("4000000 Гц")
                 tty.send(yes)
         if not protected:
             tty.expect_exact("Сохранено для")

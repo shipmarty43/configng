@@ -24,6 +24,7 @@ cli.add_argument("prefix", type=Path, nargs="?")
 g = cli.add_mutually_exclusive_group()
 g.add_argument("--handoff-only", action="store_true")
 g.add_argument("--spi-handoff-only", action="store_true")
+g.add_argument("--spi-to-ph-only", action="store_true")
 args = cli.parse_args()
 dtbs, gui = args.dtbs.resolve(), args.gui.resolve()
 prefix = args.prefix.resolve() if args.prefix else repo
@@ -302,13 +303,15 @@ with tempfile.TemporaryDirectory() as temp:
     helper = tmp/"helper"; helper.write_text(harness); helper.chmod(0o755)
     os.environ.update(PANEL_PREFIX=str(prefix), PANEL_TEST=temp, PANEL_PACKAGE="yes" if args.prefix else "",
                       OPI_WEB_OPERATOR_TOKEN="write")
-    if args.handoff_only or args.spi_handoff_only:
-        if args.spi_handoff_only:
-            from spi_handoff import check_handoff
-        else:
-            from h618_handoff import check_handoff
+    if args.handoff_only or args.spi_handoff_only or args.spi_to_ph_only:
         with patch.object(client,"HELPERS",[helper]), patch.object(client,"os",SimpleNamespace(geteuid=lambda:0)):
-            check_handoff(tmp, helper, repo, create_app(token="read"))
+            app = create_app(token="read")
+            if args.handoff_only:
+                from h618_handoff import check_handoff
+                check_handoff(tmp, helper, repo, app)
+            else:
+                from spi_handoff import check_handoff
+                check_handoff(tmp, helper, repo, app, reverse=args.spi_to_ph_only)
         sys.exit(0)
     subprocess.run([helper, "seed"], check=True, stdout=subprocess.DEVNULL)
     for node, props in read_tree(tmp/"live.dtb").items():

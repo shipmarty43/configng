@@ -2,9 +2,11 @@
 import hashlib
 import os
 import subprocess
+import shutil
 from unittest.mock import patch
 
 from dt_clock_overlay import tokens, write_selection
+from header_panel import SPI_TO_PH, SPI_TO_PH_LABEL
 from h618_handoff import dialog
 from i2c_clocks import BUSES
 from modules.system.system_module import SystemModule
@@ -19,7 +21,7 @@ PINS = {18:("I²C3 SCL","nRF24 CE"), 24:("I²C3 SDA","SPI1 CS2"),
         23:("I²C4 SCL","SPI1 CLK"), 19:("I²C4 SDA","SPI1 MOSI")}
 
 
-def check_handoff(tmp, helper, repo, app):
+def check_handoff(tmp, helper, repo, app, *, reverse=False):
     boot = tmp/"boot"
     env = boot/"armbianEnv.txt"
     folder = boot/"overlay-user"
@@ -54,13 +56,14 @@ def check_handoff(tmp, helper, repo, app):
 
     # Create the clock blobs via SPI001 and park them through the normal profile selector.
     subprocess.run([helper,"seed"], check=True,stdout=subprocess.DEVNULL)
-    save("off")
-    save("i2c3-ph")
-    save("i2c4-ph")
-    for bus,rate in (("twi3","100000"),("twi4","400000")):
-        subprocess.run([helper,"clock",bus,rate],check=True,stdout=subprocess.DEVNULL)
+    if not reverse:
+        save("off")
+        save("i2c3-ph")
+        save("i2c4-ph")
+        for bus,rate in (("twi3","100000"),("twi4","400000")):
+            subprocess.run([helper,"clock",bus,rate],check=True,stdout=subprocess.DEVNULL)
     baseline = env.read_bytes()
-    clocks = managed(saved_names(env.read_text()))
+    clocks = managed(tokens(env.read_text()) if reverse else saved_names(env.read_text()))
     blobs = {folder/(name+".dtbo"):(folder/(name+".dtbo")).read_bytes()
              for (bus,cs),(name,hz) in clocks.items() if bus=="spi1" and RATES.get(cs)==hz}
     assert len(blobs)==2
@@ -92,7 +95,7 @@ def check_handoff(tmp, helper, repo, app):
         for bus,hz in (("twi3",100000),("twi4",400000)):
             path = BUSES[bus]
             assert enabled(tree,path) != shared
-            if not shared: assert cells(tree[path]["clock-frequency"]) == [hz]
+            if not shared and not reverse: assert cells(tree[path]["clock-frequency"]) == [hz]
         if shared:
             for cs,hz in RATES.items():
                 child = tree[BUS+"/"+CLIENTS[cs][0]]
@@ -109,6 +112,11 @@ def check_handoff(tmp, helper, repo, app):
         (tmp/"live-next").replace(tmp/"live")
         state = get()
         for section in ("live","current"): verify_model(state[section],shared)
+
+    if reverse:
+        check_reverse(tmp, helper, app, get, post, reboot)
+        print("DTB SHA256",hashlib.sha256((boot/"dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb").read_bytes()).hexdigest(),flush=True)
+        return
 
     reboot(False)
     original_files, prior = files(), history()
@@ -209,3 +217,125 @@ def check_handoff(tmp, helper, repo, app):
         check(app,os.environ["PANEL_TEST_CHROMIUM"],tmp,observe=observe,spi1=True)
     print("PASS separate radio child claims, partial/unknown owners, cancel, retry and viewer permissions",flush=True)
     print("DTB SHA256",hashlib.sha256((boot/"dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb").read_bytes()).hexdigest(),flush=True)
+
+def check_reverse(tmp, helper, app, get, post, reboot):
+    boot = tmp/"boot"
+    env = boot/"armbianEnv.txt"
+    journal = boot/"armbianEnv.txt.spi1-panel-backups"
+    seed = tmp/"seeded-boot"
+    boot.rename(seed)
+
+    def fresh():
+        # Provision each frontend from active files alone. No change journals.
+        boot.mkdir()
+        (boot/"dtb").symlink_to((seed/"dtb").resolve())
+        for name in ("boot.scr","armbianEnv.txt"):
+            shutil.copy2(seed/name,boot/name)
+        shutil.copytree(seed/"overlay-user",boot/"overlay-user")
+        reboot(True)
+        assert not get()["undo"] and not list(boot.glob("*-backups"))
+
+    def preview(key):
+        return post("preview",{"profile":key},viewer=True)
+
+    def negative_cases():
+        # Both routes must be validated even if only the second has a foreign
+        # provider. The damaged CS2 case also exercises verification before parking.
+        before = env.read_bytes()
+        extra = boot/"overlay-user/test-extra.dtbo"
+        for dts in (b'/dts-v1/;/plugin/; &{/} { t { test-gpios=<&pio 7 7 0>; }; };',
+                    b'/dts-v1/;/plugin/; &spi1 { sensor@3 {reg=<3>;compatible="test,extra";spi-max-frequency=<1000000>;}; };'):
+            subprocess.run(["dtc","-q","-@","-o",extra],input=dts,check=True)
+            write_selection(before.decode(),env,[*tokens(before.decode()),extra.stem])
+            obstructed = env.read_bytes()
+            p = preview(SPI_TO_PH)
+            assert not p["token"] and p["issues"]
+            post("apply",{"profile":SPI_TO_PH,"token":"0"*64},409)
+            assert env.read_bytes()==obstructed and not journal.exists()
+        env.write_bytes(before)
+        extra.unlink()
+        cs2 = boot/"overlay-user"/(managed(tokens(env.read_text()))["spi1",2][0]+".dtbo")
+        data = cs2.read_bytes()
+        try:
+            cs2.write_bytes(b"broken")
+            post("apply",{"profile":SPI_TO_PH,"token":"0"*64},503)
+            assert env.read_bytes()==before and not journal.exists()
+        finally:
+            cs2.write_bytes(data)
+
+    module = SystemModule()
+    menu = dict(module.get_menu_items())["Шины и контакты"]
+    def urwid(reverse, cancel=False):
+        def choose(title,items):
+            if title.startswith("Шины и контакты"):
+                return items.index("SPI1")
+            if title.startswith("SPI1 ·"):
+                return items.index(SPI_TO_PH_LABEL if reverse else "SX1262 + CC1101 + nRF24")
+            if "Конфликт" in title:
+                assert not reverse
+                return next(i for i,item in enumerate(items) if "I²C3 и I²C4" in item)
+            assert "I²C3 и I²C4" in title and all(str(hz)+" Гц" in title for hz in RATES.values())
+            return items.index("Назад" if cancel else "Сохранить для следующей загрузки")
+        with patch.object(module,"show_menu",side_effect=choose), patch.object(module,"show_message"), \
+             patch.object(module,"show_error",side_effect=AssertionError):
+            menu()
+
+    def native(reverse):
+        key = SPI_TO_PH if reverse else "shared"
+        if os.environ.get("PANEL_TEST_DIALOG"):
+            dialog(helper,get,False,False,group="SPI1",target=key,owners="I²C3 и I²C4",direct=reverse)
+        else:
+            p=subprocess.run([helper,"native"],env=os.environ|{"PANEL_GROUP":"SPI1","PANEL_CHOICE":key,"PANEL_CONFIRM":"yes"},
+                             check=True,capture_output=True,text=True)
+            assert "Сохранено" in p.stdout
+
+    frontends = [("urwid",urwid), ("native",native)]
+    if os.environ.get("PANEL_TEST_CHROMIUM"):
+        frontends.append(("Chromium",None))
+    for name, frontend in frontends:
+        if boot.exists():
+            boot.rename(tmp/f"previous-{name}")
+        fresh()
+        before = env.read_bytes()
+        if name=="urwid":
+            negative_cases()
+        p = preview(SPI_TO_PH)
+        assert p["token"] and not p["issues"] and p["candidate"]["parked"] == PARKED
+        assert p["candidate"]["profile"] == "off" and p["changed"]
+        changes={r["pin"]:(r["before"],r["after"]) for r in p["changes"]}
+        for pin,(i2c,spi) in PINS.items():
+            old,new=changes[pin]
+            assert [o["label"] for o in old]==[spi] and [o["label"] for o in new]==[i2c]
+        if name=="urwid":
+            urwid(True,cancel=True)
+            assert env.read_bytes()==before and not journal.exists()
+            post("apply",{"profile":SPI_TO_PH,"token":p["token"]},403,viewer=True)
+            env.write_bytes(before+b"verbosity=7\n")
+            post("apply",{"profile":SPI_TO_PH,"token":p["token"]},409)
+            assert env.read_bytes()==before+b"verbosity=7\n" and not journal.exists()
+            env.write_bytes(before)
+
+        previous = before
+        entries = set()
+        def observe(shared):
+            nonlocal previous, entries
+            now = set(journal.glob("change.*"))
+            entry, = now-entries
+            assert (entry/"before").read_bytes()==previous and (entry/"after").read_bytes()==env.read_bytes()!=previous
+            previous, entries = env.read_bytes(), now
+            reboot(shared)
+            if not shared:
+                repeat = preview(SPI_TO_PH)
+                assert not repeat["changed"] and not repeat["issues"]
+                post("apply",{"profile":SPI_TO_PH,"token":repeat["token"]})
+                assert set(journal.glob("change.*"))==entries and env.read_bytes()==previous
+        if frontend:
+            frontend(True)
+            observe(False)
+            frontend(False)  # explicit shared+i2c3+i2c4; never call undo
+            observe(True)
+        else:
+            from panel_browser import check
+            check(app,os.environ["PANEL_TEST_CHROMIUM"],tmp,observe=observe,spi1=True,reverse_spi1=True)
+        assert len(entries)==2
+        print(f"PASS {name}: empty history; one save shared SPI1 → I2C3-PH + I2C4-PH; CS1/CS2 parked at 1/4 MHz; explicit forward save restores both clocks without undo",flush=True)
