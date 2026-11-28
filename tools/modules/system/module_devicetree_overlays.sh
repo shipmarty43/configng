@@ -15,7 +15,7 @@ module_options+=(
 ["module_devicetree_overlays,help_edit"]="Interactive TUI for toggling overlays (default action)"
 ["module_devicetree_overlays,help_show"]="List currently-enabled overlays"
 ["module_devicetree_overlays,help_ups"]="DFR0528 UPS: ups select|status|enable|disable"
-["module_devicetree_overlays,help_sx1262"]="SX1262 HAT: sx1262 select|status|enable|disable|rollback change.ID"
+["module_devicetree_overlays,help_sx1262"]="SX1262 HAT: sx1262 select|status|enable|shared|disable|rollback change.ID"
 ["module_devicetree_overlays,help_help"]="Print this help"
 )
 #
@@ -353,7 +353,7 @@ function _dt_overlays_write_config() (
 			return 1
 		fi
 	fi
-    if [[ "$2" != true ]] && awk '/^user_overlays=/ {sub(/^user_overlays=/,""); for(i=1;i<=NF;i++) if($i=="opi-zero2w-sx1262") found=1} END {exit !found}' "$conf"; then
+    if [[ "$2" != true ]] && awk '/^user_overlays=/ {sub(/^user_overlays=/,""); for(i=1;i<=NF;i++) if($i=="opi-zero2w-sx1262" || $i=="opi-zero2w-spi1-radios") found=1} END {exit !found}' "$conf"; then
         _zero2w_overlay_prepare stock "$conf" /dev/null sx1262 opi-zero2w-sx1262 "$3" || return 1
     fi
     _dt_overlays_write_config_unlocked "$@"
@@ -536,7 +536,7 @@ function _dt_overlays_select() {
 	choice=$(dialog_menu 'Device Tree Overlays' 'Select overlays to configure for the next boot.' 13 76 4 \
 		stock 'Stock Armbian overlays' \
 		ups 'DFR0528 UPS battery (I2C + installed driver)' \
-		sx1262 'Waveshare SX1262 433 MHz HAT (SPI1)') || return 0
+		sx1262 'SPI1 radio profiles: Waveshare alone or three chip selects') || return 0
 	case "$choice" in
 		stock) _dt_overlays_edit ;;
 		ups) module_ups_dfr0528 select ;;
@@ -608,7 +608,10 @@ function _zero2w_overlay_prepare() (
 			if [[ " ${custom[*]} " == *' zero2w-dfr0528 '* ]]; then
 				_ups_dfr_validate "$composed" || return 1
 			fi
-			if [[ " ${custom[*]} " == *' opi-zero2w-sx1262 '* ]]; then
+			if [[ " ${custom[*]} " == *' opi-zero2w-spi1-radios '* ]]; then
+                [[ " ${custom[*]} " != *' opi-zero2w-sx1262 '* ]] || { echo 'Select one SPI1 radio profile.' >&2; return 1; }
+                _spi1_radio_cli validate "$composed" "$base" "${blobs[@]}" || return 1
+            elif [[ " ${custom[*]} " == *' opi-zero2w-sx1262 '* ]]; then
 				_sx1262_validate "$composed" || return 1
 			fi
             if [[ $action == base || $action == compose ]]; then cp "$composed" "$output"; return; fi
@@ -646,7 +649,7 @@ function _zero2w_overlay_change() (
 		}
 		if cmp -s "$work/before" "$saved/after"; then
 			cp "$saved/before" "$work/after" || return 1
-		elif [[ $profile == uart || $profile == pwm || $profile == a733-io || $profile == header-gpio || $profile == pwm-modes ]]; then
+		elif [[ $profile == uart || $profile == pwm || $profile == a733-io || $profile == header-gpio || $profile == pwm-modes || $profile == sx1262 ]]; then
 			python3 "${script_dir:-/usr/bin}/../share/armbian-config/uart_routes.py" rollback-reordered "$saved/before" "$saved/after" "$work/before" "$work/after" || return 1
 		else
 			echo 'Boot configuration has changed since this backup.' >&2
@@ -655,6 +658,9 @@ function _zero2w_overlay_change() (
 	else
 		"$prepare" "$action" "$work/before" "$work/after" || return 1
 	fi
+    if [[ $profile == sx1262 ]] || grep -Eq '^user_overlays=.*opi-zero2w-spi1-radios' "$work/after"; then
+        _zero2w_overlay_prepare compose "$work/after" "$work/radio.dtb" sx1262 '' || return 1
+    fi
     if grep -Eq '^user_overlays=.*opi-header-gpio-' "$work/after"; then
         _header_gpio_verify "$work/after" || return 1
     fi

@@ -29,11 +29,39 @@ inline void validateRoute(const fs::path& soc, const fs::path& endpoint) {
     bool sx1262 = false;
     while (std::getline(compat, item, '\0')) sx1262 |= item == "semtech,sx1262";
     auto pioHandle = property(pio/"phandle"), groupHandle = property(group/"phandle");
-    const uint32_t pi3ActiveLow[] = {htonl(8), htonl(3), htonl(1)};
-    const std::string descriptor(reinterpret_cast<const char*>(pi3ActiveLow), sizeof(pi3ActiveLow));
-    require(sx1262 && property(node/"reg") == std::string(4, '\0') && !fs::exists(node/"spi-cs-high")
-            && pioHandle.size() == 4 && property(ctrl/"cs-gpios") == pioHandle + descriptor,
-            "Expected kernel CS0 on PI3 (physical 40, active low)");
+    auto cell = [](uint32_t n) {
+        n = htonl(n);
+        return std::string(reinterpret_cast<const char*>(&n), sizeof(n));
+    };
+    auto gpio = [&](uint32_t bank, uint32_t line, uint32_t flags) {
+        return pioHandle + cell(bank) + cell(line) + cell(flags);
+    };
+    std::string expected = gpio(8,3,1);
+    const auto count = fs::exists(ctrl/"num-cs") ? property(ctrl/"num-cs") : cell(1);
+    if (count == cell(3)) {
+        expected += gpio(7,9,1) + gpio(7,5,1);
+        const char* children[] = {"radio@0","cc1101@1","nrf24@2"};
+        const char* kinds[] = {"semtech,sx1262","ti,cc1101","nordic,nrf24l01"};
+        unsigned live = 0;
+        for (const auto& peer : fs::directory_iterator(ctrl))
+            if (peer.is_directory() && fs::exists(peer.path()/"reg") && dtEnabled(peer.path())) ++live;
+        require(live == 3, "Unexpected shared SPI1 clients");
+        for (unsigned i = 0; i < 3; ++i) {
+            auto peer = ctrl/children[i];
+            require(dtEnabled(peer) && property(peer/"reg") == cell(i) &&
+                    property(peer/"compatible") == std::string(kinds[i]) + '\0' + "armbian,spi-dev" + '\0',
+                    "Wrong shared SPI1 endpoint");
+            for (auto flag : {"spi-cs-high","spi-cpha","spi-cpol","spi-3wire","spi-lsb-first"})
+                require(!fs::exists(peer/flag), "Wrong shared SPI1 mode");
+        }
+        require(property(node/"reset-gpios") == gpio(8,1,1) && property(node/"busy-gpios") == gpio(8,4,0) &&
+                property(node/"dio1-gpios") == gpio(2,12,0) && property(node/"rxen-gpios") == gpio(8,15,0),
+                "Wrong Waveshare control lines");
+        require(property(ctrl/"nrf24@2/ce-gpios") == gpio(7,4,0), "Wrong nRF24 CE");
+    } else require(count == cell(1), "Unknown SPI1 radio layout");
+    require(sx1262 && property(node/"reg") == cell(0) && !fs::exists(node/"spi-cs-high")
+            && pioHandle.size() == 4 && property(ctrl/"cs-gpios") == expected,
+            "Expected kernel CS0 on PI3 and qualified peer selects");
     std::set<std::string> pins;
     std::istringstream names(property(group/"pins"));
     while (std::getline(names, item, '\0')) pins.insert(item);

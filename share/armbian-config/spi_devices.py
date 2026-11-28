@@ -16,7 +16,7 @@ TOKEN = re.compile(r"opi-sclk-(spi[01])-cs(0|[1-9][0-9]*)-([0-9a-f]{16})-([1-9][
 # Compatible-specific ceilings for explicitly identified peripherals. A generic
 # spidev node gives no evidence about which part is connected to the header.
 CHIP_LIMIT = {"ti,cc1101": 6_500_000, "nxp,pn532": 5_000_000,
-              "nordic,nrf24l01p": 8_000_000, "semtech,sx1262": 16_000_000}
+              "nordic,nrf24l01": 8_000_000, "nordic,nrf24l01p": 8_000_000, "semtech,sx1262": 16_000_000}
 MARKER = "armbian,spi-clock-request-hz"
 
 

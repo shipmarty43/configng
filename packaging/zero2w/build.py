@@ -100,6 +100,8 @@ Description: {description}
 
 def reload_units(root, init_test_lock=False):
     command = "systemd-tmpfiles --create opi-sx1262-test.conf\n" if init_test_lock else ""
+    if (root / "usr/lib/tmpfiles.d/opi-spi1-peers.conf").exists():
+        command += "systemd-tmpfiles --create opi-radio.conf opi-spi1-peers.conf\n"
     write(root / "DEBIAN/postinst", "#!/bin/sh\nset -eu\n" + command +
           "if [ -d /run/systemd/system ]; then systemctl daemon-reload; fi\n", 0o755)
     write(root / "DEBIAN/postrm", "#!/bin/sh\nset -eu\nif [ -d /run/systemd/system ]; then systemctl daemon-reload; fi\n", 0o755)
@@ -120,6 +122,10 @@ def core_files(src, root):
         "/usr/share/armbian-config/", "/opt/armbian-config-zero2w/share/armbian-config/")
     write(root / UNITS / "opi-sx1262-restore.service", restore)
     copy(radio / "opi-sx1262-test.conf", root / "usr/lib/tmpfiles.d/opi-sx1262-test.conf")
+    peers = radio / "opi-spi1-peers.conf"
+    if peers.exists():
+        copy(peers, root / "usr/lib/tmpfiles.d" / peers.name)
+        copy(src / "hardware/lorawan/opi-radio.conf", root / "usr/lib/tmpfiles.d/opi-radio.conf")
     pwm = src / "hardware/h616-io/opi-zero2w-pwm.service"
     if pwm.exists():
         write(root / UNITS / pwm.name, pwm.read_text().replace(

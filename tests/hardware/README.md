@@ -1,5 +1,7 @@
 # Orange Pi Zero 2W development handoff
 
+[Three radios on one Zero 2W SPI1 controller, select mapping, per-device locks and ARM64 test](spi1-radio-twin/README.md).
+
 [Combined header kits, A733 GPIO, bus diagnostics and Web/TUI acceptance](header-software-2026-11-28.md).
 
 [PWM002 channel matrix, fan settings, driver patches and offline acceptance](pwm-modes.md).

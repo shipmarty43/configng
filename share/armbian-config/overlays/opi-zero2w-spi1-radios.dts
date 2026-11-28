@@ -1,0 +1,35 @@
+/dts-v1/;
+/plugin/;
+
+/* Zero 2W 40-pin header. The SPI core drives three active-low GPIO selects.
+ * Leave PH5/PH9 in GPIO mode; the SPI mux group contains only CLK/MOSI/MISO. */
+&spi1 {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    pinctrl-names = "default";
+    pinctrl-0 = <&spi1_pins>;
+    num-cs = <3>;
+    cs-gpios = <&pio 8 3 1>, <&pio 7 9 1>, <&pio 7 5 1>;
+    status = "okay";
+
+    radio@0 {
+        compatible = "semtech,sx1262", "armbian,spi-dev";
+        reg = <0>; /* Waveshare NSS, pin 40 */
+        spi-max-frequency = <16000000>;
+        reset-gpios = <&pio 8 1 1>;
+        busy-gpios = <&pio 8 4 0>;
+        dio1-gpios = <&pio 2 12 0>;
+        rxen-gpios = <&pio 8 15 0>; /* Antenna switch: high selects RX. */
+    };
+    cc1101@1 {
+        compatible = "ti,cc1101", "armbian,spi-dev";
+        reg = <1>; /* CC1101 CSn, pin 26 */
+        spi-max-frequency = <6500000>;
+    };
+    nrf24@2 {
+        compatible = "nordic,nrf24l01", "armbian,spi-dev";
+        reg = <2>; /* nRF24 CSN, pin 24 */
+        spi-max-frequency = <8000000>;
+        ce-gpios = <&pio 7 4 0>; /* CE, pin 18. Owned by the client at runtime. */
+    };
+};

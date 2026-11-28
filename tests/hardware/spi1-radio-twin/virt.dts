@@ -1,0 +1,15 @@
+/dts-v1/;
+/plugin/;
+/ {
+    fragment@0 { target-path = "/"; __overlay__ {
+        compatible = "linux,dummy-virt", "xunlong,orangepi-zero2w", "allwinner,sun50i-h618";
+        soc {
+            pio: pinctrl@300b000 {
+                compatible = "test,memory-gpio";
+                gpio-controller; #gpio-cells = <3>;
+                spi1_pins: spi1-pins { pins = "PH6", "PH7", "PH8"; function = "spi1"; pinctrl-use-default; };
+            };
+            spi1: spi@5011000 { compatible = "test,memory-spi"; status = "disabled"; };
+        };
+    }; };
+};

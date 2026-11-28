@@ -114,8 +114,26 @@ def discover(sysroot=Path("/sys")):
             "Expected active-low four-wire SPI mode 0, MSB first")
     gpio_handle = (pio/"phandle").read_bytes()
     group_handle = (group/"phandle").read_bytes()
-    require(len(gpio_handle) == len(group_handle) == 4 and (ctrl/"num-cs").read_bytes() == cells(1)
-            and (ctrl/"cs-gpios").read_bytes() == gpio_handle + cells(8,3,1), "Expected kernel CS0 on PI3")
+    require(len(gpio_handle) == len(group_handle) == 4, "Invalid SPI1 pin controller handles")
+    count = (ctrl/"num-cs").read_bytes()
+    expected = gpio_handle + cells(8,3,1)
+    if count == cells(3):
+        expected += gpio_handle + cells(7,9,1) + gpio_handle + cells(7,5,1)
+        clients = ("radio@0","cc1101@1","nrf24@2")
+        live = {n.name for n in ctrl.iterdir() if (n/"reg").is_file() and enabled(n)}
+        require(live == set(clients), "Unexpected shared SPI1 clients")
+        for cs,kind in enumerate(("semtech,sx1262","ti,cc1101","nordic,nrf24l01")):
+            peer = ctrl/clients[cs]
+            require((peer/"reg").read_bytes() == cells(cs) and names(peer/"compatible") == [kind,"armbian,spi-dev"]
+                    and not any((peer/k).exists() for k in ("spi-cs-high","spi-cpol","spi-cpha","spi-3wire","spi-lsb-first")),
+                    f"Wrong SPI1 CS{cs} device or mode")
+        for prop,fields in (("reset-gpios",(8,1,1)), ("busy-gpios",(8,4,0)),
+                            ("dio1-gpios",(2,12,0)), ("rxen-gpios",(8,15,0))):
+            require((radio/prop).read_bytes() == gpio_handle + cells(*fields), f"Wrong SX1262 {prop}")
+        require((ctrl/"nrf24@2/ce-gpios").read_bytes() == gpio_handle + cells(7,4,0), "Wrong nRF24 CE")
+    else:
+        require(count == cells(1), "Unknown SPI1 radio layout")
+    require((ctrl/"cs-gpios").read_bytes() == expected, "Expected kernel CS0 on PI3 and qualified peer selects")
     require((ctrl/"pinctrl-0").read_bytes() == group_handle and names(group/"function") == ["spi1"]
             and sorted(names(group/"pins")) == ["PH6","PH7","PH8"], "Unexpected SPI1 pinmux")
     require(not any(n != radio and (n/"reg").is_file() and enabled(n) and (n/"reg").read_bytes() == cells(0)
