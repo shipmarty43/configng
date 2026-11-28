@@ -11,7 +11,7 @@ import urllib.request
 from werkzeug.serving import make_server
 
 
-def check(app, chrome, temp, *, board="h618"):
+def check(app, chrome, temp, *, board="h618", observe=None):
     cdp_class = runpy.run_path(str(Path(__file__).resolve().parents[1] / "zero2w-browser-pixels.py"))["CDP"]
     with make_server("127.0.0.1", 0, app) as server:
         thread = Thread(target=server.serve_forever, daemon=True)
@@ -60,6 +60,29 @@ def check(app, chrome, temp, *, board="h618"):
                 free, signal = "i2c2-pi", "I²C2 SDA"
             preview(conflict)
             assert js(f"el('apply').disabled && el('issues').textContent.includes('{owner}') && el('issues').textContent.includes('{pin}')")
+            if observe:
+                # Check live and next-boot cells separately across two simulated reboots.
+                def pe0(live, next_boot):
+                    return js(f"Array.from(el('pins').querySelectorAll('tbody tr')).some(r => "
+                              f"r.cells[0].textContent==='24' && r.cells[2].textContent.includes({json.dumps(live)}) && "
+                              f"r.cells[3].textContent.includes({json.dumps(next_boot)}))")
+                camera, spi = "Камера VIN", "SPI3 CS0"
+                assert pe0(camera,camera) and js("el('issues').querySelector('button').textContent.includes('Отключить камеру VIN')")
+                js("el('issues').querySelector('button').click()")
+                until(lambda: js("!el('apply').disabled && el('issues').textContent.includes('Отключить камеру VIN')"))
+                assert js("el('changes').textContent.includes('SPI3 CS0') && el('candidate').textContent.includes('SPI3')")
+                js("el('apply').click()")
+                until(lambda: js("!el('undo').disabled") and pe0(camera,spi))
+                observe(True)
+                js("el('refresh').click()")
+                until(lambda: js("!el('undo').disabled") and pe0(spi,spi))
+                js("el('undo').click()")
+                until(lambda: js("!el('refresh').disabled") and pe0(spi,camera))
+                observe(False)
+                js("el('refresh').click()")
+                until(lambda: js("!el('refresh').disabled") and pe0(camera,camera))
+                print("PASS Chromium: PE0 camera → SPI3 CS0 → camera; one save and one undo, both verified against booted DTBs",flush=True)
+                return
             preview(free)
             assert js(f"!el('apply').disabled && el('changes').textContent.includes('{signal}')")
             js("el('apply').click()")

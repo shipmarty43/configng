@@ -64,9 +64,14 @@ def stage(root, snapshot, work, target, board):
     if (root / "overlay-user").is_symlink() or any(os.path.lexists(root / n) for n in
             ("fixup.scr", "overlay-user/user-fixup.scr", "extlinux/extlinux.conf")):
         raise ValueError("Unsupported custom boot route")
-    routes = a733_panel.ROUTES if board == "a733" else {**header.ROUTES, **PROFILES}
-    if target not in routes and target not in ("state", "undo"):
-        raise ValueError("INVALID: Неизвестный маршрут гребёнки")
+    route = release = None
+    if target not in ("state", "undo"):
+        if board == "a733":
+            route, release = a733_panel.selection(target)
+        else:
+            route = header.ROUTES.get(target)
+            if not route and target not in PROFILES:
+                raise ValueError("INVALID: Неизвестный маршрут гребёнки")
     before = work / "before"
     shutil.copyfile(regular(snapshot), before)
     shadow = work / "boot"
@@ -101,23 +106,28 @@ def stage(root, snapshot, work, target, board):
         names.update(tokens(text))
         if board == "h618":
             names.update(saved_names(text))
-    provider = {"single": SINGLE, "shared": SHARED}.get(target)
-    route = header.ROUTES.get(target) if board == "h618" else None
-    if route and route.group == "UART" and route.mode not in ("off", "txrx-ph"):
-        provider = uart.token(route.port, route.mode)
-    if board == "a733" and target in routes:
-        provider = routes[target].provider
-    if provider and os.path.lexists(root / "overlay-user" / (provider + ".dtbo")):
-        names.add(provider)
+    if board == "a733":
+        providers = [step.provider for step in (release, route) if step]
+    elif route and route.group == "UART" and route.mode not in ("off", "txrx-ph"):
+        providers = [uart.token(route.port, route.mode)]
+    else:
+        providers = [{"single": SINGLE, "shared": SHARED}.get(target)]
+    for provider in providers:
+        if provider and os.path.lexists(root / "overlay-user" / (provider + ".dtbo")):
+            names.add(provider)
     for name in names:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
             raise ValueError("Invalid overlay name")
         src = regular(root / "overlay-user" / (name + ".dtbo"))
         shutil.copyfile(src, folder / src.name)
     if board == "a733":
-        if target in routes:
-            a733_panel.edit(routes[target], before, work / "base.env", folder, strip=True)
-            a733_panel.edit(routes[target], before, after, folder)
+        if route:
+            seed = before
+            if release:
+                seed = work / "released.env"
+                a733_panel.edit(release, before, seed, folder)
+            a733_panel.edit(route, seed, work / "base.env", folder, strip=True)
+            a733_panel.edit(route, seed, after, folder)
         elif target == "state":
             shutil.copyfile(before, after)
         return
@@ -229,6 +239,7 @@ def describe(work, target, dt, devices, locks, board):
         state["parked"] = {str(cs): hz for (_, cs), (_, hz) in managed(saved_names(env)).items()}
         states.append(state)
     current, candidate = states
+    changed = (work / "before").read_bytes() != (work / "after").read_bytes()
     revision = digest((work / "before").read_bytes(), (work / "before.dtb").read_bytes(),
                       json.dumps(current, sort_keys=True).encode())
     undo = work / "undo-key"
@@ -246,12 +257,23 @@ def describe(work, target, dt, devices, locks, board):
     affected = {row["pin"] for row in changed_pins}
     warnings = [f"Вывод {r['pin']} ({r['pad']}) сейчас удерживает GPIO-клиент {r['gpio_consumer']}."
                 for r in live_state["pins"] if r["pin"] in affected and r.get("gpio_consumer")]
+    alternative = transition = None
     if board == "a733":
         issues = a733_panel.conflicts(candidate["pins"])
         try:
             a733_panel.validate_stock_pwm(trees[1], (work/"after").read_text())
-            if target in a733_panel.ROUTES:
-                issues.extend(a733_panel.route_issues(a733_panel.ROUTES[target], read_tree(work / "base.dtb"), *trees))
+            if target not in ("state", "undo"):
+                route, release = a733_panel.selection(target)
+                issues.extend(a733_panel.route_issues(route, read_tree(work / "base.dtb"), *trees))
+                if release:
+                    transition = a733_panel.transition_label(route, release)
+                    if changed and release.path not in a733_panel.owners_on_route(route, current["pins"], candidate["pins"]):
+                        issues.append("Выбранный владелец не занимает выводы запрошенного маршрута.")
+                    if enabled(trees[1], release.path):
+                        issues.append(f"Итоговый DTB не освободил {release.path}.")
+                    issues.extend(a733_panel.route_issues(release, trees[1], *trees))
+                elif issues:
+                    alternative = a733_panel.alternative(target, route, current["pins"], candidate["pins"])
         except (ValueError, KeyError) as exc:
             issues.append(str(exc))
     else:
@@ -262,8 +284,8 @@ def describe(work, target, dt, devices, locks, board):
     if failure.exists() and not issues:
         issues.append(failure.read_text().strip() or "Проверка DTB отклонила конфигурацию.")
     return dict(board="Zero 3W" if board == "a733" else "Zero 2W", live=live_state, current=current, candidate=candidate,
-                changed=(work / "before").read_bytes() != (work / "after").read_bytes(),
-                changes=changed_pins, warnings=warnings, issues=issues,
+                changed=changed,
+                changes=changed_pins, warnings=warnings, issues=issues, alternative=alternative, transition=transition,
                 choices=a733_panel.choices() if board == "a733" else header.choices(), token=None if issues else token, undo=undo_token)
 
 

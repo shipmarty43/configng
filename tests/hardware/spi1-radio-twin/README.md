@@ -160,3 +160,25 @@ Set `PANEL_TEST_CHROMIUM` to a Chromium executable for the loopback browser test
 ```sh
 python3 tests/hardware/check-a733-panel.py "$A733_ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
 ```
+
+
+### Release a pin and enable its next route together
+
+On Zero 3W, choose SPI3 while VIN owns PE0. The conflict screen offers a
+second preview showing the camera release and SPI3 enable together. Saving
+this preview writes one boot environment and one change record. Undo restores
+the preceding selection, including unrelated settings. The simple SPI3
+preview still reports its conflict until a release is explicitly selected.
+
+BUS002 offers this action when a single catalogued owner holds the contested
+pins. The privileged helper accepts `preview a733-spi3-on+camera` and
+`apply a733-spi3-on+camera TOKEN`. It stages both edits in a private directory,
+validates the released owner and final DTB, and rechecks the preview token
+under the boot lock. An additional claimant or a declared client of a bus
+being removed can block the entire change.
+
+Run the focused twin test with
+`python3 tests/hardware/check-a733-panel.py --transition-only "$A733_ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"`.
+The test composes and boots both OF fixtures in userspace, checks the physical
+owner of pin 24, counts journal entries and compares the restored environment
+byte for byte. Set `PANEL_TEST_CHROMIUM` to exercise the real browser buttons.

@@ -89,9 +89,17 @@ function _panel_dialog() {
         if [[ $group == SPI1 || $group == SPI ]]; then report=$(_panel_summary <<< "$state") || return 1; fi
         choice=$(dialog_menu "$group" "$report" 23 90 9 -- "${choices[@]}") || return 0
         plan=$(module_spi1_panel preview "$choice" 2>&1) || { dialog_msgbox 'Предпросмотр' "$plan" 14 78; return 1; }
+        local alternative
+        alternative=$(jq -r '.alternative.id // empty' <<< "$plan")
+        if [[ -n $alternative ]]; then
+            report=$(jq -r '.issues[], "", .alternative.label' <<< "$plan")
+            dialog_yesno 'Предпросмотр перехода?' "$report" 'Предпросмотр' 'Назад' 16 90 --defaultno || return 0
+            choice=$alternative
+            plan=$(module_spi1_panel preview "$choice" 2>&1) || { dialog_msgbox 'Предпросмотр' "$plan" 14 78; return 1; }
+        fi
         report=$(jq -r 'def owners: map(.label) | join(" + ") | if .=="" then "—" else . end;
             .changes[] | "\(.pin) \(.pad)   \(.before|owners) → \(.after|owners)"' <<< "$plan") || return 1
-        report="$choice"$'\n'"${report:-Назначения контактов совпадают.}"
+        report="$(jq -r --arg id "$choice" '.transition // $id' <<< "$plan")"$'\n'"${report:-Назначения контактов совпадают.}"
         if [[ $group == SPI1 || $group == SPI ]]; then report+=$'\n'"$(_panel_summary <<< "$plan")"; fi
         if jq -e '.warnings | length > 0' <<< "$plan" >/dev/null; then report+=$'\n'"$(jq -r '.warnings[]' <<< "$plan")"; fi
         if jq -e '.issues | length > 0' <<< "$plan" >/dev/null; then
@@ -116,7 +124,7 @@ function module_spi1_panel() (
         select) _panel_dialog; return ;;
         state) [[ $# == 1 ]] || return 2; target=state ;;
         preview|apply)
-            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}|shared|single|off|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})$ ]] || return 2
+            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12})?|shared|single|off|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})$ ]] || return 2
             target=$2
             if [[ $op == apply ]]; then [[ $# == 3 ]] || return 2; expected=$3
             else [[ $# == 2 ]] || return 2; fi ;;

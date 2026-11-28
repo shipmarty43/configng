@@ -1,6 +1,7 @@
 """Exercise BUS002 against the distribution's actual A733 DTB with private /boot and sysfs.
 Usage: python3 check-a733-panel.py ALLWINNER_DIR GUI_CHECKOUT [EXTRACTED_CONFIG_PREFIX]
 """
+import argparse
 import hashlib
 import json
 import os
@@ -12,8 +13,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 repo = Path(__file__).resolve().parents[2]
-vendor, gui = (Path(s).resolve() for s in sys.argv[1:3])
-prefix = Path(sys.argv[3]).resolve() if len(sys.argv) == 4 else repo
+cli = argparse.ArgumentParser(description=__doc__)
+cli.add_argument("vendor", type=Path)
+cli.add_argument("gui", type=Path)
+cli.add_argument("prefix", type=Path, nargs="?")
+cli.add_argument("--transition-only", action="store_true")
+args = cli.parse_args()
+vendor, gui = args.vendor.resolve(), args.gui.resolve()
+prefix = args.prefix.resolve() if args.prefix else repo
 sys.path[:0] = [str(gui), str(prefix/"share/armbian-config")]
 import a733_io as io
 import a733_panel
@@ -32,6 +39,155 @@ def sysfs(dt, dest):
             (path/key).write_bytes(val)
 
 
+def check_transition(tmp, helper, get, post, browser=None):
+    boot = tmp / "boot"
+    env = boot / "armbianEnv.txt"
+    original = env.read_bytes()
+    # Keep a real unrelated route, comments and ordering across both UI paths.
+    baseline = original + b"# keep this assignment in place\noverlays=i2c0\n"
+    env.write_bytes(baseline)
+    journal = boot / "armbianEnv.txt.a733-panel-backups"
+    def history():
+        return set(journal.glob("change.*"))
+    initial_live = (tmp / "live").resolve()
+    boot_number = 0
+
+    def reboot(spi):
+        nonlocal boot_number
+        boot_number += 1
+        image = tmp / "handoff.dtb"
+        tree, saved = io.compose(boot, env.read_text(), image)
+        io.verify(tree, saved)
+        assert io.enabled(tree, io.CAMERA) == (not spi)
+        assert io.enabled(tree, io.SOC + io.ROUTES["spi3"][0]) == spi
+        assert io.enabled(tree, io.SOC + io.ROUTES["i2c0"][0])
+        live = tmp / f"handoff-boot-{boot_number}"
+        sysfs(image, live)
+        (tmp / "live-next").symlink_to(live)
+        (tmp / "live-next").replace(tmp / "live")
+        model = get()["live"]
+        row = next(r for r in model["pins"] if r["pin"] == 24)
+        assert [o["path"] for o in row["owners"]] == [io.SOC+io.ROUTES["spi3"][0] if spi else io.CAMERA]
+        assert [(r["cs"],r["pin"]) for r in model["rows"]] == ([(0,24),(1,26)] if spi else [])
+
+    def preview(target):
+        return post("preview", {"profile":target}, viewer=True)
+
+    def assert_one_change(prior):
+        change, = history() - prior
+        assert (change/"before").read_bytes() == baseline
+        assert (change/"after").read_bytes() == env.read_bytes() != baseline
+
+    plain = "a733-spi3-on"
+    combined = plain + "+camera"
+    # All selection/confirmation dialogs of the GUI TUI call the real broker.
+    module = SystemModule()
+    menu = dict(module.get_menu_items())["Шины и контакты"]
+
+    def tui(action):
+        def select(title, items):
+            if "Zero 3W" in title:
+                return items.index("Откатить последнее изменение" if action == "undo" else "SPI")
+            if title.startswith("SPI ·"):
+                return next(i for i, item in enumerate(items) if item.startswith("SPI3 · CS0"))
+            if "Конфликт" in title:
+                assert "Вывод 24 (PE0)" in title
+                return next(i for i, item in enumerate(items) if "камеру VIN" in item and "SPI3" in item)
+            assert "Отключить камеру VIN" in title and "SPI3 CS0" in title
+            return items.index("Назад" if action == "cancel" else "Сохранить для следующей загрузки")
+        with patch.object(module,"show_menu",side_effect=select), patch.object(module,"show_message"), \
+             patch.object(module,"show_error",side_effect=AssertionError):
+            menu()
+
+    def contents():
+        return {str(p.relative_to(boot)): (p.stat().st_mtime_ns, p.read_bytes() if p.is_file() else None)
+                for p in boot.rglob("*") if not p.is_symlink()}
+
+    try:
+        prior = history()
+        untouched = contents()
+        blocked = preview(plain)
+        assert not blocked["token"] and blocked["alternative"]["id"] == combined
+        plan = preview(combined)
+        assert plan["token"] and not plan["issues"] and plan["transition"] == blocked["alternative"]["label"]
+        change, = [r for r in plan["changes"] if r["pin"]==24]
+        assert change["before"][0]["path"] == io.CAMERA and change["after"][0]["label"] == "SPI3 CS0"
+        tui("cancel")
+        assert contents() == untouched
+        post("apply", {"profile":combined, "token":plan["token"]}, 403, viewer=True)
+        env.write_bytes(baseline+b"verbosity=7\n")
+        post("apply", {"profile":combined,"token":plan["token"]}, 409)
+        assert env.read_bytes() == baseline+b"verbosity=7\n" and history() == prior
+        env.write_bytes(baseline)
+        # A second owner still blocking SPI3 must prevent both parts of the save.
+        env.write_bytes(baseline.replace(b"overlays=i2c0",b"overlays=i2c0 i2c2"))
+        obstructed = env.read_bytes()
+        remaining = preview(combined)
+        assert not remaining["token"] and any("I²C2" in issue for issue in remaining["issues"])
+        post("apply", {"profile":combined,"token":"0"*64}, 409)
+        assert env.read_bytes() == obstructed and history() == prior
+        env.write_bytes(baseline)
+        unrelated = preview(plain + "+pinctrl-test")
+        assert not unrelated["token"]
+        tui("save")
+        assert_one_change(prior)
+        repeat = preview(combined)
+        assert not repeat["changed"] and not repeat["issues"]
+        post("apply", {"profile":combined,"token":repeat["token"]})
+        assert_one_change(prior)
+        reboot(True)
+        tui("undo")
+        assert env.read_bytes() == baseline and len(history()-prior)==2
+        reboot(False)
+        print("PASS urwid: cancelled preview writes nothing; one save camera → SPI3; one undo restores camera and exact env after simulated boots",flush=True)
+
+        prior = history()
+        for group, choice, spi in (("SPI",plain,True),("undo","undo",False)):
+            cmd = subprocess.run([helper,"native"],env=os.environ | {"GROUP":group,"CHOICE":choice},
+                                 check=True,capture_output=True,text=True)
+            assert "Сохранено" in cmd.stdout, cmd.stdout
+            if spi:
+                assert_one_change(prior)
+            else:
+                assert env.read_bytes() == baseline
+            reboot(spi)
+        print("PASS native BUS002: one camera/SPI3 journal entry, one undo; extra owner and stale token refused before saving",flush=True)
+        # Managed bus owners can yield a pin too, subject to their normal client checks.
+        uart_id = "a733-uart2-rtscts"
+        pair = preview(uart_id)["alternative"]["id"]
+        assert pair == uart_id + "+i2c0"
+        prior = history()
+        post("apply", {"profile":pair,"token":preview(pair)["token"]})
+        assert_one_change(prior)
+        post("undo", {"token":get()["undo"]})
+        assert env.read_bytes() == baseline
+        folder = boot / "overlay-user"
+        sensor = folder / "handoff-sensor.dtbo"
+        dts = '/dts-v1/; /plugin/; &{/soc@3000000/twi@2510000} { sensor@42 { compatible="test,sensor"; reg=<0x42>; }; };'
+        subprocess.run(["dtc","-q","-@","-o",sensor], input=dts.encode(), check=True)
+        env.write_bytes(baseline+b"user_overlays=handoff-sensor\n")
+        protected = env.read_bytes()
+        check = preview(pair)
+        assert check["token"] is None and any("sensor@42" in issue for issue in check["issues"])
+        post("apply", {"profile":pair,"token":"0"*64}, 409)
+        assert env.read_bytes() == protected
+        env.write_bytes(baseline)
+        print("PASS I²C0 → UART2 joint save/undo; declared I²C client blocks both edits",flush=True)
+        if browser:
+            prior = history()
+            def observe(spi):
+                if spi:
+                    assert_one_change(prior)
+                else:
+                    assert env.read_bytes() == baseline and len(history()-prior) == 2
+                reboot(spi)
+            browser(observe)
+    finally:
+        env.write_bytes(original)
+        (tmp/"live-next").symlink_to(initial_live)
+        (tmp/"live-next").replace(tmp/"live")
+
+
 def run(tmp):
     boot = tmp/"boot"
     (boot/"dtb").mkdir(parents=True)
@@ -41,7 +197,8 @@ def run(tmp):
     env.write_text("rootdev=UUID=test\nconsole=both\noverlay_prefix=sun60i-a733\nfdtfile="+io.BASE+"\n")
     original = env.read_bytes()
     dtb = boot/"dtb"/io.BASE
-    sysfs(dtb, tmp/"live")
+    sysfs(dtb, tmp/"stock-live")
+    (tmp/"live").symlink_to(tmp/"stock-live")
     helper = tmp/"helper"
     helper.write_text('''#!/bin/bash
 set -eu
@@ -99,7 +256,20 @@ fi
         assert env.read_bytes() == expected
     def snapshot():
         return {p.name:(p.stat().st_mtime_ns,p.read_bytes()) for p in boot.iterdir() if p.is_file()}
+    def handoff():
+        browser = None
+        if os.environ.get("PANEL_TEST_CHROMIUM"):
+            sys.path.insert(0,str(Path(__file__).resolve().parent/"spi1-radio-twin"))
+            from panel_browser import check
+            def browser(observe):
+                check(app,os.environ["PANEL_TEST_CHROMIUM"],tmp,board="a733", observe=observe)
+        check_transition(tmp, helper, get, post, browser)
+
     with patch.object(client,"HELPERS",[helper]), patch.object(client,"os",SimpleNamespace(geteuid=lambda:0)):
+        if args.transition_only:
+            handoff()
+            print("DTB SHA256",hashlib.sha256(dtb.read_bytes()).hexdigest(),flush=True)
+            return
         state = get()
         live = state["live"]
         assert state["board"] == "Zero 3W" and len(live["pins"]) == 28
@@ -200,10 +370,7 @@ fi
         undo(previous)
         env.write_bytes(original)
         print("PASS renumbered spidev binding, declared SPI2 client clock/mode across CS edits and rollback",flush=True)
-        if os.environ.get("PANEL_TEST_CHROMIUM"):
-            sys.path.insert(0,str(Path(__file__).resolve().parent/"spi1-radio-twin"))
-            from panel_browser import check
-            check(app,os.environ["PANEL_TEST_CHROMIUM"],tmp,board="a733")
+        handoff()
         print("DTB SHA256",hashlib.sha256(dtb.read_bytes()).hexdigest(),flush=True)
 
 

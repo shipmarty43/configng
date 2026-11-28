@@ -79,6 +79,44 @@ def catalog():
 
 ROUTES = catalog()
 
+# Only catalogued "off" actions and explicit vendor releases can yield a pin.
+RELEASES = {r.port: r for r in ROUTES.values() if
+            (r.port in RESERVES and r.values == ("release",)) or (r.port not in RESERVES and not r.values)}
+
+
+def selection(target):
+    key, sep, port = target.partition("+")
+    route = ROUTES.get(key)
+    if route is None:
+        raise ValueError("INVALID: Неизвестный маршрут гребёнки")
+    if not sep:
+        return route, None
+    release = RELEASES.get(port)
+    if release is None or not route.values or route.port in RESERVES or release.port == route.port:
+        raise ValueError("INVALID: Недопустимая пара владельца и маршрута")
+    return route, release
+
+
+def transition_label(route, release):
+    owner = {"camera": "камеру VIN", "pinctrl-test": "тестовый драйвер PIO"}.get(
+        release.port, release.port.upper().replace("I2C", "I²C"))
+    return f"Отключить {owner} и включить {route.label}"
+
+
+def owners_on_route(route, current, candidate):
+    pins = {row["pin"] for row in candidate if any(o["path"] == route.path for o in row["owners"])}
+    return {o["path"] for row in current if row["pin"] in pins for o in row["owners"] if o["path"] != route.path}
+
+
+def alternative(key, route, current, candidate):
+    if not route.values or route.port in RESERVES:
+        return None
+    conflicts = owners_on_route(route, candidate, candidate)
+    for port, release in RELEASES.items():
+        if conflicts == {release.path} and release.path in owners_on_route(route, current, candidate):
+            return {"id": f"{key}+{port}", "label": transition_label(route, release)}
+    return None
+
 
 def choices():
     return [dict(id=key, group=route.group, label=route.label) for key, route in ROUTES.items()]
