@@ -107,6 +107,8 @@ fi
         claims = {r["pin"]: {o["path"] for o in r["owners"]} for r in live["pins"]}
         assert claims[24] == {io.CAMERA} and claims[35] == {io.PIN_TEST}
         assert claims[8] == claims[10] == {io.PIN_TEST, io.SOC+"uart@2500000"}
+        options = {r["pin"]:set(r["functions"]) for r in live["pins"]}
+        assert options[7] == {"SPI2 CS1","PWM0-0"} and options[28] == {"S_PWM0-2"}
         post("preview", {"profile":"single"}, 400)
         post("apply", {"profile":"a733-spi2-cs0","token":"0"*64}, 403, viewer=True)
         before_files = snapshot()

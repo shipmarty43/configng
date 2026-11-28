@@ -126,7 +126,11 @@ def pins(tree):
     for cs, (pad, _) in io.SPI2_CS.items():
         labels[io.SOC + io.ROUTES["spi2"][0], pad] = f"SPI2 CS{cs}"
     pwm_paths = {pwm.channel("a733", n): ("S_PWM0-2" if n == 22 else f"PWM0-{n}") for n in pwm.A733}
-    return [dict(pin=pin, pad=pad, owners=[dict(path=path, label=labels.get((path, pad),
+    for n, pad in pwm.A733.items():
+        path = pwm.channel("a733", n)
+        labels[path, pad] = pwm_paths[path]
+    return [dict(pin=pin, pad=pad, functions=sorted({label for (path, p), label in labels.items()
+                 if p == pad and path != io.CAMERA}), owners=[dict(path=path, label=labels.get((path, pad),
                  "Тестовый драйвер PIO" if path == io.PIN_TEST else pwm_paths.get(path, path)))
                  for path in sorted(claims.get(pad, ()))]) for pin, pad in PADS.items()]
 
@@ -161,6 +165,7 @@ def inventory(tree, dt=None, devices=None):
                              (dev/"device/of_node").resolve() == node]
                 row["endpoint"] = endpoints[0] if len(endpoints) == 1 else None
             rows.append(row)
+    rows.sort(key=lambda row: (row["bus"], row["cs"]))
     return dict(profile="a733", buses=buses, pins=pins(tree), rows=rows)
 
 

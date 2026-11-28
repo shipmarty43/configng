@@ -75,7 +75,7 @@ function _panel_dialog() {
         mapfile -t choices < <(jq -r 'def owners: map(.label) | join(" + ") | if .=="" then "—" else . end;
             (.live.pins | INDEX(.pin | tostring)) as $live | .current.pins[] |
             (.pin|tostring), ("\(.pad)   " + (if $live[.pin|tostring] then ($live[.pin|tostring] | (.owners|owners) + (if .gpio_consumer then " [GPIO: " + .gpio_consumer + "]" else "" end)) else "нет данных" end)
-                                    + " → " + (.owners|owners))' <<< "$state")
+                                    + " → " + (.owners|owners) + (if (.functions // [] | length)>0 then " · " + (.functions|join(" / ")) else "" end))' <<< "$state")
         report='Сейчас (DT, gpiochip недоступен) → следующая загрузка (DT)'
         if jq -e '.live.gpio_known' <<< "$state" >/dev/null; then report='Сейчас (DT и GPIO) → следующая загрузка (DT)'; fi
         dialog_menu 'Физические контакты' "$report" 23 90 14 -- "${choices[@]}" >/dev/null || :

@@ -45,12 +45,13 @@ def check(app, chrome, temp, *, board="h618"):
                 raise RuntimeError(nav["errorText"])
             js = cdp.evaluate
             until(lambda: js("!!document.querySelector('#preview:not(:disabled)')"))
-            js("el('all-pins').click()")
+            js("if (!el('all-pins').checked) el('all-pins').click()")
             assert js("el('pins').querySelectorAll('tbody tr').length") == 28
             def preview(route):
                 js(f"el('profile').value={json.dumps(route)}; el('profile').dispatchEvent(new Event('change')); el('preview').click()")
                 until(lambda: js("!el('preview').disabled && !el('plan').hidden"))
             if board == "a733":
+                assert js("el('pins').textContent.includes('SPI2 CS1') && el('pins').textContent.includes('S_PWM0-2')")
                 assert js("el('board').textContent.includes('Zero 3W')")
                 conflict, owner, pin = "a733-spi3-on", "Камера VIN", 24
                 free, signal = "a733-i2c1-400000", "I²C1 SDA"
@@ -62,9 +63,9 @@ def check(app, chrome, temp, *, board="h618"):
             preview(free)
             assert js(f"!el('apply').disabled && el('changes').textContent.includes('{signal}')")
             js("el('apply').click()")
-            until(lambda: js(f"!el('undo').disabled && el('pins').textContent.includes('{signal}')"))
+            until(lambda: js(f"!el('undo').disabled && Array.from(el('pins').querySelectorAll('tbody tr')).some(r => r.cells[3].textContent.includes('{signal}'))"))
             js("el('undo').click()")
-            until(lambda: js(f"!el('refresh').disabled && !el('pins').textContent.includes('{signal}')"))
+            until(lambda: js(f"!el('refresh').disabled && !Array.from(el('pins').querySelectorAll('tbody tr')).some(r => r.cells[3].textContent.includes('{signal}'))"))
             print(f"PASS Chromium {board}: 28 pins, blocked {conflict}, preview/apply {free} and one-click undo", flush=True)
         finally:
             if cdp:
