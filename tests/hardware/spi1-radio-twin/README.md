@@ -80,3 +80,10 @@ bash tests/hardware/spi1-radio-twin/run.sh "$IMAGE" "$HEADERS" "$ALLWINNER_DTB_D
 python3 tests/hardware/spi1-radio-twin/live-routes.py "$NEW_WORKDIR/board.dtb" \
   "$GUI_CHECKOUT" "$LORAWAN_BUILD/lorawan-hal-tests"
 ```
+
+The extracted configurator package also opened the real dialog on a private boot
+tree, selected the shared profile, installed the DTBO and saved the selection.
+Run `package-menu.py CONFIGURATOR.deb ALLWINNER_DTB_DIR` with dialog and dtc
+installed to repeat this check. The single-HAT regression suite passed 17 ARM64
+tests separately. The shared-route check fed the same composed board tree and
+five malformed variants to the GUI, mesh helper and C++ LoRaWAN validator.
