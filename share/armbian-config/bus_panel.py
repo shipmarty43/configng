@@ -1,4 +1,4 @@
-"""Read-only SPI1 inventory and private candidate boot trees for the Zero 2W panel."""
+"""Live header inventory and private candidate boot trees for BUS002."""
 import argparse
 import hashlib
 import json
@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+import a733_panel
 import header_panel as header
 import uart_routes as uart
 from dt_clock_overlay import install_blob, tokens
@@ -37,8 +38,9 @@ def regular(path):
     return path
 
 
-def matching_backup(root, before):
-    folder = root / "armbianEnv.txt.spi1-panel-backups"
+def matching_backup(root, before, board):
+    journal = "a733-panel" if board == "a733" else "spi1-panel"
+    folder = root / f"armbianEnv.txt.{journal}-backups"
     if folder.is_symlink():
         raise ValueError("Unsafe profile backup directory")
     if not folder.exists():
@@ -57,12 +59,13 @@ def matching_backup(root, before):
     return None
 
 
-def stage(root, snapshot, work, target):
+def stage(root, snapshot, work, target, board):
     # The only symlink in the private tree points to the normal kernel DTB directory.
     if (root / "overlay-user").is_symlink() or any(os.path.lexists(root / n) for n in
             ("fixup.scr", "overlay-user/user-fixup.scr", "extlinux/extlinux.conf")):
         raise ValueError("Unsupported custom boot route")
-    if target not in (*PROFILES, *header.ROUTES, "state", "undo"):
+    routes = a733_panel.ROUTES if board == "a733" else {**header.ROUTES, **PROFILES}
+    if target not in routes and target not in ("state", "undo"):
         raise ValueError("INVALID: Неизвестный маршрут гребёнки")
     before = work / "before"
     shutil.copyfile(regular(snapshot), before)
@@ -74,7 +77,7 @@ def stage(root, snapshot, work, target):
     folder = shadow / "overlay-user"
     folder.mkdir()
     try:
-        backup = matching_backup(root, before)
+        backup = matching_backup(root, before, board)
     except PermissionError:
         if target == "undo":
             raise
@@ -88,25 +91,36 @@ def stage(root, snapshot, work, target):
         if not backup:
             raise ValueError("No matching profile change to undo")
         rollback_reordered(backup_before, backup / "after", before, after,
-                           allowed=("overlays", "user_overlays", PARKED))
+                           allowed=("overlays", "user_overlays", PARKED) if board == "h618" else ("overlays", "user_overlays"))
         if before.read_bytes() == (backup / "after").read_bytes():
             shutil.copyfile(backup_before, after)  # Also restore exact ordering/newlines.
     names = set()
     for env in (before, after) if after.exists() else (before,):
         text = env.read_text()
         env_content(text)
-        names.update(tokens(text) + saved_names(text))
+        names.update(tokens(text))
+        if board == "h618":
+            names.update(saved_names(text))
     provider = {"single": SINGLE, "shared": SHARED}.get(target)
-    route = header.ROUTES.get(target)
+    route = header.ROUTES.get(target) if board == "h618" else None
     if route and route.group == "UART" and route.mode not in ("off", "txrx-ph"):
         provider = uart.token(route.port, route.mode)
+    if board == "a733" and target in routes:
+        provider = routes[target].provider
     if provider and os.path.lexists(root / "overlay-user" / (provider + ".dtbo")):
         names.add(provider)
     for name in names:
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
             raise ValueError("Invalid overlay name")
         src = regular(root / "overlay-user" / (name + ".dtbo"))
         shutil.copyfile(src, folder / src.name)
+    if board == "a733":
+        if target in routes:
+            a733_panel.edit(routes[target], before, work / "base.env", folder, strip=True)
+            a733_panel.edit(routes[target], before, after, folder)
+        elif target == "state":
+            shutil.copyfile(before, after)
+        return
     peer_clocks(saved_names(before.read_text()), folder, parked=True)
     if target in PROFILES:
         select(before, after, folder, PROFILES[target])
@@ -118,10 +132,13 @@ def stage(root, snapshot, work, target):
     peer_clocks(saved_names(after.read_text()), folder, parked=True)
 
 
-def publish(root, work):
+def publish(root, work, board):
     active = tokens((work / "after").read_text())
-    providers = {SINGLE, SHARED} | {uart.token(r.port, r.mode) for r in header.ROUTES.values()
-                                   if r.group == "UART" and r.mode not in ("off", "txrx-ph")}
+    if board == "a733":
+        providers = {r.provider for r in a733_panel.ROUTES.values() if r.provider}
+    else:
+        providers = {SINGLE, SHARED} | {uart.token(r.port, r.mode) for r in header.ROUTES.values()
+                                       if r.group == "UART" and r.mode not in ("off", "txrx-ph")}
     for provider in providers.intersection(active):
         data = (work / "boot/overlay-user" / (provider + ".dtbo")).read_bytes()
         install_blob(root / "overlay-user", provider, data)
@@ -149,7 +166,7 @@ def live_tree(dt):
     props = {"status", "reg", "compatible", "phandle", "spi-max-frequency", MARKER,
              "pins", "allwinner,pins", "function", "allwinner,function", "gpio", "gpios",
              "interrupts", "interrupts-extended", "interrupt-parent", "#interrupt-cells",
-             "gpio-hog", "num-cs", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", uart.DE_PROP}
+             "gpio-hog", "spi-cpha", "spi-cpol", "num-cs", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", uart.DE_PROP}
     tree = {}
     for directory, children, files in os.walk(dt):
         node = Path(directory)
@@ -198,12 +215,15 @@ def inventory(tree, dt=None, devices=None, locks=None):
     return {"profile": profile, "rows": rows}
 
 
-def describe(work, target, dt, devices, locks):
+def describe(work, target, dt, devices, locks, board):
     states, trees = [], []
     for name in ("before", "after"):
         env = (work / name).read_text()
         tree = read_tree(work / (name + ".dtb"))
         trees.append(tree)
+        if board == "a733":
+            states.append(a733_panel.inventory(tree))
+            continue
         state = inventory(tree)
         state["pins"] = header.pins(tree)
         state["parked"] = {str(cs): hz for (_, cs), (_, hz) in managed(saved_names(env)).items()}
@@ -216,37 +236,53 @@ def describe(work, target, dt, devices, locks):
     token = digest(revision.encode(), target.encode(), (work / "after").read_bytes(),
                    (work / "after.dtb").read_bytes(), json.dumps(candidate, sort_keys=True).encode())
     live = live_tree(dt)
-    live_state = inventory(live, dt, devices, locks)
-    live_state["pins"] = header.pins(live)
-    live_state["gpio_known"] = header.gpio_consumers(live_state["pins"], dt)
+    if board == "a733":
+        live_state = a733_panel.inventory(live, dt, devices)
+    else:
+        live_state = inventory(live, dt, devices, locks)
+        live_state["pins"] = header.pins(live)
+    live_state["gpio_known"] = header.gpio_consumers(live_state["pins"], dt, board=board)
     changed_pins = header.changes(current["pins"], candidate["pins"])
     affected = {row["pin"] for row in changed_pins}
     warnings = [f"Вывод {r['pin']} ({r['pad']}) сейчас удерживает GPIO-клиент {r['gpio_consumer']}."
                 for r in live_state["pins"] if r["pin"] in affected and r.get("gpio_consumer")]
-    issues = header.conflict_messages(candidate["pins"])
-    if target in header.ROUTES:
+    if board == "a733":
+        issues = a733_panel.conflicts(candidate["pins"])
+        if target in a733_panel.ROUTES:
+            try:
+                issues.extend(a733_panel.route_issues(a733_panel.ROUTES[target], read_tree(work / "base.dtb"), *trees))
+            except (ValueError, KeyError) as exc:
+                issues.append(str(exc))
+    else:
+        issues = header.conflict_messages(candidate["pins"])
+    if board == "h618" and target in header.ROUTES:
         issues.extend(header.route_issues(header.ROUTES[target], read_tree(work / "base.dtb"), *trees))
     failure = work / "validation-error"
     if failure.exists() and not issues:
         issues.append(failure.read_text().strip() or "Проверка DTB отклонила конфигурацию.")
-    return dict(live=live_state, current=current, candidate=candidate,
+    return dict(board="Zero 3W" if board == "a733" else "Zero 2W", live=live_state, current=current, candidate=candidate,
                 changed=(work / "before").read_bytes() != (work / "after").read_bytes(),
                 changes=changed_pins, warnings=warnings, issues=issues,
-                choices=header.choices(), token=None if issues else token, undo=undo_token)
+                choices=a733_panel.choices() if board == "a733" else header.choices(), token=None if issues else token, undo=undo_token)
 
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--board", choices=("a733", "h618"), default="h618")
     sub = parser.add_subparsers(dest="op", required=True)
     for cmd, args in (("stage", "root snapshot work target"), ("describe", "work target dt devices locks"),
                       ("publish", "root work")):
         group = sub.add_parser(cmd)
         for arg in args.split():
             group.add_argument(arg, type=str if arg == "target" else Path)
+    cmd = sub.add_parser("a733-trees")
+    cmd.add_argument("work", type=Path)
     kwargs = vars(parser.parse_args())
     op = kwargs.pop("op")
-    if op == "describe":
+    if op == "a733-trees":
+        a733_panel.compose(kwargs["work"])
+    elif op == "describe":
         print(json.dumps(describe(**kwargs), ensure_ascii=False))
     elif op == "stage":
         stage(**kwargs)

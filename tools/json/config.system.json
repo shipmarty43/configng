@@ -175,12 +175,12 @@
                         {
                             "id": "BUS002",
                             "short": "Шины и контакты",
-                            "description": "SPI1, I²C, UART и PWM на гребёнке Zero 2W.",
+                            "description": "SPI, I²C, UART и PWM на гребёнке Zero 2W и Zero 3W.",
                             "module": "module_generic",
                             "command": ["module_spi1_panel select"],
                             "status": "Preview",
                             "author": "@shipmarty43",
-                            "condition": "_ups_dfr_board",
+                            "condition": "_header_gpio_board >/dev/null",
                             "help": "Show live and next-boot header pin owners, preview routing conflicts and undo a profile change."
                         },
                         {

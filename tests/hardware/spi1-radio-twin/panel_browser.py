@@ -11,7 +11,7 @@ import urllib.request
 from werkzeug.serving import make_server
 
 
-def check(app, chrome, temp):
+def check(app, chrome, temp, *, board="h618"):
     cdp_class = runpy.run_path(str(Path(__file__).resolve().parents[1] / "zero2w-browser-pixels.py"))["CDP"]
     with make_server("127.0.0.1", 0, app) as server:
         thread = Thread(target=server.serve_forever, daemon=True)
@@ -50,15 +50,22 @@ def check(app, chrome, temp):
             def preview(route):
                 js(f"el('profile').value={json.dumps(route)}; el('profile').dispatchEvent(new Event('change')); el('preview').click()")
                 until(lambda: js("!el('preview').disabled && !el('plan').hidden"))
-            preview("uart3-rtscts")
-            assert js("el('apply').disabled && el('issues').textContent.includes('PWM1') && el('issues').textContent.includes('32')")
-            preview("i2c2-pi")
-            assert js("!el('apply').disabled && el('changes').textContent.includes('I²C2 SCL')")
+            if board == "a733":
+                assert js("el('board').textContent.includes('Zero 3W')")
+                conflict, owner, pin = "a733-spi3-on", "Камера VIN", 24
+                free, signal = "a733-i2c1-400000", "I²C1 SDA"
+            else:
+                conflict, owner, pin = "uart3-rtscts", "PWM1", 32
+                free, signal = "i2c2-pi", "I²C2 SDA"
+            preview(conflict)
+            assert js(f"el('apply').disabled && el('issues').textContent.includes('{owner}') && el('issues').textContent.includes('{pin}')")
+            preview(free)
+            assert js(f"!el('apply').disabled && el('changes').textContent.includes('{signal}')")
             js("el('apply').click()")
-            until(lambda: js("!el('undo').disabled && el('pins').textContent.includes('I²C2 SDA')"))
+            until(lambda: js(f"!el('undo').disabled && el('pins').textContent.includes('{signal}')"))
             js("el('undo').click()")
-            until(lambda: js("!el('refresh').disabled && !el('pins').textContent.includes('I²C2 SDA')"))
-            print("PASS Chromium: 28-pin map, UART/PWM conflict, I²C preview, save and one-click undo", flush=True)
+            until(lambda: js(f"!el('refresh').disabled && !el('pins').textContent.includes('{signal}')"))
+            print(f"PASS Chromium {board}: 28 pins, blocked {conflict}, preview/apply {free} and one-click undo", flush=True)
         finally:
             if cdp:
                 cdp.ws.close()

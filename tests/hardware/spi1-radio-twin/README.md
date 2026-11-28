@@ -132,3 +132,31 @@ The same test covers I²C/UART/PWM route changes, blocked saves, the DFR0528,
 GPIO-v2 line information on a model, and one-step undo across both interfaces.
 Set `PANEL_TEST_CHROMIUM` to a Chromium executable for the optional headless
 Web button test. It uses a temporary browser profile and a loopback Flask server.
+
+
+### Zero 3W (A733)
+
+BUS002 selects the board from the live OF compatible strings. On Zero 3W it
+reads the vendor DTB and both GPIO controllers. The map covers all 28 signal
+pins and identifies the debug UART on 8/10, camera MCLK on PE0 (24), and the
+vendor pin-test IRQ on PB6 (35). The stock DT reserves 8/10 for both debug and
+the pin-test device. These specific reservations remain visible when an
+unrelated route is saved.
+
+| Group | Next-boot choices |
+| --- | --- |
+| SPI | SPI2 clock/data on 13/5/3, CS0 on 11 and any subset of CS1/2/3 on 7/12/35. SPI3 clock/data on 23/19/21, CS0/1 on 24/26. Existing device clock/mode settings stay with their client. |
+| I²C | TWI0–3 at 100 or 400 kHz. SCL/SDA pairs are 5/3, 40/38, 23/19 and 21/26. |
+| UART | UART2 on 11/13, UART6 on 24/23, UART7 (standby UART0) on 16/18. Optional RTS/CTS on UART2 (5/3) and UART6 (19/21). |
+| PWM | Vendor PWM0 channels 0, 1, 2, 3, 4, 8 and 9 on 7, 32, 36, 33, 37, 35 and 40. Standby PWM0-2 uses PL4 (28). |
+| Резервы | Explicitly release or restore the camera or pin-test device. A conflicting SPI/UART/PWM request leaves these devices in place. |
+
+The package uses the existing boot lock and an A733-specific undo journal
+(`/boot/armbianEnv.txt.a733-panel-backups`). The check below runs with a private
+boot tree and emulated sysfs built from the distribution DTB. Supply the extracted
+package prefix as a third argument to exercise its assembled shell modules.
+Set `PANEL_TEST_CHROMIUM` to a Chromium executable for the loopback browser test.
+
+```sh
+python3 tests/hardware/check-a733-panel.py "$A733_ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
+```

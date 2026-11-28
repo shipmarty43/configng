@@ -645,7 +645,7 @@ _zero2w_validate_change() {
     if [[ $profile == header-gpio ]] && ! cmp -s "$work/before" "$work/after"; then
         _header_gpio_precommit "$work/before" "$work/after" || return 1
     fi
-    if [[ $profile == a733-io ]]; then
+    if [[ $profile == a733-io || $profile == a733-panel ]]; then
         _a733_io_cli "$work/after" verify >/dev/null || return 1
     fi
     if [[ $profile == pwm-modes ]] || grep -Eq '^user_overlays=.*opi-pwmx-' "$work/after"; then

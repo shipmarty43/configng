@@ -204,15 +204,15 @@ def pins(tree):
         for pin, pad in HEADER.items()]
 
 
-def gpio_consumers(rows, dt, sysroot=Path("/sys"), devroot=Path("/dev")):
+def gpio_consumers(rows, dt, sysroot=Path("/sys"), devroot=Path("/dev"), *, board="h618"):
     """GPIO v2 line info only. An offline DT or inaccessible gpiochip stays unknown."""
     if (sysroot / "firmware/devicetree/base").resolve() != dt.resolve():
         return False
     try:
         with ExitStack() as stack:
-            chips = gpio.discover("h618", stack, sysroot, devroot)
+            chips = gpio.discover(board, stack, sysroot, devroot)
             for row in rows:
-                _, ctl, bank, bit = location("h618", row["pin"])
+                _, ctl, bank, bit = location(board, row["pin"])
                 if ctl not in chips:
                     return False
                 flags, owner, _ = chips[ctl].info(bank * 32 + bit)

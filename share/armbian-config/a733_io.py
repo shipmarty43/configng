@@ -175,10 +175,11 @@ def environment(text):
     return config
 
 
-def compose(root, text, output):
+def compose(root, text, output, *, check_clocks=True):
     env = environment(text)
     dt = root / "dtb" / BASE
-    board(read_tree(dt))
+    base = read_tree(dt)
+    board(base)
     stock = dt.parent / "overlay"
     folder = root / "overlay-user"
     prefixes = env.get("overlay_prefix", "").split()
@@ -205,9 +206,9 @@ def compose(root, text, output):
             if key in SPI2_KEYS:
                 device_clocks.add(path)
         blobs.append(path)
-    if device_clocks:
+    if device_clocks and check_clocks:
         inputs = [b for b in blobs if b not in device_clocks]
-        ref = read_tree(dt)
+        ref = base
         if inputs:
             subprocess.run(["fdtoverlay", "-i", dt, "-o", output, *inputs], check=True)
             ref = read_tree(output)
@@ -220,7 +221,8 @@ def compose(root, text, output):
         subprocess.run(["fdtoverlay", "-i", dt, "-o", output, *blobs], check=True)
         nodes = read_tree(output)
     else:
-        nodes = read_tree(dt)
+        Path(output).write_bytes(dt.read_bytes())
+        nodes = base
     board(nodes)
     return nodes, selected
 
@@ -374,8 +376,6 @@ def main():
         output, = a.args
         nodes, selections = compose(root, before, Path(output))
         verify(nodes, selections)
-        if not (environment(before).get("overlays", "").split() or tokens(before)):
-            Path(output).write_bytes((root / "dtb" / BASE).read_bytes())
         return
     with tempfile.TemporaryDirectory() as work:
         dt = Path(work)/"composed.dtb"

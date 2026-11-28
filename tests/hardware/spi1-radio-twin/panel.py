@@ -34,7 +34,7 @@ declare -A module_options
 if [[ -n $PANEL_PACKAGE ]]; then
     source "$PANEL_PREFIX/lib/armbian-config/config.system.sh"
 else
-    for name in devicetree_overlays sx1262_overlay spi1_panel ups_dfr0528 spi_clocks h616_uart; do
+    for name in devicetree_overlays sx1262_overlay spi1_panel ups_dfr0528 spi_clocks h616_uart header_gpio a733_io; do
         source "$PANEL_PREFIX/tools/modules/system/module_$name.sh"
     done
 fi
