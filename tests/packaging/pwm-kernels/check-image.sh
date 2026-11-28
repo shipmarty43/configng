@@ -1,0 +1,56 @@
+#!/bin/bash
+# The only writable guest devices are scratch files under a new work directory.
+set -euo pipefail
+if (( $# < 6 || $# > 7 )); then
+    echo "Usage: $0 BOARD CLEAN.img ROLLBACK.deb CANDIDATE.deb|before BUSYBOX NEW_WORKDIR [QA-ECAM.ko]" >&2; exit 2
+fi
+board=$1; clean=$(realpath "$2"); stock=$(realpath "$3"); candidate=$4; busy=$(realpath "$5")
+for file in "$clean" "$stock" "$busy"; do [[ -f $file ]] || exit 2; done
+mkdir -m 700 "$6"; w=$(realpath "$6"); here=$(cd "$(dirname "$0")" && pwd)
+q=${QEMU_SYSTEM_AARCH64:-qemu-system-aarch64}
+pkg=$(dpkg-deb -f "$stock" Package); orig=$(dpkg-deb -f "$stock" Version)
+rel=$(dpkg-deb -f "$stock" Armbian-Kernel-Version-Family)
+mkdir -p "$w/input" "$w/early"/{bin,dev,proc,sys,newroot}
+extract_image() { dpkg-deb --fsys-tarfile "$1" | tar -xO "./boot/vmlinuz-$rel" > "$2"; }
+extract_image "$stock" "$w/stock.Image"; stocksha=$(sha256sum "$w/stock.Image" | cut -d' ' -f1)
+cp "$here/guest.sh" "$here/ramdisk.py" "$w/input/"
+phases=(before); new=unused; expected=unused
+if [[ $candidate != before ]]; then
+    [[ -f $candidate && $(dpkg-deb -f "$candidate" Package) == "$pkg" ]]
+    new=$(dpkg-deb -f "$candidate" Version); dpkg --compare-versions "$new" gt "$orig"
+    extract_image "$candidate" "$w/from-package.Image"
+    expected=$(sha256sum "$w/from-package.Image" | cut -d' ' -f1); [[ $expected != "$stocksha" ]]
+    cp "$candidate" "$w/input/current.deb"; cp "$stock" "$w/input/stock.deb"
+    phases=(install downgrade restored)
+fi
+echo "$board $pkg $rel $orig $new $stocksha $expected" > "$w/input/manifest"
+cp "$here/init" "$w/early/init"; chmod 755 "$w/early/init"
+cp "$busy" "$w/early/bin/busybox"
+if [[ $# == 7 ]]; then test -f "$7"; cp "$7" "$w/early/qa-ecam.ko"; fi
+(cd "$w/early" && find . -print0 | cpio --null -o -H newc 2>/dev/null | gzip -1 > "$w/init.gz")
+qemu-img create -q -f qcow2 -F raw -b "$clean" "$w/root.qcow2"
+truncate -s "$(( $(du -sm "$w/input" | cut -f1) + 16 ))M" "$w/input.ext4"
+mke2fs -q -F -t ext4 -m0 -L PWM_INPUT -d "$w/input" "$w/input.ext4"
+truncate -s 128M "$w/result.ext4"; mke2fs -q -F -t ext4 -m0 -L PWM_RESULT "$w/result.ext4"
+kernel="$w/stock.Image"
+for phase in "${phases[@]}"; do
+    timeout --kill-after=15s "${PWM_VM_TIMEOUT:-35m}" "$q" -no-user-config -nodefaults -machine virt,gic-version=3 \
+        -accel tcg,thread=multi,tb-size=48 -cpu cortex-a55 -smp 2 -m 896M -nic none -display none -monitor none -no-reboot \
+        -serial none -chardev "file,id=c,path=$w/$phase.serial" -device pci-serial,chardev=c \
+        -device qemu-xhci,id=hc \
+        -drive "if=none,id=root,file=$w/root.qcow2,format=qcow2,cache=none" -device usb-storage,bus=hc.0,drive=root \
+        -drive "if=none,id=input,file=$w/input.ext4,format=raw,readonly=on" -device usb-storage,bus=hc.0,drive=input \
+        -drive "if=none,id=result,file=$w/result.ext4,format=raw,cache=none" -device usb-storage,bus=hc.0,drive=result \
+        -kernel "$kernel" -initrd "$w/init.gz" -append "console=ttyS0,115200 rdinit=/init panic=2 qa_phase=$phase systemd.unit=pwm-qa.target fstab=no systemd.gpt_auto=0 systemd.mask=timers.target systemd.mask=armbian-zram-config.service systemd.mask=armbian-ramlog.service systemd.mask=systemd-zram-setup@zram0.service" || :
+    debugfs -R "dump /$phase.log $w/$phase.log" "$w/result.ext4" 2>/dev/null
+    [[ -s $w/$phase.log ]] && tail -8 "$w/$phase.log"
+    [[ $(debugfs -R "cat /$phase.pass" "$w/result.ext4" 2>/dev/null) == PASS ]] || exit 1
+    case "$phase" in
+        install) next=installed; hash=$expected ;;
+        downgrade) next=restored; hash=$stocksha ;;
+        *) continue ;;
+    esac
+    kernel="$w/$next.Image"
+    debugfs -R "dump /$next.Image $kernel" "$w/result.ext4"
+    echo "$hash  $kernel" | sha256sum -c -
+done

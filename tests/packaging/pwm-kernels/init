@@ -1,0 +1,42 @@
+#!/bin/busybox sh
+set -eu
+export PATH=/bin
+/bin/busybox --install -s /bin
+mount -t devtmpfs dev /dev; mount -t proc proc /proc; mount -t sysfs sys /sys
+if test -f /qa-ecam.ko; then insmod /qa-ecam.ko; fi
+root= input= result=
+for i in $(seq 1 60); do
+    for disk in /dev/sd? /dev/sd?1; do
+        test -b "$disk" || continue
+        # ext4 superblock s_volume_name; busybox-static has no blkid applet.
+        label=$(dd if="$disk" bs=1 skip=1144 count=16 2>/dev/null | tr -d '\000')
+        case "$label" in armbi_root) root=$disk ;; PWM_INPUT) input=$disk ;; PWM_RESULT) result=$disk ;; esac
+    done
+    test -b "$root" && test -b "$input" && test -b "$result" && break
+    sleep 1
+done
+mount -t ext4 "$root" /newroot
+r=/newroot
+mkdir -p "$r/run"; mount -t tmpfs tmpfs "$r/run"
+mkdir -p "$r/run/qa/input" "$r/run/qa/result"
+mount -t ext4 -o ro,noload "$input" "$r/run/qa/input"
+mount -t ext4 "$result" "$r/run/qa/result"
+mkdir -p "$r/run/systemd/system"
+cat > "$r/run/systemd/system/pwm-qa.target" <<'UNIT'
+[Unit]
+Description=Offline PWM package test
+Requires=basic.target pwm-qa.service
+After=basic.target
+AllowIsolate=yes
+UNIT
+cat > "$r/run/systemd/system/pwm-qa.service" <<'UNIT'
+[Unit]
+Description=Test kernel installation on the image root
+After=basic.target
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /run/qa/input/guest.sh
+TimeoutStartSec=32min
+UNIT
+for fs in proc dev sys; do mount -o move "/$fs" "$r/$fs"; done
+exec switch_root /newroot /sbin/init
