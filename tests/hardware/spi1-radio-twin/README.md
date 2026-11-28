@@ -134,6 +134,36 @@ Set `PANEL_TEST_CHROMIUM` to a Chromium executable for the optional headless
 Web button test. It uses a temporary browser profile and a loopback Flask server.
 
 
+### Zero 2W multi-owner routes
+
+Choose **UART2 · RTS/CTS · 15/22/5/3** with the stock `i2c0-pi` and
+`i2c1-pi` overlays enabled. BUS002 offers
+`uart2-rtscts+i2c0+i2c1` after resolving the owners of all four pads.
+The same handoff planner handles the catalogued I²C, UART and PWM routes.
+Clock overrides for released I²C buses are removed from the active selection
+together with their routes. One journal record retains the exact old
+environment; undo reselects those immutable clock overlays.
+
+| Physical pin | Initial / restored | UART2 |
+|---|---|---|
+| 15 (PI5) | I²C0 SCL | TX |
+| 22 (PI6) | I²C0 SDA | RX |
+| 5 (PI7) | I²C1 SCL | RTS |
+| 3 (PI8) | I²C1 SDA | CTS |
+
+When I²C1 serves `dfrobot,dfr0528` at address 0x10, the UI reports the UPS
+dependency and withholds the handoff. An explicit compound request goes through
+the same dependency check under the boot lock. The fixture checks both buses,
+their clocks, the overlay files and journal after rejection.
+
+```sh
+python3 tests/hardware/spi1-radio-twin/panel.py --handoff-only "$ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
+```
+
+An optional third path selects the extracted package prefix. Set
+`PANEL_TEST_CHROMIUM` to a Chromium executable for a loopback Web test.
+Set `PANEL_TEST_DIALOG=1` for the native TUI test with dialog and pexpect.
+
 ### Zero 3W (A733)
 
 BUS002 selects the board from the live OF compatible strings. On Zero 3W it

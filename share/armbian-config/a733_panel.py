@@ -28,6 +28,10 @@ class Route:
     label: str
 
     @property
+    def can_take_pins(self):
+        return bool(self.values) and self.port not in RESERVES
+
+    @property
     def provider(self):
         if self.values and self.values != ("stock",):
             return io.PREFIX + self.port + "--" + "-".join(self.values)
@@ -82,47 +86,6 @@ ROUTES = catalog()
 # Only catalogued "off" actions and explicit vendor releases can yield a pin.
 RELEASES = {r.port: r for r in ROUTES.values() if
             (r.port in RESERVES and r.values == ("release",)) or (r.port not in RESERVES and not r.values)}
-
-
-def selection(target):
-    key, *ports = target.split("+")
-    route = ROUTES.get(key)
-    if route is None:
-        raise ValueError("INVALID: Неизвестный маршрут гребёнки")
-    if not ports:
-        return route, ()
-    owners = set(ports)
-    if (not route.values or route.port in RESERVES or route.port in owners or
-            len(ports) != len(owners) or not owners.issubset(RELEASES)):
-        raise ValueError("INVALID: Недопустимый список владельцев для этого маршрута")
-    return route, tuple(RELEASES[port] for port in sorted(ports))
-
-
-def transition_label(route, releases):
-    names = {"camera": "камеру VIN", "pinctrl-test": "тестовый драйвер PIO"}
-    owners = [names.get(r.port, r.port.upper().replace("I2C", "I²C")) for r in releases]
-    if len(owners) == 1:
-        return f"Отключить {owners[0]} и включить {route.label}"
-    owner_list = ", ".join(owners[:-1]) + " и " + owners[-1]
-    return f"Отключить {owner_list}, затем включить {route.label}"
-
-
-def owners_on_route(route, current, candidate):
-    pins = {row["pin"] for row in candidate if any(o["path"] == route.path for o in row["owners"])}
-    return {o["path"] for row in current if row["pin"] in pins for o in row["owners"] if o["path"] != route.path}
-
-
-def alternative(key, route, current, candidate):
-    if not route.values or route.port in RESERVES:
-        return None
-    conflicts = owners_on_route(route, candidate, candidate)
-    if not conflicts or not conflicts <= owners_on_route(route, current, candidate):
-        return None
-    ports = sorted(port for port, release in RELEASES.items() if release.path in conflicts)
-    releases = [RELEASES[port] for port in ports]
-    if {r.path for r in releases} != conflicts:
-        return None
-    return {"id": "+".join([key, *ports]), "label": transition_label(route, releases)}
 
 
 def choices():
@@ -216,6 +179,8 @@ def inventory(tree, dt=None, devices=None):
 
 def route_issues(route, base, before, after):
     if route.port in RESERVES:
+        if route.values and enabled(after, route.path):
+            return [f"Итоговый DTB не освободил {route.path}."]
         if not route.values and not enabled(after, route.path):
             return [f"Другой оверлей удерживает штатное устройство выключенным: {route.path}."]
         return []

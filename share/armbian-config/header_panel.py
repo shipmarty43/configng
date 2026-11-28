@@ -7,6 +7,7 @@ import re
 import i2c_clocks
 import pwm_routes as pwm
 import uart_routes as uart
+from dt_clock_overlay import check_overlay, tokens, write_selection
 from header_gpio import PADS, location
 import header_gpio_live as gpio
 from spi1_radios import BUS, CLIENTS, CONTROL
@@ -28,6 +29,10 @@ class Route:
     path: str
     pads: tuple
     signals: tuple
+
+    @property
+    def can_take_pins(self):
+        return bool(self.pads)
 
     @property
     def label(self):
@@ -60,6 +65,7 @@ def routes():
 
 
 ROUTES = routes()
+RELEASES = {r.port: r for r in ROUTES.values() if r.mode == "off"}
 
 
 def choices():
@@ -94,6 +100,21 @@ def edit(route, before, after, folder):
     replace_stock(text, after, occupied, None if route.mode == "off" else f"{route.port}-{route.mode}")
 
 
+def edit_release(route, before, after, folder):
+    edit(route, before, after, folder)
+    # An active TWI clock overlay requires an enabled bus. Its immutable blob
+    # stays installed and the journal restores the original selection on undo.
+    if route.group == "I²C":
+        text = after.read_text()
+        names = tokens(text)
+        bus = "twi" + route.port[-1]
+        setting = i2c_clocks.selections(names).get(bus)
+        if setting:
+            name, hz = setting
+            check_overlay(folder / (name + ".dtbo"), route.path, {"clock-frequency": hz})
+            write_selection(text, after, [n for n in names if n != name])
+
+
 def replace_stock(text, after, occupied, target):
     stock = pwm.stock(text)
     new = [n for n in stock if n not in occupied]
@@ -121,6 +142,26 @@ def clients(tree, path):
             "reg" in tree[p] and tree[p].get("status", b"okay\0") in (b"okay\0", b"ok\0")]
 
 
+def release_blockers(route, tree):
+    path = route.path
+    if route.group == "I²C" and uart.enabled(tree, path):
+        devices = clients(tree, path)
+        if devices:
+            labels = []
+            for device in devices:
+                name = device.rsplit("/", 1)[1]
+                if "dfrobot,dfr0528" in uart.strings(tree[device].get("compatible", b"")):
+                    name = f"DFR0528 ({name})"
+                labels.append(name)
+            return [f"I²C{route.port[-1]} обслуживает {', '.join(labels)}. Сначала освободите устройства на этом маршруте."]
+    if route.group == "PWM" and pwm.routed_pin(tree, int(route.port[-1])) is not None:
+        from pwm_modes import consumers
+        users = consumers(tree, pwm.CTRL).get(int(route.port[-1]), ())
+        if users:
+            return ["Канал PWM обслуживает " + ", ".join(sorted(users))]
+    return []
+
+
 def route_issues(route, base, before, after):
     path = route.path
     if route.group == "PWM":
@@ -131,10 +172,11 @@ def route_issues(route, base, before, after):
         return [f"{route.port.upper()} уже настроен другим владельцем в Device Tree ({path})."]
     if route.group == "I²C" and uart.enabled(before, path) and (not route.pads or
             default_pins(before, path) != default_pins(after, path)):
-        devices = clients(before, path)
-        if devices:
-            return [f"{route.port.upper()} обслуживает {', '.join(p.rsplit('/',1)[1] for p in devices)}. "
-                    "Сначала освободите устройства на этом маршруте."]
+        blocked = release_blockers(route, before)
+        if blocked:
+            return blocked
+    if route.group == "PWM" and not route.pads:
+        return release_blockers(route, before)
     if route.pads:
         pins = default_pins(after, path)
         if not uart.enabled(after, path) or pins != [(pad, route.port) for pad in route.pads]:

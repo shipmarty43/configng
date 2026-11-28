@@ -11,6 +11,7 @@ import sys
 
 import a733_panel
 import header_panel as header
+import pin_handoff
 import uart_routes as uart
 from dt_clock_overlay import install_blob, tokens
 from spi1_radios import BUS, CLIENTS, SHARED, SINGLE, peer_clocks, select
@@ -66,13 +67,9 @@ def stage(root, snapshot, work, target, board):
         raise ValueError("Unsupported custom boot route")
     route = None
     releases = ()
-    if target not in ("state", "undo"):
-        if board == "a733":
-            route, releases = a733_panel.selection(target)
-        else:
-            route = header.ROUTES.get(target)
-            if not route and target not in PROFILES:
-                raise ValueError("INVALID: Неизвестный маршрут гребёнки")
+    catalog = a733_panel if board == "a733" else header
+    if target not in ("state", "undo") and not (board == "h618" and target in PROFILES):
+        route, releases = pin_handoff.selection(target, catalog)
     before = work / "before"
     shutil.copyfile(regular(snapshot), before)
     shadow = work / "boot"
@@ -121,27 +118,28 @@ def stage(root, snapshot, work, target, board):
             raise ValueError("Invalid overlay name")
         src = regular(root / "overlay-user" / (name + ".dtbo"))
         shutil.copyfile(src, folder / src.name)
-    if board == "a733":
-        if route:
-            seed = before
-            for release in releases:
-                intermediate = work / f"release-{release.port}.env"
-                a733_panel.edit(release, seed, intermediate, folder)
-                seed = intermediate
+    seed = before
+    for release in releases:
+        intermediate = work / f"release-{release.port}.env"
+        if board == "a733":
+            a733_panel.edit(release, seed, intermediate, folder)
+        else:
+            header.edit_release(release, seed, intermediate, folder)
+        seed = intermediate
+    if board == "h618":
+        peer_clocks(saved_names(before.read_text()), folder, parked=True)
+    if route:
+        if board == "a733":
             a733_panel.edit(route, seed, work / "base.env", folder, strip=True)
-            a733_panel.edit(route, seed, after, folder)
-        elif target == "state":
-            shutil.copyfile(before, after)
-        return
-    peer_clocks(saved_names(before.read_text()), folder, parked=True)
-    if target in PROFILES:
+        else:
+            header.edit(header.RELEASES[route.port], seed, work / "base.env", folder)
+        catalog.edit(route, seed, after, folder)
+    elif board == "h618" and target in PROFILES:
         select(before, after, folder, PROFILES[target])
-    elif route:
-        header.edit(header.ROUTES[route.port + "-off"], before, work / "base.env", folder)
-        header.edit(route, before, after, folder)
     elif target == "state":
         shutil.copyfile(before, after)
-    peer_clocks(saved_names(after.read_text()), folder, parked=True)
+    if board == "h618":
+        peer_clocks(saved_names(after.read_text()), folder, parked=True)
 
 
 def publish(root, work, board):
@@ -260,30 +258,32 @@ def describe(work, target, dt, devices, locks, board):
     warnings = [f"Вывод {r['pin']} ({r['pad']}) сейчас удерживает GPIO-клиент {r['gpio_consumer']}."
                 for r in live_state["pins"] if r["pin"] in affected and r.get("gpio_consumer")]
     alternative = transition = None
-    if board == "a733":
-        issues = a733_panel.conflicts(candidate["pins"])
-        try:
+    catalog = a733_panel if board == "a733" else header
+    issues = (a733_panel.conflicts(candidate["pins"]) if board == "a733"
+              else header.conflict_messages(candidate["pins"]))
+    try:
+        if board == "a733":
             a733_panel.validate_stock_pwm(trees[1], (work/"after").read_text())
-            if target not in ("state", "undo"):
-                route, releases = a733_panel.selection(target)
-                issues.extend(a733_panel.route_issues(route, read_tree(work / "base.dtb"), *trees))
-                if releases:
-                    transition = a733_panel.transition_label(route, releases)
-                    owners = a733_panel.owners_on_route(route, current["pins"], candidate["pins"])
-                    for release in releases:
-                        if changed and release.path not in owners:
-                            issues.append(f"{release.port}: владелец не занимает выводы запрошенного маршрута.")
-                        if enabled(trees[1], release.path):
-                            issues.append(f"Итоговый DTB не освободил {release.path}.")
-                        issues.extend(a733_panel.route_issues(release, trees[1], *trees))
-                elif issues:
-                    alternative = a733_panel.alternative(target, route, current["pins"], candidate["pins"])
-        except (ValueError, KeyError) as exc:
-            issues.append(str(exc))
-    else:
-        issues = header.conflict_messages(candidate["pins"])
-    if board == "h618" and target in header.ROUTES:
-        issues.extend(header.route_issues(header.ROUTES[target], read_tree(work / "base.dtb"), *trees))
+        if target not in ("state", "undo") and not (board == "h618" and target in PROFILES):
+            route, releases = pin_handoff.selection(target, catalog)
+            issues.extend(catalog.route_issues(route, read_tree(work / "base.dtb"), *trees))
+            if releases:
+                transition = pin_handoff.transition_label(route, releases)
+                owners = pin_handoff.owners_on_route(route, current["pins"], candidate["pins"])
+                for release in releases:
+                    if changed and release.path not in owners:
+                        issues.append(f"{release.port}: владелец не занимает выводы запрошенного маршрута.")
+                    issues.extend(catalog.route_issues(release, trees[1], *trees))
+            elif issues:
+                offer = pin_handoff.conflicting_releases(route, current["pins"], candidate["pins"], catalog)
+                blockers = [msg for r in offer for msg in header.release_blockers(r, trees[0])] if board == "h618" else []
+                if blockers:
+                    issues.extend(blockers)
+                elif offer:
+                    alternative = {"id": "+".join([target, *(r.port for r in offer)]),
+                                   "label": pin_handoff.transition_label(route, offer)}
+    except (ValueError, KeyError) as exc:
+        issues.append(str(exc))
     failure = work / "validation-error"
     if failure.exists() and not issues:
         issues.append(failure.read_text().strip() or "Проверка DTB отклонила конфигурацию.")

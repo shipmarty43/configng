@@ -3,6 +3,7 @@
 Usage: python3 panel.py ALLWINNER_DTB_DIRECTORY ARMBIAN_GUI_CHECKOUT [PACKAGE_PREFIX]
 The optional prefix is the extracted /opt/armbian-config-zero2w package directory.
 """
+import argparse
 import fcntl
 import hashlib
 import json
@@ -16,8 +17,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 repo = Path(__file__).resolve().parents[3]
-dtbs, gui = (Path(p).resolve() for p in sys.argv[1:3])
-prefix = Path(sys.argv[3]).resolve() if len(sys.argv) == 4 else repo
+cli = argparse.ArgumentParser(description=__doc__)
+cli.add_argument("dtbs", type=Path)
+cli.add_argument("gui", type=Path)
+cli.add_argument("prefix", type=Path, nargs="?")
+cli.add_argument("--handoff-only", action="store_true")
+args = cli.parse_args()
+dtbs, gui = args.dtbs.resolve(), args.gui.resolve()
+prefix = args.prefix.resolve() if args.prefix else repo
 sys.path[:0] = [str(gui), str(prefix / "share/armbian-config")]
 from core import bus_panel as client
 from modules.system.system_module import SystemModule
@@ -30,11 +37,11 @@ from webui_server import create_app
 harness = '''#!/bin/bash
 set -eu
 script_dir=$PANEL_PREFIX/bin
-declare -A module_options
+declare -A module_options menu_options
 if [[ -n $PANEL_PACKAGE ]]; then
     source "$PANEL_PREFIX/lib/armbian-config/config.system.sh"
 else
-    for name in devicetree_overlays sx1262_overlay spi1_panel ups_dfr0528 spi_clocks h616_uart header_gpio a733_io; do
+    for name in devicetree_overlays sx1262_overlay spi1_panel ups_dfr0528 spi_clocks i2c_clocks h616_uart header_gpio a733_io; do
         source "$PANEL_PREFIX/tools/modules/system/module_$name.sh"
     done
 fi
@@ -49,6 +56,16 @@ mv() {
     command mv "$@"
 }
 case "$1" in
+ boot-dtb) _zero2w_overlay_prepare compose "$PANEL_TEST/boot/armbianEnv.txt" "$PANEL_TEST/booted.dtb" spi1-panel '' ;;
+ clock) shift; module_i2c_clocks set "$@" ;;
+ dialog)
+    if [[ -n $PANEL_PACKAGE ]]; then
+        source "$PANEL_PREFIX/lib/armbian-config/config.functions.sh"
+    else
+        source "$PANEL_PREFIX/tools/modules/functions/module_dialog_ui.sh"
+    fi
+    DIALOG=dialog BACKTITLE="Zero 2W twin"
+    module_spi1_panel select ;;
  seed)
     module_sx1262_overlay shared
     module_spi_clocks set spi1 1 1000000
@@ -251,7 +268,8 @@ def check(boot, helper, tmp):
         captured.append(title)
         if title.startswith("Шины и контакты"): return options.index("I²C")
         if title.startswith("I²C"): return next(i for i,o in enumerate(options) if o.startswith("I2C2 · PH"))
-        assert "Применение заблокировано" in title and "UART5" in title and "Вывод 13" in title
+        assert "Конфликт" in title and "UART5" in title and "Вывод 13" in title
+        assert "UART5" in options[1] and "I2C2" in options[1]
         return 0
     with patch.object(module,"show_menu",side_effect=navigate), patch.object(module,"show_error",side_effect=AssertionError):
         action()
@@ -278,10 +296,15 @@ with tempfile.TemporaryDirectory() as temp:
     (boot/"dtb").mkdir(); (boot/"dtb/allwinner").symlink_to(dtbs)
     (boot/"armbianEnv.txt").write_text("rootdev=UUID=twin\noverlay_prefix=sun50i-h616\noverlays=i2c1-pi pwm1-pi11\n")
     (boot/"boot.scr").write_text('armbianEnv.txt overlay-user/${overlay_file}.dtbo')
-    live = tmp/"live"; live.mkdir(); (live/"compatible").write_bytes(b"xunlong,orangepi-zero2w\0allwinner,sun50i-h618\0")
+    live = tmp/"initial-live"; live.mkdir(); (tmp/"live").symlink_to(live); (live/"compatible").write_bytes(b"xunlong,orangepi-zero2w\0allwinner,sun50i-h618\0")
     helper = tmp/"helper"; helper.write_text(harness); helper.chmod(0o755)
-    os.environ.update(PANEL_PREFIX=str(prefix), PANEL_TEST=temp, PANEL_PACKAGE="yes" if len(sys.argv)==4 else "",
+    os.environ.update(PANEL_PREFIX=str(prefix), PANEL_TEST=temp, PANEL_PACKAGE="yes" if args.prefix else "",
                       OPI_WEB_OPERATOR_TOKEN="write")
+    if args.handoff_only:
+        from h618_handoff import check_handoff
+        with patch.object(client,"HELPERS",[helper]), patch.object(client,"os",SimpleNamespace(geteuid=lambda:0)):
+            check_handoff(tmp, helper, repo, create_app(token="read"))
+        sys.exit(0)
     subprocess.run([helper, "seed"], check=True, stdout=subprocess.DEVNULL)
     for node, props in read_tree(tmp/"live.dtb").items():
         node_dir = live/node.lstrip("/")

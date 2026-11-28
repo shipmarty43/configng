@@ -11,7 +11,7 @@ import urllib.request
 from werkzeug.serving import make_server
 
 
-def check(app, chrome, temp, *, board="h618", observe=None):
+def check(app, chrome, temp, *, board="h618", observe=None, protect=None):
     cdp_class = runpy.run_path(str(Path(__file__).resolve().parents[1] / "zero2w-browser-pixels.py"))["CDP"]
     with make_server("127.0.0.1", 0, app) as server:
         thread = Thread(target=server.serve_forever, daemon=True)
@@ -55,26 +55,34 @@ def check(app, chrome, temp, *, board="h618", observe=None):
                 assert js("el('board').textContent.includes('Zero 3W')")
                 conflict, owner, pin = "a733-spi3-on", "Камера VIN", 24
                 free, signal = "a733-i2c1-400000", "I²C1 SDA"
+            elif observe:
+                conflict, owner, pin = "uart2-rtscts", "I²C1", 3
             else:
                 conflict, owner, pin = "uart3-rtscts", "PWM1", 32
                 free, signal = "i2c2-pi", "I²C2 SDA"
             preview(conflict)
             assert js(f"el('apply').disabled && el('issues').textContent.includes('{owner}') && el('issues').textContent.includes('{pin}')")
             if observe:
-                # Read all three affected pins in a single DOM snapshot per poll.
-                routes = {"19":["I²C2 SDA","SPI3 MOSI"], "23":["I²C2 SCL","SPI3 CLK"],
-                          "24":["Камера VIN","SPI3 CS0"]}
-                def owners(live_spi, next_spi):
+                if board == "a733":
+                    routes = {"19":["I²C2 SDA","SPI3 MOSI"], "23":["I²C2 SCL","SPI3 CLK"],
+                              "24":["Камера VIN","SPI3 CS0"]}
+                    parts = ("камеру VIN","I²C2","SPI3")
+                else:
+                    routes = {"3":["I²C1 SDA","UART2 CTS"], "5":["I²C1 SCL","UART2 RTS"],
+                              "15":["I²C0 SCL","UART2 TX"], "22":["I²C0 SDA","UART2 RX"]}
+                    parts = ("I²C0","I²C1","UART2")
+                def owners(live_new, saved_new):
                     rows = js("Array.from(el('pins').querySelectorAll('tbody tr'), r => "
                               "[r.cells[0].textContent, r.cells[2].textContent, r.cells[3].textContent])")
                     pins = {pin:(live,saved) for pin,live,saved in rows}
-                    return all(pin in pins and names[live_spi] in pins[pin][0]
-                               and names[next_spi] in pins[pin][1] for pin,names in routes.items())
+                    return all(pin in pins and names[live_new] in pins[pin][0]
+                               and names[saved_new] in pins[pin][1] for pin,names in routes.items())
                 assert owners(False,False)
                 offer = js("el('issues').querySelector('button').textContent")
-                assert all(part in offer for part in ("камеру VIN","I²C2","SPI3"))
+                assert all(part in offer for part in parts)
                 js("el('issues').querySelector('button').click()")
-                until(lambda: js("!el('apply').disabled && el('issues').textContent.includes('I²C2')"))
+                until(lambda: js("!el('apply').disabled"))
+                assert all(p in js("el('issues').textContent") for p in parts)
                 diff = js("el('changes').textContent")
                 assert all(name in diff for pair in routes.values() for name in pair)
                 js("el('apply').click()")
@@ -87,7 +95,16 @@ def check(app, chrome, temp, *, board="h618", observe=None):
                 observe(False)
                 js("el('refresh').click()")
                 until(lambda: js("!el('refresh').disabled") and owners(False,False))
-                print("PASS Chromium: pins 19/23/24 VIN + I2C2 → SPI3 → VIN + I2C2; one save, one undo, verified live and next-boot DTs",flush=True)
+                print(f"PASS Chromium {board}: {conflict} handoff and one undo, checked before/after/live owners on pins {', '.join(routes)}",flush=True)
+                if protect:
+                    assert_unchanged = protect()
+                    js("el('refresh').click()")
+                    until(lambda: js("!el('refresh').disabled && el('pins').textContent.includes('DFR0528')"))
+                    preview(conflict)
+                    assert js("el('apply').disabled && el('issues').textContent.includes('DFR0528') && !el('issues').querySelector('button')")
+                    assert owners(False,False)
+                    assert_unchanged()
+                    print("PASS Chromium: DFR0528 displayed, no partial offer, save disabled; boot files and history unchanged",flush=True)
                 return
             preview(free)
             assert js(f"!el('apply').disabled && el('changes').textContent.includes('{signal}')")
