@@ -175,13 +175,13 @@
                         {
                             "id": "BUS002",
                             "short": "Шины и контакты",
-                            "description": "SPI1 на Zero 2W, предпросмотр профиля и откат.",
+                            "description": "SPI1, I²C, UART и PWM на гребёнке Zero 2W.",
                             "module": "module_generic",
                             "command": ["module_spi1_panel select"],
                             "status": "Preview",
                             "author": "@shipmarty43",
                             "condition": "_ups_dfr_board",
-                            "help": "Inspect chip selects, pins and requested clocks; stage a boot profile or undo one change."
+                            "help": "Show live and next-boot header pin owners, preview routing conflicts and undo a profile change."
                         },
                         {
                             "id": "BUS001",

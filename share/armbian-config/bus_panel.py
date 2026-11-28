@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import sys
 
+import header_panel as header
+import uart_routes as uart
 from dt_clock_overlay import install_blob, tokens
 from spi1_radios import BUS, CLIENTS, SHARED, SINGLE, peer_clocks, select
 from spi_devices import MARKER, PARKED, managed, saved_names
@@ -60,6 +62,8 @@ def stage(root, snapshot, work, target):
     if (root / "overlay-user").is_symlink() or any(os.path.lexists(root / n) for n in
             ("fixup.scr", "overlay-user/user-fixup.scr", "extlinux/extlinux.conf")):
         raise ValueError("Unsupported custom boot route")
+    if target not in (*PROFILES, *header.ROUTES, "state", "undo"):
+        raise ValueError("INVALID: Неизвестный маршрут гребёнки")
     before = work / "before"
     shutil.copyfile(regular(snapshot), before)
     shadow = work / "boot"
@@ -84,7 +88,7 @@ def stage(root, snapshot, work, target):
         if not backup:
             raise ValueError("No matching profile change to undo")
         rollback_reordered(backup_before, backup / "after", before, after,
-                           allowed=("user_overlays", PARKED))
+                           allowed=("overlays", "user_overlays", PARKED))
         if before.read_bytes() == (backup / "after").read_bytes():
             shutil.copyfile(backup_before, after)  # Also restore exact ordering/newlines.
     names = set()
@@ -93,6 +97,9 @@ def stage(root, snapshot, work, target):
         env_content(text)
         names.update(tokens(text) + saved_names(text))
     provider = {"single": SINGLE, "shared": SHARED}.get(target)
+    route = header.ROUTES.get(target)
+    if route and route.group == "UART" and route.mode not in ("off", "txrx-ph"):
+        provider = uart.token(route.port, route.mode)
     if provider and os.path.lexists(root / "overlay-user" / (provider + ".dtbo")):
         names.add(provider)
     for name in names:
@@ -103,19 +110,21 @@ def stage(root, snapshot, work, target):
     peer_clocks(saved_names(before.read_text()), folder, parked=True)
     if target in PROFILES:
         select(before, after, folder, PROFILES[target])
+    elif route:
+        header.edit(header.ROUTES[route.port + "-off"], before, work / "base.env", folder)
+        header.edit(route, before, after, folder)
     elif target == "state":
         shutil.copyfile(before, after)
     peer_clocks(saved_names(after.read_text()), folder, parked=True)
 
 
 def publish(root, work):
-    # All other immutable inputs were copied from /boot. Only a profile provider
-    # can be generated during preview. Commit this dependency before the env rename.
     active = tokens((work / "after").read_text())
-    for provider in (SINGLE, SHARED):
-        if provider in active:
-            data = (work / "boot/overlay-user" / (provider + ".dtbo")).read_bytes()
-            install_blob(root / "overlay-user", provider, data)
+    providers = {SINGLE, SHARED} | {uart.token(r.port, r.mode) for r in header.ROUTES.values()
+                                   if r.group == "UART" and r.mode not in ("off", "txrx-ph")}
+    for provider in providers.intersection(active):
+        data = (work / "boot/overlay-user" / (provider + ".dtbo")).read_bytes()
+        install_blob(root / "overlay-user", provider, data)
 
 
 def lock_owner(path):
@@ -135,17 +144,20 @@ def lock_owner(path):
 
 
 def live_tree(dt):
-    # Only read the DT nodes needed for the inventory. No /dev descriptors.
-    paths = ["/", "/soc", PIO, BUS]
-    ctrl = dt / BUS.lstrip("/")
-    if ctrl.is_dir():
-        paths.extend(f"{BUS}/{p.name}" for p in ctrl.iterdir() if p.is_dir())
+    # Read the live OF tree, including non-bus consumers such as GPIO keys.
+    # Skip firmware payloads, __symbols__ and other unrelated binary properties.
+    props = {"status", "reg", "compatible", "phandle", "spi-max-frequency", MARKER,
+             "pins", "allwinner,pins", "function", "allwinner,function", "gpio", "gpios",
+             "interrupts", "interrupts-extended", "interrupt-parent", "#interrupt-cells",
+             "gpio-hog", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", uart.DE_PROP}
     tree = {}
-    props = ("status", "reg", "compatible", "phandle", "cs-gpios", "spi-max-frequency", MARKER)
-    for path in paths:
-        node = dt / path.lstrip("/")
-        if node.is_dir():
-            tree[path] = {k: (node / k).read_bytes() for k in props if (node / k).is_file()}
+    for directory, children, files in os.walk(dt):
+        node = Path(directory)
+        children[:] = [c for c in children if not c.startswith("__")]
+        path = "/" if node == dt else "/" + node.relative_to(dt).as_posix()
+        tree[path] = {name: (node / name).read_bytes() for name in files if name in props
+                      or name.startswith("pinctrl-")
+                      or name.endswith(("-gpios", "-gpio", "_gpio", "_gpios", "_hostwake", "_pwdn"))}
     return tree
 
 
@@ -187,10 +199,13 @@ def inventory(tree, dt=None, devices=None, locks=None):
 
 
 def describe(work, target, dt, devices, locks):
-    states = []
+    states, trees = [], []
     for name in ("before", "after"):
         env = (work / name).read_text()
-        state = inventory(read_tree(work / (name + ".dtb")))
+        tree = read_tree(work / (name + ".dtb"))
+        trees.append(tree)
+        state = inventory(tree)
+        state["pins"] = header.pins(tree)
         state["parked"] = {str(cs): hz for (_, cs), (_, hz) in managed(saved_names(env)).items()}
         states.append(state)
     current, candidate = states
@@ -200,9 +215,25 @@ def describe(work, target, dt, devices, locks):
     undo_token = digest(revision.encode(), undo.read_bytes()) if undo.is_file() else None
     token = digest(revision.encode(), target.encode(), (work / "after").read_bytes(),
                    (work / "after.dtb").read_bytes(), json.dumps(candidate, sort_keys=True).encode())
-    return dict(live=inventory(live_tree(dt), dt, devices, locks), current=current,
-                candidate=candidate, changed=(work / "before").read_bytes() != (work / "after").read_bytes(),
-                token=token, undo=undo_token)
+    live = live_tree(dt)
+    live_state = inventory(live, dt, devices, locks)
+    live_state["pins"] = header.pins(live)
+    live_state["gpio_known"] = header.gpio_consumers(live_state["pins"], dt)
+    changed_pins = header.changes(current["pins"], candidate["pins"])
+    affected = {row["pin"] for row in changed_pins}
+    warnings = [f"Вывод {r['pin']} ({r['pad']}) сейчас удерживает GPIO-клиент {r['gpio_consumer']}."
+                for r in live_state["pins"] if r["pin"] in affected and r.get("gpio_consumer")]
+    issues = header.conflict_messages(candidate["pins"])
+    if target in header.ROUTES:
+        issues.extend(header.route_issues(header.ROUTES[target], read_tree(work / "base.dtb"), *trees))
+    failure = work / "validation-error"
+    if failure.exists() and not issues:
+        issues.append(failure.read_text().strip() or "Проверка DTB отклонила конфигурацию.")
+    return dict(live=live_state, current=current, candidate=candidate,
+                changed=(work / "before").read_bytes() != (work / "after").read_bytes(),
+                changes=changed_pins, warnings=warnings, issues=issues,
+                choices=header.choices(), token=None if issues else token, undo=undo_token)
+
 
 
 def main():

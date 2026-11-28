@@ -6,7 +6,8 @@ import re
 import sys
 
 args = sys.argv[1:]
-if not re.fullmatch(r"state|preview (single|shared|off)|apply (single|shared|off) [0-9a-f]{64}|undo [0-9a-f]{64}",
+profile = r"(?:single|shared|off|(?:i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})"
+if not re.fullmatch(rf"state|preview {profile}|apply {profile} [0-9a-f]{{64}}|undo [0-9a-f]{{64}}",
                     " ".join(args)) or any(" " in arg for arg in args):
     sys.exit("Expected state, preview PROFILE, apply PROFILE TOKEN or undo TOKEN")
 script = """

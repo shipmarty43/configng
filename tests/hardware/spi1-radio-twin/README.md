@@ -90,11 +90,20 @@ five malformed variants to the GUI, mesh helper and C++ LoRaWAN validator.
 
 ### Bus and header profile panel
 
-On Zero 2W, open **System → Шины и контакты (BUS002)**. The first table reads
-the live Device Tree, spidev bindings and advisory locks. The second uses the
-DTB selected for the next boot. Speeds are client requests and DT ceilings in
-Hz. Chip selects use physical header numbering. An unattached spidev or missing
-lock file is reported separately from the configured device.
+On Zero 2W, open **System → Шины и контакты (BUS002)** to compare live and
+next-boot owners for all 28 signal pins. The panel resolves pinctrl, GPIO and
+interrupt consumers in the composed board tree. The single Waveshare profile
+also reserves its four fixed HAT sidebands. Live GPIO line-info reads supplement
+the map when the kernel permits access. The SPI1 view includes spidev bindings,
+advisory locks, requested speeds and DT ceilings in Hz.
+
+The route list covers header I²C0–4 (including both I²C2 banks), UART2–5
+(TX/RX and the supported RTS/CTS and RS-485 variants), PWM1–4 on their
+alternative pads, and the SPI1 radio profiles. UART0 occupies pins 8/10 by
+default. Use the dedicated console/PWM controls to release that reservation.
+Preview reports both owners at each conflicting physical pin, and the boot
+writer rechecks the same candidate under its lock. Dependency errors, such as
+removing the I²C bus used by the DFR0528, also block saving.
 
 Preview composes the candidate with Armbian's installed base DTB and overlays
 in a temporary directory. Saving rechecks the preview under the boot writer's
@@ -118,3 +127,8 @@ builds the board DT and a private sysfs view, holds a real file lock and drives
 the Web endpoints and both terminal menu handlers across independent processes.
 It also exercises cancellation, stale previews, manual edits, an interrupted
 rename and a corrupted saved clock overlay.
+
+The same test covers I²C/UART/PWM route changes, blocked saves, the DFR0528,
+GPIO-v2 line information on a model, and one-step undo across both interfaces.
+Set `PANEL_TEST_CHROMIUM` to a Chromium executable for the optional headless
+Web button test. It uses a temporary browser profile and a loopback Flask server.

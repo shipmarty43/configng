@@ -273,7 +273,7 @@ def prepare(before, after, folder, port, action):
     if (port, "rtscts") in FLOW:
         known.add(f"{port}-pi-rts-cts")
     if port == "uart2":
-        known.add("uart2-ph-rts-cts")
+        known.update(("uart2-ph", "uart2-ph-rts-cts"))
     alternatives = [n for n in stock if port in n and n not in known]
     if alternatives:
         raise ValueError("Another UART route is selected: " + " ".join(alternatives))

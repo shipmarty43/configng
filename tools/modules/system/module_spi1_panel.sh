@@ -16,9 +16,16 @@ function _panel_plan() (
     source_boot=$(_ups_dfr_boot)
     _panel_py stage "$source_boot" "$snapshot" "$panel_work" "$target" || return 1
     _ups_dfr_boot() { echo "$panel_work/boot"; }
-    _zero2w_overlay_prepare compose "$panel_work/before" "$panel_work/before.dtb" sx1262 '' || return 1
-    _zero2w_validate_change spi1-panel "$panel_work" || return 1
-    mv "$panel_work/radio.dtb" "$panel_work/after.dtb" || return 1
+    local name
+    for name in before after; do
+        _zero2w_overlay_prepare panel-tree "$panel_work/$name" "$panel_work/$name.dtb" sx1262 '' || return 1
+    done
+    if [[ -f "$panel_work/base.env" ]]; then
+        _zero2w_overlay_prepare panel-tree "$panel_work/base.env" "$panel_work/base.dtb" sx1262 '' || return 1
+    fi
+    if ! _zero2w_validate_change spi1-panel "$panel_work" > "$panel_work/validation-log" 2>&1; then
+        mv "$panel_work/validation-log" "$panel_work/validation-error" || return 1
+    fi
     _panel_py describe "$panel_work" "$target" "$(_ups_dfr_dt)" "$(_sx1262_class)" "$(_panel_locks)" > "$panel_work/result"
 )
 
@@ -28,6 +35,10 @@ function _panel_commit() {
     local key=token result
     [[ $1 != undo ]] || key=undo
     _panel_plan "$panel_workdir" "$1" "$2" || return 1
+    if jq -e '.issues | length > 0' "$panel_workdir/result" >/dev/null; then
+        jq -r '"CONFLICT: " + (.issues | join(" • "))' "$panel_workdir/result" >&2
+        return 1
+    fi
     result=$(jq -er --arg k "$key" '.[$k]' "$panel_workdir/result") || return 1
     if [[ $expected != "$result" ]]; then
         echo 'STALE: Конфигурация изменилась. Откройте новый предпросмотр.' >&2
@@ -41,18 +52,39 @@ function _panel_summary() {
 }
 
 function _panel_dialog() {
-    local state choice plan report undo output
-    local -a choices=(single 'SX1262' shared 'SX1262 + CC1101 + nRF24' off 'Отключить профиль')
+    local state group choice plan report undo output
+    local -a choices=(pins 'Контакты сейчас и при следующей загрузке' SPI1 'Радиопрофиль и частоты'
+                      'I²C' 'Линии SCL/SDA' UART 'Последовательные порты' PWM 'Каналы PWM')
     state=$(module_spi1_panel state 2>&1) || { dialog_msgbox 'Шины и контакты' "$state" 14 78; return 1; }
     undo=$(jq -r '.undo // empty' <<< "$state")
     [[ -z $undo ]] || choices+=(undo 'Откатить последнее изменение')
-    report=$(_panel_summary <<< "$state") || return 1
-    choice=$(dialog_menu 'Шины и контакты' "$report" 24 95 4 -- "${choices[@]}") || return 0
-    if [[ $choice == undo ]]; then
+    group=$(dialog_menu 'Шины и контакты' 'Orange Pi Zero 2W · 40-контактная гребёнка' 17 76 6 -- "${choices[@]}") || return 0
+    if [[ $group == pins ]]; then
+        mapfile -t choices < <(jq -r 'def owners: map(.label) | join(" + ") | if .=="" then "—" else . end;
+            (.live.pins | INDEX(.pin | tostring)) as $live | .current.pins[] |
+            (.pin|tostring), ("\(.pad)   " + (if $live[.pin|tostring] then ($live[.pin|tostring] | (.owners|owners) + (if .gpio_consumer then " [GPIO: " + .gpio_consumer + "]" else "" end)) else "нет данных" end)
+                                    + " → " + (.owners|owners))' <<< "$state")
+        report='Сейчас (DT, gpiochip недоступен) → следующая загрузка (DT)'
+        if jq -e '.live.gpio_known' <<< "$state" >/dev/null; then report='Сейчас (DT и GPIO) → следующая загрузка (DT)'; fi
+        dialog_menu 'Физические контакты' "$report" 23 90 14 -- "${choices[@]}" >/dev/null || :
+        return 0
+    elif [[ $group == undo ]]; then
         output=$(module_spi1_panel undo "$undo" 2>&1) || { dialog_msgbox 'Откат' "$output" 14 78; return 1; }
     else
+        mapfile -t choices < <(jq -r --arg g "$group" '.choices[] | select(.group==$g) | .id, .label' <<< "$state")
+        (( ${#choices[@]} )) || return 1
+        report='Выберите маршрут для предпросмотра'
+        if [[ $group == SPI1 ]]; then report=$(_panel_summary <<< "$state") || return 1; fi
+        choice=$(dialog_menu "$group" "$report" 23 90 9 -- "${choices[@]}") || return 0
         plan=$(module_spi1_panel preview "$choice" 2>&1) || { dialog_msgbox 'Предпросмотр' "$plan" 14 78; return 1; }
-        report=$(_panel_summary <<< "$plan") || return 1
+        if jq -e '.issues | length > 0' <<< "$plan" >/dev/null; then
+            dialog_msgbox 'Применение заблокировано' "$(jq -r '.issues[]' <<< "$plan")" 20 90; return 0
+        fi
+        report=$(jq -r 'def owners: map(.label) | join(" + ") | if .=="" then "—" else . end;
+            .changes[] | "\(.pin) \(.pad)   \(.before|owners) → \(.after|owners)"' <<< "$plan") || return 1
+        report="$choice"$'\n'"${report:-Назначения контактов совпадают.}"
+        if [[ $group == SPI1 ]]; then report+=$'\n'"$(_panel_summary <<< "$plan")"; fi
+        if jq -e '.warnings | length > 0' <<< "$plan" >/dev/null; then report+=$'\n'"$(jq -r '.warnings[]' <<< "$plan")"; fi
         if [[ $(jq -r .changed <<< "$plan") == false ]]; then
             dialog_msgbox 'Профиль уже выбран' "$report" 20 90; return 0
         fi
@@ -69,7 +101,7 @@ function module_spi1_panel() (
         select) _panel_dialog; return ;;
         state) [[ $# == 1 ]] || return 2; target=state ;;
         preview|apply)
-            [[ ${2:-} =~ ^(shared|single|off)$ ]] || return 2
+            [[ ${2:-} =~ ^(shared|single|off|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})$ ]] || return 2
             target=$2
             if [[ $op == apply ]]; then [[ $# == 3 ]] || return 2; expected=$3
             else [[ $# == 2 ]] || return 2; fi ;;

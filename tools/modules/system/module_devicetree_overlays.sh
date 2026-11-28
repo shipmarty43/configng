@@ -577,7 +577,7 @@ function _zero2w_overlay_prepare() (
 		[[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || { echo 'Invalid overlay name.' >&2; return 1; }
 	done
 	case "$action" in
-		enable|stock|base|compose)
+		enable|stock|base|compose|panel-tree)
 			if [[ "$action" == stock ]]; then
 				read -r -a stock <<< "$6"
 				for name in "${stock[@]}"; do [[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || return 1; done
@@ -605,6 +605,8 @@ function _zero2w_overlay_prepare() (
             else
                 cp "$base" "$composed" || return 1
             fi
+            # Read-only composition for the pin conflict report, including invalid candidates.
+            if [[ $action == panel-tree ]]; then cp "$composed" "$output"; return; fi
 			if [[ " ${custom[*]} " == *' zero2w-dfr0528 '* ]]; then
 				_ups_dfr_validate "$composed" || return 1
 			fi

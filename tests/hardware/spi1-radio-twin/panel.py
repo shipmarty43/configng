@@ -7,6 +7,7 @@ import fcntl
 import hashlib
 import json
 import os
+import struct
 from pathlib import Path
 import subprocess
 import sys
@@ -21,6 +22,9 @@ sys.path[:0] = [str(gui), str(prefix / "share/armbian-config")]
 from core import bus_panel as client
 from modules.system.system_module import SystemModule
 from uart_routes import read_tree
+import header_panel
+from header_gpio import MAIN_2W
+from header_gpio_live import Chip, CHIP_INFO, LINE_INFO, USED
 from webui_server import create_app
 
 harness = '''#!/bin/bash
@@ -30,7 +34,7 @@ declare -A module_options
 if [[ -n $PANEL_PACKAGE ]]; then
     source "$PANEL_PREFIX/lib/armbian-config/config.system.sh"
 else
-    for name in devicetree_overlays sx1262_overlay spi1_panel ups_dfr0528 spi_clocks; do
+    for name in devicetree_overlays sx1262_overlay spi1_panel ups_dfr0528 spi_clocks h616_uart; do
         source "$PANEL_PREFIX/tools/modules/system/module_$name.sh"
     done
 fi
@@ -51,7 +55,9 @@ case "$1" in
     module_spi_clocks set spi1 2 4000000
     _zero2w_overlay_prepare compose "$(_ups_dfr_boot)/armbianEnv.txt" "$PANEL_TEST/live.dtb" sx1262 '' ;;
  native)
-    dialog_menu() { echo "$PANEL_CHOICE"; }
+    dialog_menu() {
+        if [[ $1 == 'Шины и контакты' ]]; then echo "$PANEL_GROUP"; else echo "$PANEL_CHOICE"; fi
+    }
     dialog_yesno() { [[ "$PANEL_CONFIRM" == yes ]]; }
     dialog_msgbox() { echo "$2"; }
     module_spi1_panel select ;;
@@ -68,8 +74,8 @@ def check(boot, helper, tmp):
                 for p in boot.rglob("*") if p.is_file()}
     def backend(*args):
         return json.loads(subprocess.check_output([helper, *args], text=True))
-    def native(choice, confirm):
-        subprocess.run([helper, "native"], env=os.environ | dict(PANEL_CHOICE=choice, PANEL_CONFIRM=confirm),
+    def native(choice, confirm, group="SPI1"):
+        subprocess.run([helper, "native"], env=os.environ | dict(PANEL_CHOICE=choice, PANEL_CONFIRM=confirm, PANEL_GROUP=group),
                        check=True, capture_output=True)
     def post(action, body, user="operator", extra=None):
         return web.post("/api/buses/" + action, auth=(user, "write" if user=="operator" else "read"),
@@ -127,10 +133,10 @@ def check(boot, helper, tmp):
              patch.object(module,"show_message"), patch.object(module,"show_error",side_effect=AssertionError):
             action()
         assert list(replies) == []
-    drive([3]); assert env.read_bytes() == original
+    drive([5]); assert env.read_bytes() == original
     verify_three(backend("state")["current"])
     native("single","yes"); verify_single(backend("state")["current"])
-    drive([1,1]); verify_three(backend("state")["current"])
+    drive([1,1,1]); verify_three(backend("state")["current"])
     print("PASS native TUI → single, GUI TUI one-step undo and explicit shared restore", flush=True)
 
     state = backend("state")
@@ -157,6 +163,104 @@ def check(boot, helper, tmp):
     assert not post("preview", {"profile":"shared"}).json["changed"]
     print("PASS one-click Web undo, external edits, reordered boot, off and damaged clock blob", flush=True)
 
+    # Include the actual DFR0528 overlay, used by the I²C guard and pin labels.
+    dfr = "zero2w-dfr0528"
+    subprocess.run(["dtc","-q","-@","-o",boot/"overlay-user"/(dfr+".dtbo"),
+                    repo/"hardware/dfrobot-ups/zero2w-dfr0528.dts"], check=True)
+    env.write_text(env.read_text().replace("user_overlays=", "user_overlays="+dfr+" "))
+    baseline = env.read_bytes()
+    def preview(target):
+        resp = post("preview", {"profile":target}, user="viewer")
+        assert resp.status_code == 200, (target, resp.json)
+        return resp.json
+    def save(target):
+        plan = preview(target)
+        assert plan["changed"] and not plan["issues"] and plan["token"], (target, plan["issues"])
+        resp = post("apply", {"profile":target,"token":plan["token"]})
+        assert resp.status_code == 200, (target, resp.json)
+        return plan
+    def deny(target, pins, *labels):
+        untouched = snapshot()
+        plan = preview(target)
+        assert plan["token"] is None, target
+        issues = " ".join(plan["issues"])
+        assert all(f"Вывод {p} (" in issues for p in pins) and all(label in issues for label in labels), issues
+        assert snapshot() == untouched
+        rejected = post("apply", {"profile":target,"token":"0"*64})
+        assert rejected.status_code == 409, (target,rejected.json)
+        assert env.read_bytes() == baseline
+        return plan
+    def undo_to(expected):
+        state = backend("state")
+        assert post("undo", {"token":state["undo"]}).status_code == 200
+        assert env.read_bytes() == expected
+    def owners(state, pin):
+        return [o["label"] for row in state["pins"] if row["pin"]==pin for o in row["owners"]]
+    state = backend("state")
+    assert len(state["live"]["pins"]) == len(state["current"]["pins"]) == 28
+    assert owners(state["live"],3) == ["I²C1 SDA"] and owners(state["current"],3)==["I²C1 SDA · DFR0528"]
+    assert owners(state["current"],8) == ["UART0 TX"] and owners(state["current"],32) == ["PWM1"]
+    assert owners(state["current"],24) == ["SPI1 CS2"]
+    seen = []
+    def ioctl(fd, op, buf):
+        if op == CHIP_INFO:
+            struct.pack_into("=I", buf, 64, 288)
+            return
+        assert op == LINE_INFO
+        offset, = struct.unpack_from("=I", buf, 64)
+        seen.append(offset)
+        if offset == 8 * 32 + 7:
+            buf[32:37] = b"meter"
+            struct.pack_into("=Q", buf, 72, USED)
+    with patch.object(header_panel.gpio, "discover", return_value={MAIN_2W:Chip(-1,ioctl)}):
+        lines = state["live"]["pins"]
+        assert header_panel.gpio_consumers(lines,tmp/"firmware/devicetree/base",tmp,tmp)
+        assert len(set(seen)) == 28 and next(r for r in lines if r["pin"]==5)["gpio_consumer"] == "meter"
+        next(r for r in lines if r["pin"]==5).pop("gpio_consumer")
+    # Check the full pin list and both colliding signals (including HAT sidebands).
+    deny("uart2-rtscts",[3,5],"CTS","RTS","DFR0528")
+    deny("uart3-rtscts",[32],"PWM1","UART3 RTS")
+    deny("uart2-txrx-ph",[23,24],"SPI1","UART2")
+    deny("uart2-rtscts-ph",[19,21,23,24],"SPI1","UART2")
+    deny("i2c3-ph",[18,24],"nRF24 CE","SPI1 CS2","I²C3")
+    deny("pwm3-ph0",[8],"PWM3","UART0 TX")
+    deny("i2c1-off",[],"ups@10")
+    print("PASS I²C/UART/PWM/SPI conflicts, all physical pins and both owners, DFR0528 protected",flush=True)
+    for target, expected in (("i2c2-ph",{11,13}),("uart4-txrx",{7,16}),("pwm1-ph3",{13,32})):
+        prior = snapshot()
+        plan = preview(target)
+        assert {r["pin"] for r in plan["changes"]} == expected
+        assert prior == snapshot()
+        save(target)
+        now = backend("state")
+        assert now["current"]["pins"] == plan["candidate"]["pins"] and now["live"] == state["live"]
+        verify_three(now["current"])
+        undo_to(baseline)
+    # Same I²C controller, different pads; undo after Armbian reorders the env.
+    save("i2c2-ph")
+    plan = save("i2c2-pi"); assert {r["pin"] for r in plan["changes"]} == {11,13,27,28}
+    env.write_bytes(b"".join(reversed(env.read_bytes().splitlines(keepends=True))))
+    undo_token = backend("state")["undo"]; assert post("undo",{"token":undo_token}).status_code == 200
+    assert owners(backend("state")["current"],11) == ["I²C2 SCL"]
+    save("i2c2-off"); assert not owners(backend("state")["current"],11)
+    print("PASS I²C bank switch/off, UART TX/RX, PWM move, byte-exact and reordered undo; live DT fixed",flush=True)
+    # Drive both terminal entry points using their real labels and the same helper.
+    native("uart5-txrx","yes",group="UART")
+    captured=[]
+    def navigate(title, options):
+        captured.append(title)
+        if title.startswith("Шины и контакты"): return options.index("I²C")
+        if title.startswith("I²C"): return next(i for i,o in enumerate(options) if o.startswith("I2C2 · PH"))
+        assert "Применение заблокировано" in title and "UART5" in title and "Вывод 13" in title
+        return 0
+    with patch.object(module,"show_menu",side_effect=navigate), patch.object(module,"show_error",side_effect=AssertionError):
+        action()
+    assert len(captured)==3
+    assert owners(backend("state")["current"],11)==["UART5 TX"]
+    native("undo","yes",group="undo")
+    assert not owners(backend("state")["current"],11)
+    print("PASS native UART selection/one-step undo and TUI I²C conflict preview",flush=True)
+
 
 with tempfile.TemporaryDirectory() as temp:
     tmp = Path(temp); boot = tmp/"boot"; boot.mkdir()
@@ -181,4 +285,7 @@ with tempfile.TemporaryDirectory() as temp:
     with (locks/"opi-spi1-cs1.lock").open() as held, patch.object(client,"HELPERS",[helper]), \
          patch.object(client,"os",SimpleNamespace(geteuid=lambda:0, environ=os.environ)):
         fcntl.flock(held, fcntl.LOCK_EX)
+        if os.environ.get("PANEL_TEST_CHROMIUM"):
+            from panel_browser import check as check_browser
+            check_browser(create_app(token="read"), os.environ["PANEL_TEST_CHROMIUM"], tmp)
         check(boot, helper, tmp)
