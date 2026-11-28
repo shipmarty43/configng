@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 import h616_spi_clock as clock
-from dt_clock_overlay import check_overlay, install_overlay, prop, tokens, write_selection
+from dt_clock_overlay import env_names, replace_env_names, check_overlay, install_overlay, prop, tokens, write_selection
 
 BUSES = {"spi0": "/soc/spi@5010000", "spi1": "/soc/spi@5011000"}
 PREFIX = "opi-sclk-"
@@ -93,20 +93,11 @@ PARKED = "opi_spi1_saved_clocks"
 
 
 def saved_names(text):
-    values = [line.partition("=")[2].split() for line in text.splitlines()
-              if line.startswith(PARKED + "=")]
-    if len(values) > 1:
-        raise ValueError(f"Duplicate {PARKED}")
-    return values[0] if values else []
+    return env_names(text, PARKED)
 
 
 def replace_saved(text, names):
-    if saved_names(text) == names:
-        return text
-    text = re.sub(rf"^{PARKED}=.*(?:\n|$)", "", text, flags=re.M)
-    if not names:
-        return text
-    return text + ("" if text.endswith("\n") else "\n") + PARKED + "=" + " ".join(names) + "\n"
+    return replace_env_names(text, PARKED, names)
 
 
 def verify(blob, effective, names, folder):

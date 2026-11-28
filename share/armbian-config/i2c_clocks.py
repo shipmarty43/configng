@@ -5,7 +5,7 @@ import re
 import subprocess
 import sys
 
-from dt_clock_overlay import check_overlay, install_overlay, prop, tokens, write_selection
+from dt_clock_overlay import env_names, replace_env_names, check_overlay, install_overlay, prop, tokens, write_selection
 
 BUSES = {f"twi{i}": f"/soc/i2c@{0x5002000 + 0x400*i:x}" for i in range(5)}
 BUSES["s-twi0"] = "/soc/i2c@7081400"
@@ -13,6 +13,8 @@ PREFIX = "opi-twi-clock-"
 TOKEN = re.compile(r"opi-twi-clock-(twi[0-4]|s-twi0)-([1-9][0-9]{0,5})")
 MAX = 400_000
 DEFAULT = 100_000
+PI_BUSES = ("twi0", "twi1")
+PARKED = "opi_pi_i2c_saved_clocks"
 
 
 def rates(parent):
@@ -79,6 +81,46 @@ def selections(names):
     return result
 
 
+def parked(text):
+    names = env_names(text, PARKED)
+    result = selections(names)
+    if len(result) != len(names) or not result.keys() <= set(PI_BUSES):
+        raise ValueError("Invalid saved PI I²C clock selection")
+    return result
+
+
+def validate_parked(text, folder):
+    saved = parked(text)
+    if saved.keys() & selections(tokens(text)).keys():
+        raise ValueError("Duplicate active and saved I²C clock")
+    for bus, (name, hz) in saved.items():
+        check_overlay(folder / (name + ".dtbo"), BUSES[bus], {"clock-frequency": hz})
+
+
+def clear_parked(text, bus):
+    names = [name for key, (name, _) in parked(text).items() if key != bus]
+    return replace_env_names(text, PARKED, names)
+
+
+def move_clock(text, after, bus, folder, *, restore):
+    """Move an immutable override between the boot selection and saved PI clocks."""
+    active_names = tokens(text)
+    active = selections(active_names)
+    saved = parked(text)
+    if active.keys() & saved.keys():
+        raise ValueError("Duplicate active and saved I²C clock")
+    setting = (saved if restore else active).get(bus)
+    if not setting:
+        return
+    name, hz = setting
+    check_overlay(folder / (name + ".dtbo"), BUSES[bus], {"clock-frequency": hz})
+    if restore:
+        write_selection(clear_parked(text, bus), after, [*active_names, name])
+    else:
+        stored = [n for n, _ in saved.values()] + [name]
+        write_selection(replace_env_names(text, PARKED, stored), after, [n for n in active_names if n != name])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("baseline", type=Path)
@@ -102,7 +144,7 @@ def main():
     text = args.env.read_text()
     names = tokens(text)
     if args.action == "default-all":
-        write_selection(text, args.after, [name for name in names if not name.startswith(PREFIX)])
+        write_selection(replace_env_names(text, PARKED, []), args.after, [name for name in names if not name.startswith(PREFIX)])
         return
     saved = selections(names)
     if args.action == "verify":
@@ -113,6 +155,7 @@ def main():
             check_overlay(args.folder / (name + ".dtbo"), path, {"clock-frequency": hz})
         return
     if args.action == "list":
+        dormant = parked(text)
         for bus in BUSES:
             active, default, clients = bus_info(args.baseline, bus)
             print(f"{bus}\t{'enabled' if active else 'disabled'}; {saved.get(bus, ('', default))[1]} Hz; {clients}")
@@ -121,7 +164,7 @@ def main():
     path = BUSES[bus]
     previous, request = saved.get(bus, (None, None))
     if args.action == "default":
-        write_selection(text, args.after, [name for name in names if name != previous])
+        write_selection(clear_parked(text, bus), args.after, [name for name in names if name != previous])
         return
     active, default, clients = bus_info(args.baseline, bus)
     fin, source = clock(bus)
@@ -141,6 +184,9 @@ def main():
               f"Clock input: {fin} Hz ({source})")
         hz, m, n = choice(request or default, grid)
         print(f"Calculated SCL: {hz} Hz (M={m}, N={n})")
+        dormant = parked(text).get(bus)
+        if dormant:
+            print(f"Saved clock on next route enable: {dormant[1]} Hz")
         if "dfrobot,dfr0528" in clients:
             print("DFR0528 MCU: vendor bus-speed limit unspecified; 400 kHz tested on the model only.")
         if bus == "s-twi0":
@@ -157,7 +203,7 @@ def main():
         name = f"{PREFIX}{bus}-{request}"
         install_overlay(args.folder, name, path, {"clock-frequency": request})
         updated = [name if item == previous else item for item in names] if previous else [*names, name]
-        write_selection(text, args.after, updated)
+        write_selection(clear_parked(text, bus), args.after, updated)
         print(f"{bus}: requested {request} Hz, calculated {hz} Hz (M={m}, N={n}; {source})")
 
 

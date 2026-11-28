@@ -7,7 +7,7 @@ import sys
 
 args = sys.argv[1:]
 # The A733 and H618 catalogs have 19 and 13 releasable owners. The planner validates each named action.
-profile = r"(?:a733-[a-z0-9-]{1,30}(?:\+[a-z0-9-]{1,12}){0,19}|shared-to-i2c34-ph|off|(?:single|shared|(?:i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})(?:\+[a-z0-9-]{1,12}){0,13})"
+profile = r"(?:a733-[a-z0-9-]{1,30}(?:\+[a-z0-9-]{1,12}){0,19}|shared-to-i2c34-ph|uart2-rtscts-to-i2c01-pi|off|(?:single|shared|(?:i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})(?:\+[a-z0-9-]{1,12}){0,13})"
 if not re.fullmatch(rf"state|preview {profile}|apply {profile} [0-9a-f]{{64}}|undo [0-9a-f]{{64}}",
                     " ".join(args)) or any(" " in arg for arg in args):
     sys.exit("Expected state, preview PROFILE, apply PROFILE TOKEN or undo TOKEN")

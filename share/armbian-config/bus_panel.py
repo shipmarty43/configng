@@ -11,6 +11,7 @@ import sys
 
 import a733_panel
 import header_panel as header
+import i2c_clocks
 import pin_handoff
 from dt_clock_overlay import install_blob, tokens
 from spi1_radios import BUS, CLIENTS, SHARED, peer_clocks
@@ -63,6 +64,8 @@ def plan_routes(target, catalog):
         return (), ()
     if catalog is header and target == header.SPI_TO_PH:
         return (header.ROUTES["i2c3-ph"], header.ROUTES["i2c4-ph"]), (header.ROUTES["off"],)
+    if catalog is header and target == header.UART_TO_PI:
+        return (header.ROUTES["i2c0-pi"], header.ROUTES["i2c1-pi"]), (header.RELEASES["uart2"],)
     route, releases = pin_handoff.selection(target, catalog)
     return (route,), releases
 
@@ -84,7 +87,7 @@ def stage(root, snapshot, work, target, board):
     folder = shadow / "overlay-user"
     folder.mkdir()
     try:
-        backup = None if target == header.SPI_TO_PH else matching_backup(root, before, board)
+        backup = None if target in (header.SPI_TO_PH, header.UART_TO_PI) else matching_backup(root, before, board)
     except PermissionError:
         if target == "undo":
             raise
@@ -98,7 +101,7 @@ def stage(root, snapshot, work, target, board):
         if not backup:
             raise ValueError("No matching profile change to undo")
         rollback_reordered(backup_before, backup / "after", before, after,
-                           allowed=("overlays", "user_overlays", PARKED) if board == "h618" else ("overlays", "user_overlays"))
+                           allowed=("overlays", "user_overlays", PARKED, i2c_clocks.PARKED) if board == "h618" else ("overlays", "user_overlays"))
         if before.read_bytes() == (backup / "after").read_bytes():
             shutil.copyfile(backup_before, after)  # Also restore exact ordering/newlines.
     names = set()
@@ -108,6 +111,7 @@ def stage(root, snapshot, work, target, board):
         names.update(tokens(text))
         if board == "h618":
             names.update(saved_names(text))
+            names.update(name for name, _ in i2c_clocks.parked(text).values())
     for step in (*releases, *routes):
         if step.provider and os.path.lexists(root / "overlay-user" / (step.provider + ".dtbo")):
             names.add(step.provider)
@@ -126,6 +130,7 @@ def stage(root, snapshot, work, target, board):
         seed = intermediate
     if board == "h618":
         peer_clocks(saved_names(before.read_text()), folder, parked=True)
+        i2c_clocks.validate_parked(before.read_text(), folder)
     # Compose every destination from the same released seed. Only the last
     # environment can be published; base.env strips all destination providers.
     base_seed = seed
@@ -143,6 +148,7 @@ def stage(root, snapshot, work, target, board):
         shutil.copyfile(before, after)
     if board == "h618":
         peer_clocks(saved_names(after.read_text()), folder, parked=True)
+        i2c_clocks.validate_parked(after.read_text(), folder)
 
 
 def publish(root, work, board):
@@ -174,7 +180,7 @@ def live_tree(dt):
     # Read the live OF tree, including non-bus consumers such as GPIO keys.
     # Skip firmware payloads, __symbols__ and other unrelated binary properties.
     props = {"status", "reg", "compatible", "phandle", "spi-max-frequency", MARKER,
-             "pins", "allwinner,pins", "function", "allwinner,function", "gpio", "gpios",
+             "clock-frequency", "pins", "allwinner,pins", "function", "allwinner,function", "gpio", "gpios",
              "interrupts", "interrupts-extended", "interrupt-parent", "#interrupt-cells",
              "gpio-hog", "spi-cpha", "spi-cpol", "num-cs", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", DE_PROP}
     tree = {}
@@ -236,6 +242,7 @@ def describe(work, target, dt, devices, locks, board):
             continue
         state = inventory(tree)
         state["pins"] = header.pins(tree)
+        state["pi_clocks"] = header.pi_clock_state(tree, env)
         state["parked"] = {str(cs): hz for (_, cs), (_, hz) in managed(saved_names(env)).items()}
         states.append(state)
     current, candidate = states
@@ -252,6 +259,7 @@ def describe(work, target, dt, devices, locks, board):
     else:
         live_state = inventory(live, dt, devices, locks)
         live_state["pins"] = header.pins(live)
+        live_state["pi_clocks"] = header.pi_clock_state(live)
     live_state["gpio_known"] = header.gpio_consumers(live_state["pins"], dt, board=board)
     changed_pins = header.changes(current["pins"], candidate["pins"])
     affected = {row["pin"] for row in changed_pins}
@@ -277,6 +285,9 @@ def describe(work, target, dt, devices, locks, board):
                 issues.append("Для перехода требуется выбранный профиль SX1262 + CC1101 + nRF24.")
             if enabled(trees[1], BUS):
                 issues.append("Итоговый DTB оставляет SPI1 включённым.")
+        elif target == header.UART_TO_PI:
+            transition = header.UART_TO_PI_LABEL
+            issues.extend(header.uart_to_pi_issues(*trees, (work/"before").read_text(), changed))
         elif releases:
             route, = routes
             transition = pin_handoff.transition_label(route, releases)

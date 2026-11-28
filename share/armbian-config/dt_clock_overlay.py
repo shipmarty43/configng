@@ -19,6 +19,23 @@ def tokens(text):
     return lines[0].split() if lines else []
 
 
+def env_names(text, key):
+    values = [line.partition("=")[2].split() for line in text.splitlines()
+              if line.startswith(key + "=")]
+    if len(values) > 1:
+        raise ValueError(f"Duplicate {key}")
+    return values[0] if values else []
+
+
+def replace_env_names(text, key, names):
+    if env_names(text, key) == names:
+        return text
+    text = re.sub(rf"^{re.escape(key)}=.*(?:\n|$)", "", text, flags=re.M)
+    if not names:
+        return text
+    return text + ("" if text.endswith("\n") else "\n") + key + "=" + " ".join(names) + "\n"
+
+
 def write_selection(before, after, names):
     value = "user_overlays=" + " ".join(names)
     if tokens(before) == names:

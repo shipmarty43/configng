@@ -1,13 +1,15 @@
 """H618 I²C0 + I²C1 → UART2 RTS/CTS acceptance on a private boot tree."""
 import hashlib
 import os
+import shutil
 import subprocess
 from unittest.mock import patch
 
-from dt_clock_overlay import tokens, write_selection
-from i2c_clocks import BUSES
+from dt_clock_overlay import replace_env_names, tokens, write_selection
+from i2c_clocks import BUSES, DEFAULT, PARKED, parked
+from header_panel import UART_TO_PI, UART_TO_PI_LABEL
 from modules.system.system_module import SystemModule
-from uart_routes import FLOW_PROP, address, cells, enabled, read_tree
+from uart_routes import FLOW_PROP, address, cells, enabled, prepare, read_tree, token
 
 TARGET = "uart2-rtscts"
 COMBINED = TARGET + "+i2c0+i2c1"
@@ -15,7 +17,7 @@ PINS = {3:("I²C1 SDA","UART2 CTS"), 5:("I²C1 SCL","UART2 RTS"),
         15:("I²C0 SCL","UART2 TX"), 22:("I²C0 SDA","UART2 RX")}
 
 
-def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners="I²C0 и I²C1", direct=False):
+def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners="I²C0 и I²C1", direct=False, clocks=()):
     import pexpect
     state = get()
     groups = list(dict.fromkeys(o["group"] for o in state["choices"]))
@@ -51,6 +53,8 @@ def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners=
                         tty.expect_exact("1000000 Гц")
                         tty.expect_exact("nRF24")
                         tty.expect_exact("4000000 Гц")
+                for rate in clocks:
+                    tty.expect_exact(f"{rate} Гц")
                 tty.send(yes)
         if not protected:
             tty.expect_exact("Сохранено для")
@@ -59,15 +63,16 @@ def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners=
     assert tty.exitstatus == 0
 
 
-def check_handoff(tmp, helper, repo, app):
+def check_handoff(tmp, helper, repo, app, *, reverse=False):
     boot = tmp/"boot"
     env = boot/"armbianEnv.txt"
     folder = boot/"overlay-user"
     folder.mkdir(exist_ok=True)
     env.write_text("# preserve unrelated settings and token order\nrootdev=UUID=twin\n"
                    "overlay_prefix=sun50i-h616\noverlays=i2c0-pi pwm1-pi11 i2c1-pi\n")
-    for bus, hz in (("twi0","100000"),("twi1","400000")):
-        subprocess.run([helper,"clock",bus,hz],check=True,stdout=subprocess.DEVNULL)
+    rates = {"twi0":200000 if reverse else 100000, "twi1":400000}
+    for bus, hz in rates.items():
+        subprocess.run([helper,"clock",bus,str(hz)],check=True,stdout=subprocess.DEVNULL)
     baseline = env.read_bytes()
     dfr = "zero2w-dfr0528"
     subprocess.run(["dtc","-q","-@","-o",folder/(dfr+".dtbo"),
@@ -106,7 +111,7 @@ def check_handoff(tmp, helper, repo, app):
         assert enabled(tree,port) == uart
         if uart:
             assert tree[port][FLOW_PROP] == b"h618\0" and "uart-has-rtscts" in tree[port]
-        for bus,rate in (("twi0",100000),("twi1",400000)):
+        for bus,rate in rates.items():
             path = BUSES[bus]
             assert enabled(tree,path) == (not uart)
             if not uart:
@@ -125,6 +130,10 @@ def check_handoff(tmp, helper, repo, app):
         (tmp/"next").replace(tmp/"live")
         state = get()
         for when in ("live","current"):
+            shown = state[when]["pi_clocks"]
+            expected_rates = {} if uart and when=="live" else {
+                bus:dict(hz=rate,saved=uart) for bus,rate in rates.items()}
+            assert shown == expected_rates, (when,shown,expected_rates)
             pins = {r["pin"]:r["owners"] for r in state[when]["pins"]}
             for n,pair in PINS.items():
                 expected = pair[uart] + (" · DFR0528" if protected and n in (3,5) else "")
@@ -177,6 +186,11 @@ def check_handoff(tmp, helper, repo, app):
             assert len(new)==2 and env.read_bytes()==baseline
         reboot(uart)
 
+    if reverse:
+        check_reverse(tmp, helper, app, get, post, preview, urwid, native, reboot, rates)
+        print("DTB SHA256",hashlib.sha256((boot/"dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb").read_bytes()).hexdigest(),flush=True)
+        return
+
     ups(False)
     prior = history()
     unchanged = files()
@@ -226,3 +240,146 @@ def check_handoff(tmp, helper, repo, app):
             return assert_unchanged
         check(app,os.environ["PANEL_TEST_CHROMIUM"],tmp,observe=observe,protect=protect)
     print("DTB SHA256",hashlib.sha256((boot/"dtb/allwinner/sun50i-h618-orangepi-zero2w.dtb").read_bytes()).hexdigest(),flush=True)
+
+def check_reverse(tmp, helper, app, get, post, preview, forward_urwid, forward_native, reboot, rates):
+    boot = tmp/"boot"
+    env = boot/"armbianEnv.txt"
+    journal = boot/"armbianEnv.txt.spi1-panel-backups"
+    # Seed actual clock overrides and enter the UART2 profile via the supported forward handoff.
+    p = preview(COMBINED)
+    post("apply", {"profile":COMBINED, "token":p["token"]})
+    original = env.read_bytes()
+    saved = parked(original.decode())
+    assert {bus:hz for bus,(_,hz) in saved.items()} == rates
+    seed = tmp/"provisioned"
+    boot.rename(seed)
+
+    def fresh():
+        boot.mkdir()
+        (boot/"dtb").symlink_to((seed/"dtb").resolve())
+        for name in ("boot.scr","armbianEnv.txt"):
+            shutil.copy2(seed/name,boot/name)
+        shutil.copytree(seed/"overlay-user",boot/"overlay-user")
+        reboot(True)
+        assert not list(boot.glob("*-backups")) and not get()["undo"]
+
+    def rejected_cases():
+        def reject(code=409):
+            before=env.read_bytes()
+            post("apply",{"profile":UART_TO_PI,"token":"0"*64},code)
+            assert env.read_bytes()==before and not journal.exists()
+        for port_mode in ("txrx", "rtscts-ph", "rs485"):
+            prepare(env,env,boot/"overlay-user","uart2","enable" if port_mode=="txrx" else "enable-"+port_mode)
+            assert not preview(UART_TO_PI)["token"]
+            reject()
+            env.write_bytes(original)
+        # Older installs can have multiple dormant blobs and no authoritative
+        # selection. A missing override independently falls back to the board DT.
+        try:
+            for keep in ([], [saved["twi1"][0]]):
+                text = replace_env_names(original.decode(), PARKED, keep)
+                env.write_text(text)
+                p = preview(UART_TO_PI)
+                assert p["token"] and not p["issues"]
+                assert p["candidate"]["pi_clocks"] == {
+                    "twi0":dict(hz=DEFAULT,saved=False),
+                    "twi1":dict(hz=rates["twi1"] if keep else DEFAULT,saved=False)}
+            stock = original.decode().replace("overlays=pwm1-pi11", "overlays=uart2-pi-rts-cts pwm1-pi11")
+            write_selection(stock, env, [name for name in tokens(stock) if name != token("uart2","rtscts")])
+            assert "uart2-pi-rts-cts" in env.read_text() and preview(UART_TO_PI)["token"]
+        finally:
+            env.write_bytes(original)
+        source=boot/"overlay-user"/"opi-uart2-header-rtscts.dtbo"
+        blob=source.read_bytes()
+        # Preserve the DT shape but change the immutable source overlay.
+        source.write_bytes(blob+b"\x00"*4)
+        try:
+            assert not preview(UART_TO_PI)["token"]
+            reject()
+        finally:
+            source.write_bytes(blob)
+        file=boot/"overlay-user"/(saved["twi1"][0]+".dtbo")
+        blob=file.read_bytes()
+        try:
+            file.unlink()
+            reject(503)
+            file.write_bytes(b"invalid")
+            reject(503)
+        finally:
+            file.write_bytes(blob)
+        for dts in ('&{/} { other { test-gpios=<&pio 8 8 0>; }; };',
+                    '&uart2 { serial-client { compatible="test,peripheral"; }; };'):
+            blob=boot/"overlay-user"/"uart-handoff-client.dtbo"
+            subprocess.run(["dtc","-q","-@","-o",blob],input=('/dts-v1/;/plugin/;'+dts).encode(),check=True)
+            write_selection(original.decode(),env,[*tokens(original.decode()),blob.stem])
+            assert not preview(UART_TO_PI)["token"]
+            reject()
+            env.write_bytes(original)
+            blob.unlink()
+
+    module = SystemModule()
+    menu = dict(module.get_menu_items())["Шины и контакты"]
+    def urwid(to_i2c, cancel=False):
+        if not to_i2c:
+            forward_urwid("save")
+            return
+        def choose(title,items):
+            if title.startswith("Шины и контакты"): return items.index("UART")
+            if title.startswith("UART ·"): return items.index(UART_TO_PI_LABEL)
+            assert all(f"I²C{bus[-1]} · {hz} Гц" in title for bus,hz in rates.items()),title
+            assert UART_TO_PI_LABEL in title and all(a in title and b in title for a,b in PINS.values())
+            return items.index("Назад" if cancel else "Сохранить для следующей загрузки")
+        with patch.object(module,"show_menu",side_effect=choose), patch.object(module,"show_message"), \
+             patch.object(module,"show_error",side_effect=AssertionError):
+            menu()
+    def native(to_i2c):
+        if not to_i2c:
+            forward_native("save")
+        elif os.environ.get("PANEL_TEST_DIALOG"):
+            dialog(helper,get,False,False,target=UART_TO_PI,owners="I²C0 и I²C1",direct=True,clocks=rates.values())
+        else:
+            res=subprocess.run([helper,"native"],env=os.environ|{"PANEL_GROUP":"UART","PANEL_CHOICE":UART_TO_PI,
+                               "PANEL_CONFIRM":"yes"},capture_output=True,text=True,check=True)
+            assert "Сохранено" in res.stdout
+
+    frontends=[("urwid",urwid),("native",native)]
+    if os.environ.get("PANEL_TEST_CHROMIUM"):
+        frontends.append(("Chromium",None))
+    for name,frontend in frontends:
+        if boot.exists():
+            boot.rename(tmp/f"previous-{name}")
+        fresh()
+        if name=="urwid":
+            rejected_cases()
+            urwid(True,cancel=True)
+            assert env.read_bytes()==original and not journal.exists()
+        plan=preview(UART_TO_PI)
+        assert plan["transition"]==UART_TO_PI_LABEL and not plan["issues"] and plan["token"]
+        assert plan["candidate"]["pi_clocks"] == {bus:dict(hz=hz,saved=False) for bus,hz in rates.items()}
+        assert {r["pin"] for r in plan["changes"]}==set(PINS)
+        previous=env.read_bytes()
+        entries=set()
+        def observe(uart):
+            nonlocal previous, entries
+            now=set(journal.glob("change.*"))
+            entry,=now-entries
+            assert (entry/"before").read_bytes()==previous and (entry/"after").read_bytes()==env.read_bytes()!=previous
+            entries,previous=now,env.read_bytes()
+            reboot(uart)
+            assert parked(env.read_text())==(saved if uart else {})
+            if not uart:
+                assert set(tokens(env.read_text())) >= {n for n,_ in saved.values()}
+                repeat=preview(UART_TO_PI)
+                assert not repeat["changed"] and not repeat["issues"]
+                post("apply",{"profile":UART_TO_PI,"token":repeat["token"]})
+                assert set(journal.glob("change.*"))==entries
+        if frontend:
+            frontend(True)
+            observe(False)
+            frontend(False)
+            observe(True)
+        else:
+            from panel_browser import check
+            check(app,os.environ["PANEL_TEST_CHROMIUM"],tmp,observe=observe,reverse_uart=True)
+        assert len(entries)==2
+        print(f"PASS {name}: empty history, one save PI UART2 RTS/CTS → I2C0/I2C1 at {rates['twi0']}/{rates['twi1']} Hz, explicit forward save parks both rates again",flush=True)

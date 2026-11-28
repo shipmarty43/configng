@@ -23,6 +23,7 @@ cli.add_argument("gui", type=Path)
 cli.add_argument("prefix", type=Path, nargs="?")
 g = cli.add_mutually_exclusive_group()
 g.add_argument("--handoff-only", action="store_true")
+g.add_argument("--uart-to-pi-only", action="store_true")
 g.add_argument("--spi-handoff-only", action="store_true")
 g.add_argument("--spi-to-ph-only", action="store_true")
 args = cli.parse_args()
@@ -303,12 +304,12 @@ with tempfile.TemporaryDirectory() as temp:
     helper = tmp/"helper"; helper.write_text(harness); helper.chmod(0o755)
     os.environ.update(PANEL_PREFIX=str(prefix), PANEL_TEST=temp, PANEL_PACKAGE="yes" if args.prefix else "",
                       OPI_WEB_OPERATOR_TOKEN="write")
-    if args.handoff_only or args.spi_handoff_only or args.spi_to_ph_only:
+    if args.handoff_only or args.uart_to_pi_only or args.spi_handoff_only or args.spi_to_ph_only:
         with patch.object(client,"HELPERS",[helper]), patch.object(client,"os",SimpleNamespace(geteuid=lambda:0)):
             app = create_app(token="read")
-            if args.handoff_only:
+            if args.handoff_only or args.uart_to_pi_only:
                 from h618_handoff import check_handoff
-                check_handoff(tmp, helper, repo, app)
+                check_handoff(tmp, helper, repo, app, reverse=args.uart_to_pi_only)
             else:
                 from spi_handoff import check_handoff
                 check_handoff(tmp, helper, repo, app, reverse=args.spi_to_ph_only)

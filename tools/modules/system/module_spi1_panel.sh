@@ -30,7 +30,10 @@ function _panel_plan() (
     # A reverse transition also consumes the original shared endpoints and clock
     # overlays. Verify them before they disappear from the candidate tree.
     if ! (
-        if [[ $target == shared-to-i2c34-ph ]]; then
+        if [[ $target == uart2-rtscts-to-i2c01-pi ]]; then
+            _uart_overlay_validate "$panel_work/before" || exit 1
+        fi
+        if [[ $panel_board == h618 && ( $target == shared-to-i2c34-ph || $target == *+i2c0* || $target == *+i2c1* ) ]]; then
             _bus_clocks_validate_config "$panel_work/before" || exit 1
         fi
         _zero2w_validate_change "$panel_journal" "$panel_work"
@@ -109,6 +112,10 @@ function _panel_dialog() {
             .changes[] | "\(.pin) \(.pad)   \(.before|owners) → \(.after|owners)"' <<< "$plan") || return 1
         report="$(jq -r --arg id "$choice" '.transition // $id' <<< "$plan")"$'\n'"${report:-Назначения контактов совпадают.}"
         if [[ $group == SPI1 || $group == SPI ]]; then report+=$'\n'"$(_panel_summary candidate <<< "$plan")"; fi
+        if [[ $panel_board == h618 && ( $group == UART || $group == 'I²C' ) ]]; then
+            report+=$'\n'"$(jq -r '.candidate.pi_clocks | to_entries[] |
+                "I²C\(.key[-1:]) · \(if .value.saved then "сохранено " else "" end)\(.value.hz) Гц"' <<< "$plan")"
+        fi
         if jq -e '.warnings | length > 0' <<< "$plan" >/dev/null; then report+=$'\n'"$(jq -r '.warnings[]' <<< "$plan")"; fi
         if jq -e '.issues | length > 0' <<< "$plan" >/dev/null; then
             dialog_msgbox 'Применение заблокировано' "$(jq -r '.issues[]' <<< "$plan")"$'\n'"$report" 22 90
@@ -132,7 +139,7 @@ function module_spi1_panel() (
         select) _panel_dialog; return ;;
         state) [[ $# == 1 ]] || return 2; target=state ;;
         preview|apply)
-            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12}){0,19}|shared-to-i2c34-ph|off|(shared|single|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})([+][a-z0-9-]{1,12}){0,13})$ ]] || return 2
+            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12}){0,19}|shared-to-i2c34-ph|uart2-rtscts-to-i2c01-pi|off|(shared|single|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})([+][a-z0-9-]{1,12}){0,13})$ ]] || return 2
             target=$2
             if [[ $op == apply ]]; then [[ $# == 3 ]] || return 2; expected=$3
             else [[ $# == 2 ]] || return 2; fi ;;

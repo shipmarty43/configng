@@ -21,6 +21,8 @@ I2C = {"i2c0-pi": ("PI5", "PI6"), "i2c1-pi": ("PI7", "PI8"),
 SPI_CHOICES = {"single": "SX1262", "shared": "SX1262 + CC1101 + nRF24", "off": "Выключить профиль SPI1"}
 
 SPI_TO_PH = "shared-to-i2c34-ph"
+UART_TO_PI = "uart2-rtscts-to-i2c01-pi"
+UART_TO_PI_LABEL = "Отключить UART2 RTS/CTS и включить I²C0 и I²C1 на PI"
 SPI_TO_PH_LABEL = "Отключить общий SPI1 и включить I²C3 и I²C4 на PH"
 
 
@@ -92,6 +94,7 @@ RELEASES = {r.port: r for r in ROUTES.values() if r.mode == "off" and r.group !=
 def choices():
     routes = [dict(group=r.group, id=k, label=r.label) for k, r in ROUTES.items()]
     routes.append(dict(group="SPI1", id=SPI_TO_PH, label=SPI_TO_PH_LABEL))
+    routes.append(dict(group="UART", id=UART_TO_PI, label=UART_TO_PI_LABEL))
     return routes
 
 
@@ -124,6 +127,9 @@ def edit(route, before, after, folder):
     if any(n not in I2C for n in occupied):
         raise ValueError(f"{route.port.upper()} использует маршрут вне гребёнки: {' '.join(occupied)}")
     replace_stock(text, after, occupied, None if route.mode == "off" else f"{route.port}-{route.mode}")
+    bus = "twi" + route.port[-1]
+    if route.mode != "off" and bus in i2c_clocks.PI_BUSES:
+        i2c_clocks.move_clock(after.read_text(), after, bus, folder, restore=True)
 
 
 def edit_release(route, before, after, folder):
@@ -134,6 +140,9 @@ def edit_release(route, before, after, folder):
         text = after.read_text()
         names = tokens(text)
         bus = "twi" + route.port[-1]
+        if bus in i2c_clocks.PI_BUSES:
+            i2c_clocks.move_clock(text, after, bus, folder, restore=False)
+            return
         setting = i2c_clocks.selections(names).get(bus)
         if setting:
             name, hz = setting
@@ -208,6 +217,39 @@ def route_issues(route, base, before, after):
         if not uart.enabled(after, path) or pins != [(pad, route.port) for pad in route.pads]:
             return [f"Итоговый DTB не назначает {route.label} контроллеру {path}."]
     return []
+
+
+def uart_to_pi_issues(before, after, text, changed):
+    source = uart.address("uart2")
+    if uart.enabled(after, source):
+        return ["Итоговый DTB оставляет UART2 включённым."]
+    if not changed:
+        return []
+    mode = uart.selected_mode("uart2", tokens(text))
+    stock = [n for n in pwm.stock(text) if "uart2" in n]
+    managed = mode == "rtscts" and not stock
+    stock_pi = mode is None and stock == ["uart2-pi-rts-cts"]
+    props = before[source]
+    if (not (managed or stock_pi) or not uart.enabled(before, source) or
+            not uart.matches_header(before, "uart2", "rtscts") or
+            any(key in props for key in (uart.DE_PROP, *uart.FLOW_CONFLICTS))):
+        return ["Для перехода требуется UART2 с RTS/CTS на PI5–PI8."]
+    dependents = [path for path in before if path.rpartition("/")[0] == source and
+                  "compatible" in before[path] and uart.enabled(before, path)]
+    return ["UART2 обслуживает " + ", ".join(dependents)] if dependents else []
+
+
+def pi_clock_state(tree, text=""):
+    saved = i2c_clocks.parked(text)
+    result = {}
+    for bus in i2c_clocks.PI_BUSES:
+        path = i2c_clocks.BUSES[bus]
+        if path in tree and uart.enabled(tree, path):
+            rate, = uart.cells(tree[path].get("clock-frequency", i2c_clocks.DEFAULT.to_bytes(4, "big")))
+            result[bus] = dict(hz=rate, saved=False)
+        elif bus in saved:
+            result[bus] = dict(hz=saved[bus][1], saved=True)
+    return result
 
 
 def signals(tree):

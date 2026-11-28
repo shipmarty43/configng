@@ -140,9 +140,10 @@ Choose **UART2 · RTS/CTS · 15/22/5/3** with the stock `i2c0-pi` and
 `i2c1-pi` overlays enabled. BUS002 offers
 `uart2-rtscts+i2c0+i2c1` after resolving the owners of all four pads.
 The same handoff planner handles the catalogued I²C, UART and PWM routes.
-Clock overrides for released I²C buses are removed from the active selection
-together with their routes. One journal record retains the exact old
-environment; undo reselects those immutable clock overlays.
+BUS002 parks explicit I²C0/1 clock selections in
+`opi_pi_i2c_saved_clocks` in the boot environment when releasing these buses.
+The immutable frequency DTBOs remain installed. Undo can still restore
+the exact old environment.
 
 | Physical pin | Initial / restored | UART2 |
 |---|---|---|
@@ -163,6 +164,31 @@ python3 tests/hardware/spi1-radio-twin/panel.py --handoff-only "$ALLWINNER_DTB_D
 An optional third path selects the extracted package prefix. Set
 `PANEL_TEST_CHROMIUM` to a Chromium executable for a loopback Web test.
 Set `PANEL_TEST_DIALOG=1` for the native TUI test with dialog and pexpect.
+
+### UART2 RTS/CTS to both PI I²C buses on Zero 2W
+
+In **UART**, select **Отключить UART2 RTS/CTS и включить I²C0 и I²C1 на
+PI**. The broker operation is `uart2-rtscts-to-i2c01-pi`. The planner
+validates the managed UART2 PI RTS/CTS route or the corresponding stock
+`uart2-pi-rts-cts` selection. It releases UART2 and restores both PI routes
+and their saved TWI clock overlays in the same boot environment update.
+TX/RX only, PH flow control and RS-485 each have different routing and do
+not qualify as sources. An enabled child of UART2 blocks removal.
+
+A saved override must match the controller, requested frequency and exact
+overlay contents. Without an explicit selection, the effective board DT
+determines the rate (100 kHz when the node omits `clock-frequency`).
+Files left by older clock settings are never searched for a guessed value.
+I2C001 can inspect or clear a saved request for a disabled bus.
+
+```sh
+python3 tests/hardware/spi1-radio-twin/panel.py --uart-to-pi-only "$ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
+```
+
+The test starts each interface from a managed PI RTS/CTS boot with an empty
+journal. It verifies 200/400 kHz in the preview and the composed and live OF
+trees, then explicitly returns to UART2 and checks the parked values again.
+The Web and native dialog test options above also apply.
 
 ### I²C3/I²C4 PH to shared SPI1 on Zero 2W
 
