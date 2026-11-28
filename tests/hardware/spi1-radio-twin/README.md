@@ -164,6 +164,27 @@ An optional third path selects the extracted package prefix. Set
 `PANEL_TEST_CHROMIUM` to a Chromium executable for a loopback Web test.
 Set `PANEL_TEST_DIALOG=1` for the native TUI test with dialog and pexpect.
 
+### I²C3/I²C4 PH to shared SPI1 on Zero 2W
+
+Select **SPI1 → SX1262 + CC1101 + nRF24**. With both PH routes active,
+the conflict dialog offers `shared+i2c3+i2c4`. Pin 18 transfers from I²C3
+SCL to nRF24 CE, 24 from I²C3 SDA to SPI1 CS2, 23 from I²C4 SCL to SPI1 CLK
+and 19 from I²C4 SDA to SPI1 MOSI. The planner checks the controller and its
+declared peripheral sidebands. It validates the complete radio overlay and
+the immutable per-device clock blobs before saving.
+
+The fixture sets CS1 to 1 MHz and CS2 to 4 MHz using SPI001, disables the
+profile to park those requests, then enables both PH buses. It exercises
+preview, save, simulated boot and one-step undo, comparing the effective
+frequencies in the DT with the client requests and the restored clock tokens.
+
+```sh
+python3 tests/hardware/spi1-radio-twin/panel.py --spi-handoff-only "$ALLWINNER_DTB_DIR" "$GUI_CHECKOUT"
+```
+
+The package prefix, `PANEL_TEST_CHROMIUM` and `PANEL_TEST_DIALOG` options
+apply to this test too. All device trees and bindings are local fixtures.
+
 ### Zero 3W (A733)
 
 BUS002 selects the board from the live OF compatible strings. On Zero 3W it

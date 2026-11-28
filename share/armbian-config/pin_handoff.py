@@ -25,8 +25,10 @@ def transition_label(route, releases):
 
 
 def owners_on_route(route, current, candidate):
-    pins = {row["pin"] for row in candidate if any(o["path"] == route.path for o in row["owners"])}
-    return {o["path"] for row in current if row["pin"] in pins for o in row["owners"] if o["path"] != route.path}
+    # A peripheral profile may also own sideband pins through its DT children.
+    paths = route.owner_paths
+    pins = {row["pin"] for row in candidate if any(o["path"] in paths for o in row["owners"])}
+    return {o["path"] for row in current if row["pin"] in pins for o in row["owners"] if o["path"] not in paths}
 
 
 def conflicting_releases(route, current, candidate, catalog):

@@ -12,14 +12,12 @@ import sys
 import a733_panel
 import header_panel as header
 import pin_handoff
-import uart_routes as uart
 from dt_clock_overlay import install_blob, tokens
-from spi1_radios import BUS, CLIENTS, SHARED, SINGLE, peer_clocks, select
+from spi1_radios import BUS, CLIENTS, peer_clocks
 from spi_devices import MARKER, PARKED, managed, saved_names
 from sx1262_spi import selected
-from uart_routes import PIO, cells, enabled, env_content, read_tree, rollback_reordered, strings
+from uart_routes import DE_PROP, PIO, cells, enabled, env_content, read_tree, rollback_reordered, strings
 
-PROFILES = {"single": "enable", "shared": "shared", "off": "disable"}
 LABELS = ("SX1262", "CC1101", "nRF24")
 PINS = {(8, 3): (40, "PI3"), (7, 9): (26, "PH9"), (7, 5): (24, "PH5")}
 LOCKS = ("opi-radio.lock", "opi-spi1-cs1.lock", "opi-spi1-cs2.lock")
@@ -68,7 +66,7 @@ def stage(root, snapshot, work, target, board):
     route = None
     releases = ()
     catalog = a733_panel if board == "a733" else header
-    if target not in ("state", "undo") and not (board == "h618" and target in PROFILES):
+    if target not in ("state", "undo"):
         route, releases = pin_handoff.selection(target, catalog)
     before = work / "before"
     shutil.copyfile(regular(snapshot), before)
@@ -104,15 +102,9 @@ def stage(root, snapshot, work, target, board):
         names.update(tokens(text))
         if board == "h618":
             names.update(saved_names(text))
-    if board == "a733":
-        providers = [step.provider for step in (*releases, route) if step]
-    elif route and route.group == "UART" and route.mode not in ("off", "txrx-ph"):
-        providers = [uart.token(route.port, route.mode)]
-    else:
-        providers = [{"single": SINGLE, "shared": SHARED}.get(target)]
-    for provider in providers:
-        if provider and os.path.lexists(root / "overlay-user" / (provider + ".dtbo")):
-            names.add(provider)
+    for step in (*releases, route):
+        if step and step.provider and os.path.lexists(root / "overlay-user" / (step.provider + ".dtbo")):
+            names.add(step.provider)
     for name in names:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", name):
             raise ValueError("Invalid overlay name")
@@ -131,11 +123,9 @@ def stage(root, snapshot, work, target, board):
     if route:
         if board == "a733":
             a733_panel.edit(route, seed, work / "base.env", folder, strip=True)
-        else:
+        elif route.group != "SPI1":
             header.edit(header.RELEASES[route.port], seed, work / "base.env", folder)
         catalog.edit(route, seed, after, folder)
-    elif board == "h618" and target in PROFILES:
-        select(before, after, folder, PROFILES[target])
     elif target == "state":
         shutil.copyfile(before, after)
     if board == "h618":
@@ -144,11 +134,8 @@ def stage(root, snapshot, work, target, board):
 
 def publish(root, work, board):
     active = tokens((work / "after").read_text())
-    if board == "a733":
-        providers = {r.provider for r in a733_panel.ROUTES.values() if r.provider}
-    else:
-        providers = {SINGLE, SHARED} | {uart.token(r.port, r.mode) for r in header.ROUTES.values()
-                                       if r.group == "UART" and r.mode not in ("off", "txrx-ph")}
+    catalog = a733_panel if board == "a733" else header
+    providers = {r.provider for r in catalog.ROUTES.values() if r.provider}
     for provider in providers.intersection(active):
         data = (work / "boot/overlay-user" / (provider + ".dtbo")).read_bytes()
         install_blob(root / "overlay-user", provider, data)
@@ -176,7 +163,7 @@ def live_tree(dt):
     props = {"status", "reg", "compatible", "phandle", "spi-max-frequency", MARKER,
              "pins", "allwinner,pins", "function", "allwinner,function", "gpio", "gpios",
              "interrupts", "interrupts-extended", "interrupt-parent", "#interrupt-cells",
-             "gpio-hog", "spi-cpha", "spi-cpol", "num-cs", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", uart.DE_PROP}
+             "gpio-hog", "spi-cpha", "spi-cpol", "num-cs", "#gpio-cells", "bt_rst_n", "bt_wake", "wlan_regon", DE_PROP}
     tree = {}
     for directory, children, files in os.walk(dt):
         node = Path(directory)
@@ -264,9 +251,11 @@ def describe(work, target, dt, devices, locks, board):
     try:
         if board == "a733":
             a733_panel.validate_stock_pwm(trees[1], (work/"after").read_text())
-        if target not in ("state", "undo") and not (board == "h618" and target in PROFILES):
+        if target not in ("state", "undo"):
             route, releases = pin_handoff.selection(target, catalog)
-            issues.extend(catalog.route_issues(route, read_tree(work / "base.dtb"), *trees))
+            # The H618 radio profile has its own full SPI tree/clock validator.
+            if route.group != "SPI1":
+                issues.extend(catalog.route_issues(route, read_tree(work / "base.dtb"), *trees))
             if releases:
                 transition = pin_handoff.transition_label(route, releases)
                 owners = pin_handoff.owners_on_route(route, current["pins"], candidate["pins"])

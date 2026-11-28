@@ -21,7 +21,9 @@ cli = argparse.ArgumentParser(description=__doc__)
 cli.add_argument("dtbs", type=Path)
 cli.add_argument("gui", type=Path)
 cli.add_argument("prefix", type=Path, nargs="?")
-cli.add_argument("--handoff-only", action="store_true")
+g = cli.add_mutually_exclusive_group()
+g.add_argument("--handoff-only", action="store_true")
+g.add_argument("--spi-handoff-only", action="store_true")
 args = cli.parse_args()
 dtbs, gui = args.dtbs.resolve(), args.gui.resolve()
 prefix = args.prefix.resolve() if args.prefix else repo
@@ -300,8 +302,11 @@ with tempfile.TemporaryDirectory() as temp:
     helper = tmp/"helper"; helper.write_text(harness); helper.chmod(0o755)
     os.environ.update(PANEL_PREFIX=str(prefix), PANEL_TEST=temp, PANEL_PACKAGE="yes" if args.prefix else "",
                       OPI_WEB_OPERATOR_TOKEN="write")
-    if args.handoff_only:
-        from h618_handoff import check_handoff
+    if args.handoff_only or args.spi_handoff_only:
+        if args.spi_handoff_only:
+            from spi_handoff import check_handoff
+        else:
+            from h618_handoff import check_handoff
         with patch.object(client,"HELPERS",[helper]), patch.object(client,"os",SimpleNamespace(geteuid=lambda:0)):
             check_handoff(tmp, helper, repo, create_app(token="read"))
         sys.exit(0)

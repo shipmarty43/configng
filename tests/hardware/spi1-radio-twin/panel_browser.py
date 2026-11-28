@@ -11,7 +11,7 @@ import urllib.request
 from werkzeug.serving import make_server
 
 
-def check(app, chrome, temp, *, board="h618", observe=None, protect=None):
+def check(app, chrome, temp, *, board="h618", observe=None, protect=None, spi1=False):
     cdp_class = runpy.run_path(str(Path(__file__).resolve().parents[1] / "zero2w-browser-pixels.py"))["CDP"]
     with make_server("127.0.0.1", 0, app) as server:
         thread = Thread(target=server.serve_forever, daemon=True)
@@ -55,6 +55,8 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None):
                 assert js("el('board').textContent.includes('Zero 3W')")
                 conflict, owner, pin = "a733-spi3-on", "Камера VIN", 24
                 free, signal = "a733-i2c1-400000", "I²C1 SDA"
+            elif spi1:
+                conflict, owner, pin = "shared", "I²C3", 18
             elif observe:
                 conflict, owner, pin = "uart2-rtscts", "I²C1", 3
             else:
@@ -67,6 +69,10 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None):
                     routes = {"19":["I²C2 SDA","SPI3 MOSI"], "23":["I²C2 SCL","SPI3 CLK"],
                               "24":["Камера VIN","SPI3 CS0"]}
                     parts = ("камеру VIN","I²C2","SPI3")
+                elif spi1:
+                    routes = {"18":["I²C3 SCL","nRF24 CE"], "24":["I²C3 SDA","SPI1 CS2"],
+                              "19":["I²C4 SDA","SPI1 MOSI"], "23":["I²C4 SCL","SPI1 CLK"]}
+                    parts = ("I²C3","I²C4","SX1262","CC1101","nRF24")
                 else:
                     routes = {"3":["I²C1 SDA","UART2 CTS"], "5":["I²C1 SCL","UART2 RTS"],
                               "15":["I²C0 SCL","UART2 TX"], "22":["I²C0 SDA","UART2 RX"]}
@@ -77,7 +83,18 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None):
                     pins = {pin:(live,saved) for pin,live,saved in rows}
                     return all(pin in pins and names[live_new] in pins[pin][0]
                                and names[saved_new] in pins[pin][1] for pin,names in routes.items())
+                def rates(section, active):
+                    if active:
+                        rows = js(f"Array.from(el('{section}').querySelectorAll('tbody tr'), r => Array.from(r.cells,c => c.textContent))")
+                        assert [(r[0],r[1],r[3],r[4]) for r in rows if r[0] in ("1","2")] == [
+                            ("1","CC1101","1000000","1000000"),("2","nRF24","4000000","4000000")], rows
+                    else:
+                        body = js(f"el('{section}').textContent")
+                        assert all(f"CS{cs} · сохранено {hz} Гц" in body for cs,hz in ((1,1000000),(2,4000000)))
                 assert owners(False,False)
+                if spi1:
+                    js("document.querySelector('details').open=true")
+                    rates("current",False)
                 offer = js("el('issues').querySelector('button').textContent")
                 assert all(part in offer for part in parts)
                 js("el('issues').querySelector('button').click()")
@@ -85,16 +102,20 @@ def check(app, chrome, temp, *, board="h618", observe=None, protect=None):
                 assert all(p in js("el('issues').textContent") for p in parts)
                 diff = js("el('changes').textContent")
                 assert all(name in diff for pair in routes.values() for name in pair)
+                if spi1: rates("candidate",True)
                 js("el('apply').click()")
                 until(lambda: js("!el('undo').disabled") and owners(False,True))
+                if spi1: rates("current",True)
                 observe(True)
                 js("el('refresh').click()")
                 until(lambda: js("!el('undo').disabled") and owners(True,True))
+                if spi1: rates("live",True)
                 js("el('undo').click()")
                 until(lambda: js("!el('refresh').disabled") and owners(True,False))
                 observe(False)
                 js("el('refresh').click()")
                 until(lambda: js("!el('refresh').disabled") and owners(False,False))
+                if spi1: rates("current",False)
                 print(f"PASS Chromium {board}: {conflict} handoff and one undo, checked before/after/live owners on pins {', '.join(routes)}",flush=True)
                 if protect:
                     assert_unchanged = protect()

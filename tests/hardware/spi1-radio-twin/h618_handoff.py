@@ -15,11 +15,11 @@ PINS = {3:("I²C1 SDA","UART2 CTS"), 5:("I²C1 SCL","UART2 RTS"),
         15:("I²C0 SCL","UART2 TX"), 22:("I²C0 SDA","UART2 RX")}
 
 
-def dialog(helper, get, undo, protected):
+def dialog(helper, get, undo, protected, *, group="UART", target=TARGET, owners="I²C0 и I²C1"):
     import pexpect
     state = get()
     groups = list(dict.fromkeys(o["group"] for o in state["choices"]))
-    routes = [o["id"] for o in state["choices"] if o["group"] == "UART"]
+    routes = [o["id"] for o in state["choices"] if o["group"] == group]
     down, yes = "\x1bOB", "\x1bOD\r"
     with pexpect.spawn(str(helper), ["dialog"], encoding="utf-8", timeout=25, dimensions=(36,126),
                        env=os.environ | {"LC_ALL":"C.UTF-8","TERM":"xterm"}) as tty:
@@ -27,19 +27,25 @@ def dialog(helper, get, undo, protected):
         if undo:
             tty.send(down * (len(groups)+1) + "\r")
         else:
-            tty.send(down * (groups.index("UART")+1) + "\r")
-            tty.expect_exact("Выберите маршрут для предпросмотра")
-            tty.send(down * routes.index(TARGET) + "\r")
+            tty.send(down * (groups.index(group)+1) + "\r")
+            tty.expect_exact("CC1101 + nRF24" if group == "SPI1" else "Выберите маршрут для предпросмотра")
+            tty.send(down * routes.index(target) + "\r")
             if protected:
                 tty.expect_exact("Применение заблокировано")
                 tty.expect_exact("DFR0528")
                 tty.send("\r")
             else:
                 tty.expect_exact("Предпросмотр перехода?")
-                tty.expect_exact("I²C0 и I²C1")
+                tty.expect_exact(owners)
                 tty.send(yes)
                 tty.expect_exact("Сохранить для следующей загрузки?")
-                tty.expect_exact("I²C0 и I²C1")
+                tty.expect_exact(owners)
+                if group == "SPI1":
+                    tty.expect_exact("После применения")
+                    tty.expect_exact("CC1101")
+                    tty.expect_exact("1000000 Гц")
+                    tty.expect_exact("nRF24")
+                    tty.expect_exact("4000000 Гц")
                 tty.send(yes)
         if not protected:
             tty.expect_exact("Сохранено для")

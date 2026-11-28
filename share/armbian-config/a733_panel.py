@@ -32,6 +32,10 @@ class Route:
         return bool(self.values) and self.port not in RESERVES
 
     @property
+    def owner_paths(self):
+        return {self.path}
+
+    @property
     def provider(self):
         if self.values and self.values != ("stock",):
             return io.PREFIX + self.port + "--" + "-".join(self.values)

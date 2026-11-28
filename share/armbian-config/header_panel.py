@@ -10,7 +10,7 @@ import uart_routes as uart
 from dt_clock_overlay import check_overlay, tokens, write_selection
 from header_gpio import PADS, location
 import header_gpio_live as gpio
-from spi1_radios import BUS, CLIENTS, CONTROL
+from spi1_radios import BUS, CLIENTS, CONTROL, SINGLE, SHARED, select as select_radio
 
 HEADER = PADS["h618"]
 NUMBERS = {pad: pin for pin, pad in HEADER.items()}
@@ -32,10 +32,27 @@ class Route:
 
     @property
     def can_take_pins(self):
-        return bool(self.pads)
+        return self.mode != "off"
+
+    @property
+    def owner_paths(self):
+        if self.group == "SPI1" and self.can_take_pins:
+            clients = CLIENTS if self.mode == "shared" else CLIENTS[:1]
+            return {BUS, *(f"{BUS}/{name}" for name, _, _ in clients)}
+        return {self.path}
+
+    @property
+    def provider(self):
+        if self.group == "SPI1":
+            return {"single": SINGLE, "shared": SHARED}.get(self.mode)
+        if self.group == "UART" and self.mode not in ("off", "txrx-ph"):
+            return uart.token(self.port, self.mode)
+        return None
 
     @property
     def label(self):
+        if self.group == "SPI1":
+            return SPI_CHOICES[self.mode]
         pins = "/".join(str(NUMBERS[p]) for p in self.pads)
         mode = {"off": "убрать маршрут", "txrx": "TX/RX", "txrx-ph": "TX/RX PH", "rtscts": "RTS/CTS",
                 "rtscts-ph": "RTS/CTS PH", "rs485": "RS-485", "rs485-ph": "RS-485 PH"}.get(self.mode, self.mode.upper())
@@ -61,20 +78,24 @@ def routes():
     for n, pads in pwm.PINS.items():
         for pad in pads:
             add("PWM", f"pwm{n}", pad.lower(), pwm.channel_node(n), (pad,), ("PWM",))
-    return result
+    profiles = {mode: Route("SPI1", "spi1", mode, BUS, (), ()) for mode in SPI_CHOICES}
+    return profiles | dict(sorted(result.items()))
 
 
 ROUTES = routes()
-RELEASES = {r.port: r for r in ROUTES.values() if r.mode == "off"}
+RELEASES = {r.port: r for r in ROUTES.values() if r.mode == "off" and r.group != "SPI1"}
 
 
 def choices():
-    return ([dict(group="SPI1", id=k, label=v) for k, v in SPI_CHOICES.items()] +
-            [dict(group=r.group, id=k, label=r.label) for k, r in sorted(ROUTES.items())])
+    return [dict(group=r.group, id=k, label=r.label) for k, r in ROUTES.items()]
 
 
 def edit(route, before, after, folder):
     """Only replace the selected controller's own recognized route."""
+    if route.group == "SPI1":
+        action = {"single": "enable", "shared": "shared", "off": "disable"}[route.mode]
+        select_radio(before, after, folder, action)
+        return
     if route.group == "UART":
         if route.mode == "txrx-ph":
             text = before.read_text()

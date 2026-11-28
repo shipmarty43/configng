@@ -59,7 +59,8 @@ function _panel_summary() {
             (if .changed then "После применения", (.candidate|rows) else empty end)'
         return
     fi
-    jq -r 'def rows: .profile, (.rows[] | " CS\(.cs)  \(.device)  pin \(.pin // "?")/\(.pad // "?")  \(.requested_hz) Гц (макс. \(.ceiling_hz)) \(.endpoint // "") \(.lock // "")"), ((.parked // {}) | to_entries[] | " CS\(.key) сохранено \(.value) Гц"); "SPI1 · CLK 23 · MOSI 19 · MISO 21", "Сейчас", (.live|rows), "При следующей загрузке", (.current|rows), (if .changed then "После применения", (.candidate|rows) else empty end)'
+    jq -r --arg view "${1:-state}" 'def rows: .profile, (.rows[] | " CS\(.cs)  \(.device)  pin \(.pin // "?")/\(.pad // "?")  \(.requested_hz) Гц (макс. \(.ceiling_hz)) \(.endpoint // "") \(.lock // "")"), ((.parked // {}) | to_entries[] | " CS\(.key) сохранено \(.value) Гц"); if $view=="candidate" then "После применения", (.candidate|rows)
+        else "SPI1 · CLK 23 · MOSI 19 · MISO 21", "Сейчас", (.live|rows), "При следующей загрузке", (.current|rows) end'
 }
 
 function _panel_dialog() {
@@ -100,7 +101,7 @@ function _panel_dialog() {
         report=$(jq -r 'def owners: map(.label) | join(" + ") | if .=="" then "—" else . end;
             .changes[] | "\(.pin) \(.pad)   \(.before|owners) → \(.after|owners)"' <<< "$plan") || return 1
         report="$(jq -r --arg id "$choice" '.transition // $id' <<< "$plan")"$'\n'"${report:-Назначения контактов совпадают.}"
-        if [[ $group == SPI1 || $group == SPI ]]; then report+=$'\n'"$(_panel_summary <<< "$plan")"; fi
+        if [[ $group == SPI1 || $group == SPI ]]; then report+=$'\n'"$(_panel_summary candidate <<< "$plan")"; fi
         if jq -e '.warnings | length > 0' <<< "$plan" >/dev/null; then report+=$'\n'"$(jq -r '.warnings[]' <<< "$plan")"; fi
         if jq -e '.issues | length > 0' <<< "$plan" >/dev/null; then
             dialog_msgbox 'Применение заблокировано' "$(jq -r '.issues[]' <<< "$plan")"$'\n'"$report" 22 90
@@ -124,7 +125,7 @@ function module_spi1_panel() (
         select) _panel_dialog; return ;;
         state) [[ $# == 1 ]] || return 2; target=state ;;
         preview|apply)
-            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12}){0,19}|shared|single|off|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12}([+][a-z0-9-]{1,12}){0,13})$ ]] || return 2
+            [[ ${2:-} =~ ^(a733-[a-z0-9-]{1,30}([+][a-z0-9-]{1,12}){0,19}|off|(shared|single|(i2c[0-4]|uart[2-5]|pwm[1-4])-[a-z][a-z0-9-]{0,12})([+][a-z0-9-]{1,12}){0,13})$ ]] || return 2
             target=$2
             if [[ $op == apply ]]; then [[ $# == 3 ]] || return 2; expected=$3
             else [[ $# == 2 ]] || return 2; fi ;;
