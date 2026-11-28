@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-28",
+  "configurator_patch_commit": "a62e1f0c60286a3389b902e6e1cab93ae7cd1ded",
+  "boards": [
+    {
+      "board": "zero2w",
+      "image": "Armbian_community_26.11.0-trunk.108_Orangepizero2w_resolute_current_6.18.57_xfce_desktop.img",
+      "image_sha256": "a398fa766ee849ef30f367534aa09d640ea0ff9d11f139a5bf2838e4a17b26fe",
+      "config_from_image_sha256": "f5696736ef520fe30d1a132cc396262f16ea942ab2c026e89ff3c9161e5dcc81",
+      "dtb_sha256": "4b90c01af0137b2297fb7243f200c5b32c33ce7e9b0e3d15fbde8c9733363758",
+      "kernel_source_commit": "2ff600d29ee478d0a8d46ef8a58afb5e038fe692",
+      "framework_commit": "fac57a02f1c6ff2221a3f3099a1094dcdf41be26",
+      "oci_layer": "sha256:0dd2ecf209daee6509f78fef760bc348ae0f1cd4fc167f2fb39072d163b24d29",
+      "stock_package": "linux-image-current-sunxi64_26.11.0-trunk.108_arm64.deb",
+      "stock_deb_sha256": "41ce65cefcb8ea76287553c4104c76b210737d4566dcd2d3f291c863f6c16b28",
+      "patched_package": "linux-image-current-sunxi64_26.11.0-trunk.108+pwm002.1_arm64.deb",
+      "patched_deb_sha256": "07b927e9bbbd1c016f38bb8d82ca2364c225fd8ee4e008af01ff1f88f9ea9ec0",
+      "stock_and_restored_Image_sha256": "8a1a6efaf6bb72da026eaf3fa807b3b58dc23dfc26f833146f7519930ffa4794",
+      "installed_Image_sha256": "876b044fc38a64a4069773f840b92f7c634a8546f158611fc2d33c217d99b725",
+      "modules": 2680,
+      "tested_boots": [
+        "stock-install",
+        "patched-downgrade",
+        "restored"
+      ],
+      "device_test": "QEMU virt ARM64, disposable qcow2 backing; no board or SD card"
+    },
+    {
+      "board": "zero3w",
+      "image": "Armbian_26.11.3_Orangepizero3w_trixie_vendor_6.6.98_minimal.img",
+      "image_sha256": "8d405be165fc648d41bc2a661a04c8a6372efc1c70b371dca1020efc6bf69596",
+      "config_from_image_sha256": "bb22dba59d3ba8dc94baf710f77d8ed65cf4edcf07be49c96fa20c14d3b1ffc9",
+      "dtb_sha256": "e39f18d3126471e733d4b317afac65aedd776567dd5ba3f44e4c27c38ded4f86",
+      "kernel_source_commit": "2ac08e8c7cdc28abbdc5c9a9dd812f887ae9c79f",
+      "framework_commit": "0bf4c8e96",
+      "oci_layer": "sha256:892595a8347682ab70e57668c0448a8dccdfa372f0465b60782862c29147d94d",
+      "stock_package": "linux-image-vendor-sun60iw2_26.11.3_arm64.deb",
+      "stock_deb_sha256": "e0b0a9d93879f40e360df6152162fbcea3805846bed833a72d53e0d9f9d33412",
+      "patched_package": "linux-image-vendor-sun60iw2_26.11.3+pwm002.1_arm64.deb",
+      "patched_deb_sha256": "91b13614c681045f075b7bcdd34435afec7f5df66e50c16037bde3d3534b080b",
+      "stock_and_restored_Image_sha256": "cb0eb7837725f746d534f17c2deca2e1d7033a32a6317ce5bf2b80901d615fa7",
+      "installed_Image_sha256": "bd2e709f76b8fee5bfc40fb6c8aae20e8d3c615e56615d87f8bc6feabc382f3f",
+      "modules": 465,
+      "tested_boots": [
+        "stock-install",
+        "patched-downgrade",
+        "restored"
+      ],
+      "device_test": "QEMU virt ARM64, disposable qcow2 backing; no board or SD card"
+    }
+  ]
+}
